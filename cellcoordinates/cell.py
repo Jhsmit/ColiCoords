@@ -37,14 +37,14 @@ class Cell(object):
                 
     """
 
-    def __init__(self, bf_img=None, binary_img=None, fl_data=None, storm_data=None, **args, **kwargs):
+    def __init__(self, bf_img=None, binary_img=None, fl_data=None, storm_data=None, *args, **kwargs):
         #todo assert shapes of all images and storm data
 
         self.data = Data(bf_img=bf_img, binary_img=binary_img, fl_data=fl_data, storm_data=storm_data)
-        self.coords = Coordinates()
+        self.coords = Coordinates(self.data)
 
-    def optimize(self, optimize_method=None, maximize='photons'):
-        if not optimize_method:
+    def optimize(self, method=None, maximize='photons'):
+        if not method:
             if self.data.binary_img and not self.data.storm_data:
                 optimizer = BinaryOptimizer(self)
             elif not self.data.binary_img and self.data.storm_data:
@@ -53,16 +53,16 @@ class Cell(object):
                 raise ValueError("Please specify optimize method")
             elif not self.data.binary_img and not self.data.storm_data:
                 raise ValueError("Please specify optimize method")
-        elif optimize_method == 'binary':
+        elif method == 'binary':
             optimizer = BinaryOptimizer(self)
-        elif optimize_method == 'STORM':
+        elif method == 'STORM':
             optimizer = STORMOptimizer(self, maximize=maximize)
         else:
             raise ValueError("Invalid value for optimize_method")
 
-
-
-
+        #todo optimizer as property
+        optimizer.execute()
+     #   optimizer.optimize_overall()
 
     @property
     def length(self):
@@ -84,6 +84,45 @@ class Cell(object):
         #todo check dis math
         return np.pi*self.coords.r**2*self.length + (4/3)*np.pi*self.coords.r**3
 
+    #todo choose fluorescence channel or storm
+    def radial_distribution(self, stop, step, src=''):
+        def bin_func(r, flu, bins):
+            r_flat = r.flatten()
+            i_sort = r_flat.argsort()
+            r_sorted = r_flat[i_sort]
+            flu_sorted = flu.flatten()[i_sort]
+
+            bin_inds = np.digitize(r_sorted,
+                                   bins) - 1  # -1 to assure points between 0 and step are in bin 0 (the first)
+            yvals = np.bincount(bin_inds, weights=flu_sorted, minlength=len(bins)) / np.bincount(bin_inds, minlength=len(bins))
+            return yvals
+
+        bins = np.arange(0, stop+step, step)
+        xvals = bins + 0.5 * step  # xval is the middle of the bin
+        print(xvals)
+        import matplotlib.pyplot as plt
+
+        if not src:
+            data = self.data.fl_dict.values()[0]
+        elif src == 'storm':
+            raise NotImplementedError('Calculating radial distribution of STORM data not yet implemented')
+        else:
+            try:
+                data = self.data.fl_dict[src]
+            except KeyError:
+                raise ValueError('Chosen data not found')
+
+       # plt.imshow(self.coords.y_coords)
+       #plt.show()
+
+        if data.ndim == 2:
+            yvals = bin_func(self.coords.rc, data, bins)
+        elif data.ndim == 3:
+            yvals = np.vstack([bin_func(self.coords.rc, d, bins) for d in data])
+        else:
+            raise ValueError('Invalid fluorescence image dimensions')
+
+        return xvals, yvals
 
 class Coordinates(object):
     """Cell's coordinate system described by the polynomial f(x) and associated functions
@@ -103,6 +142,7 @@ class Coordinates(object):
     def __init__(self, data):
         self.coeff = np.array([1., 1., 1.])
         self.xl, self.xr, self.r, self.coeff = self._initial_guesses(data) #todo implement
+        self.shape = data.shape
 
     def calc_xc(self, xp, yp):
         """ Calculates the coordinate xc on f(x) closest to x, y 
@@ -180,21 +220,45 @@ class Coordinates(object):
 
         return np.sqrt((xc - xp)**2 + (a0 + xc*(a1 + a2*xc) - yp)**2)
 
-    def calc_thetha(self, xp, yp):
+    def calc_psi(self, xp, yp):
         return
 
-    #todo properties for img equivalents of xc, rc, thetha
+    #todo check this 05 buissisnesese
+    @property
+    def x_coords(self):
+        ymax = self.shape[0]
+        xmax = self.shape[1]
+        return np.repeat(np.arange(xmax), ymax).reshape(xmax, ymax).T + 0.5
 
-    def _initial_guesses(self, data):
-        if data.binary_img:
+    @property
+    def y_coords(self):
+        ymax = self.shape[0]
+        xmax = self.shape[1]
+        return np.repeat(np.arange(ymax), xmax).reshape(ymax, xmax)[::-1, :] + 0.5
+
+    @property
+    def xc(self):
+        return self.calc_xc(self.x_coords, self.y_coords)
+
+    @property
+    def rc(self):
+        return self.calc_rc(self.x_coords, self.y_coords)
+
+    def psi(self):
+        pass
+
+    @staticmethod
+    def _initial_guesses(data):
+        if data.binary_img is not None:
             r = np.sqrt(mh.distance(data.binary_img).max())
             area = np.sum(data.binary_img)
             l = (area - np.pi*r**2) / (2*r)
+            y_cen, x_cen = mh.center_of_mass(data.binary_img)
+            xl, xr = x_cen - l/2, x_cen + l/2
+
+            coeff = np.array([y_cen, 0.01, 0.0001])
 
         elif data.storm_data:
             NotImplementedError("Optimization based on only storm data is not implemented")
-
-
-
 
         return xl, xr, r, coeff

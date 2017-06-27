@@ -15,6 +15,7 @@ def process_cell(rotate=True, binary_img=None, bf_img=None, fl_data=None, storm_
 
     if rotate:
         #todo rotate by fluorescence
+        #if there is only one data source use that one for orientation
         if len(data_dict) == 1:
             k, v = data_dict.items()[0]
             theta = _calc_orientation(k, v)
@@ -24,11 +25,11 @@ def process_cell(rotate=True, binary_img=None, bf_img=None, fl_data=None, storm_
             else:
                 try:
                     orient_img = data_dict[rotate]
-                    theta = _calc_orientation(orient_img)
+                    theta = _calc_orientation(rotate, orient_img)
                 except KeyError:
                     raise ValueError('Invalid rotation data source specified')
 
-    if binary_img:
+    if binary_img is not None:
         binary_img = scipy_rotate(binary_img, -theta)
 
     # if fl_data:
@@ -37,36 +38,20 @@ def process_cell(rotate=True, binary_img=None, bf_img=None, fl_data=None, storm_
         for k, v in fl_data.items():
             #todo: cval
             if v.ndim == 2:
-                fl_dict[k] = scipy_rotate(v, theta)
+                fl_dict[k] = scipy_rotate(v, -theta)
             elif v.ndim == 3:
-                fl_dict[k] == scipy_rotate(v, theta, axes=(1,0))
+                fl_dict[k] == scipy_rotate(v, -theta, axes=(1,0))
 
-    if bf_img:
+    if bf_img is not None:
         bf_img = scipy_rotate(bf_img, -theta)
 
     img_data = [binary_img, bf_img] + [v for v in fl_dict.values()]  # todo perhaps fl_img and movie should be unified
-    shapes = [img.shape[:2] for img in img_data if img]
+    shapes = [img.shape[:2] for img in img_data if img is not None]
     assert (shapes[1:] == shapes[:-1])
     shape = shapes[0] if len(shapes) > 0 else None
 
-    storm_data = _rotate_storm(storm_data, theta, shape=shape)
-    storm_img = None
-
     if storm_data is not None:
-        if shape:
-            xmax = shape[0] * cfg.IMG_PIXELSIZE
-            ymax = shape[1] * cfg.IMG_PIXELSIZE
-        else:
-            xmax = int(storm_data['x'].max()) + 2 * cfg.STORM_PIXELSIZE
-            ymax = int(storm_data['y'].max()) + 2 * cfg.STORM_PIXELSIZE
-
-        x_bins = np.arange(0, xmax, cfg.STORM_PIXELSIZE)
-        y_bins = np.arange(0, ymax, cfg.STORM_PIXELSIZE)
-
-        h, xedges, yedges = np.histogram2d(storm_data['x'], storm_data['y'], bins=[x_bins, y_bins])
-
-        storm_img = h.T
-
+        storm_data = _rotate_storm(storm_data, theta, shape=shape)
 
     return Cell(bf_img=bf_img, binary_img=binary_img, fl_data=fl_dict, storm_data=storm_data)
 

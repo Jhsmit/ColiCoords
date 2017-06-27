@@ -23,92 +23,178 @@ class STORMOptimizer(OptimizerBase):
 
     def __init__(self, cell_obj, maximize='photons'):
         """
-
         :param storm_data: structured array with entries x, y, photons. x, y coordinates are in cartesian coords
         :param cell_obj: Cell object
         """
         self.cell_obj = cell_obj
+        self.maximize = maximize
 
     def optimize_r(self):
-        def minimize_func(r, storm_data, cell_obj):
-            r_vals = cell_obj.get_r(storm_data['x'], storm_data['y'])
+        def minimize_func(r, cell_obj, maximize):
+            r_vals = cell_obj.calc_rc(cell_obj.data.storm_data['x'], cell_obj.data.storm_data['y'])
             bools = r_vals < np.abs(r)
 
-            photons = np.sum(storm_data['photons'][bools])
-            #points = np.sum(bools)
-            cell_obj.r = np.abs(r)
+            if maximize == 'photons':
+                p = np.sum(cell_obj.data.storm_data['photons'][bools])
+            elif maximize == 'points':
+                p = np.sum(bools)
+
+            cell_obj.coords.r = np.abs(r)
             area = cell_obj.area
-            # r_g.append(r)
-            # val.append(area/photons)
-            return -photons/area
 
-        r_guess = 20#1*cell_obj.r # todo check optimizaton of this r
-        min = minimize(minimize_func, r_guess, args=(self.storm_data, self.cell_obj), method='Powell', options={'disp':True})
-        #min = minimize_scalar(minimize_func, args=(storm_data, cell_obj), options={'disp':True}, method='Bounded', bounds=[30, 500])
+            return -p/area
 
+        r_guess = self.cell_obj.coords.r
+        min = minimize(minimize_func, r_guess, args=(self.cell_obj, self.maximize), method='Powell')
+        self.cell_obj.coords.r = min.x
         return min.x, min.fun
 
     def optimize_endcaps(self):
-        def minimize_func(x_lr, storm_data, cell_obj):
+        def minimize_func(x_lr, cell_obj, maximize):
             cell_obj.xl, cell_obj.xr = x_lr
-            r_vals = cell_obj.get_r(storm_data['x'], storm_data['y'])
-            bools = r_vals < cell_obj.r
+            r_vals = cell_obj.calc_rc(cell_obj.data.storm_data['x'], cell_obj.data.storm_data['y'])
+            bools = r_vals < cell_obj.coords.r
 
-            photons = np.sum(storm_data['photons'][bools])
-            area = cell_obj.area
-            return -photons / area
+            if maximize == 'photons':
+                p = np.sum(cell_obj.data.storm_data['photons'][bools])
+            elif maximize == 'points':
+                p = np.sum(bools)
 
+            return -p/cell_obj.area
 
-        x_lr = [self.cell_obj.xl, self.cell_obj.xr]
-        print(x_lr)
-        min = minimize(minimize_func, x_lr, args=(self.storm_data, self.cell_obj), method='Powell', options={'disp':True})
-
+        x_lr = [self.cell_obj.coords.xl, self.cell_obj.coords.xr]
+        min = minimize(minimize_func, x_lr, args=(self.cell_obj, self.maximize), method='Powell')
+        self.cell_obj.xl, self.cell_obj.xr = x_lr
         return min.x, min.fun
 
     def optimize_fit(self):
-        def minimize_func(par, storm_data, cell_obj):
-            cell_obj.c_coords.params = par
+        def minimize_func(coeff, cell_obj, maximize):
+            cell_obj.coords.coeff = coeff
 
-            r_vals = cell_obj.get_r(storm_data['x'], storm_data['y'])
+            r_vals = cell_obj.get_r(cell_obj.data.storm_data['x'], cell_obj.data.storm_data['y'])
             bools = r_vals < cell_obj.r
 
-            photons = np.sum(storm_data['photons'][bools])
-            area = cell_obj.area
-            return -photons / area
+            if maximize == 'photons':
+                p = np.sum(cell_obj.data.storm_data['photons'][bools])
+            elif maximize == 'points':
+                p = np.sum(bools)
 
+            return -p/cell_obj.area
 
-        par = self.cell_obj.c_coords.params*0.9
-        min = minimize(minimize_func, par, args=(self.storm_data, self.cell_obj), method='Powell', options={'disp': True})
+        coeff = self.cell_obj.coords.coeff
+        min = minimize(minimize_func, coeff, args=(self.cell_obj, self.maximize), method='Powell')
 
         return min.x, min.fun
 
-    def optimize_all(self):
-        def minimize_func(arr, storm_data, cell_obj):
-            r, xl, xr = arr[:3]
-            par = arr[3:]
-            cell_obj.xl = xl
-            cell_obj.xr = xr
-            cell_obj.r = r
-            cell_obj.c_coords.params = par
+    def optimize_overall(self):
+        def minimize_func(par, cell_obj, maximize):
+            r, cell_obj.xl, cell_obj.xr = par[:3]
+            cell_obj.coords.coeff = par[3:]
 
-            r_vals = cell_obj.get_r(storm_data['x'], storm_data['y'])
+            r_vals = cell_obj.calc_rc(cell_obj.data.storm_data['x'], cell_obj.data.storm_data['y'])
             bools = r_vals < r
 
-            photons = np.sum(storm_data['photons'][bools])
-            area = cell_obj.area
+            if maximize == 'photons':
+                p = np.sum(cell_obj.data.storm_data['photons'][bools])
+            elif maximize == 'points':
+                p = np.sum(bools)
 
-            return -photons/area
+            return -p/cell_obj.area
 
-        arr = [self.cell_obj.r, self.cell_obj.xl, self.cell_obj.xr] + list(self.cell_obj.c_coords.params)
-        arr = np.array(arr)
-        arr *= 1.
-        arr = list(arr)
+        par = [self.cell_obj.r, self.cell_obj.xl, self.cell_obj.xr] + list(self.cell_obj.c_coords.coeff)
 
-        min = minimize(minimize_func, arr, args=(self.storm_data, self.cell_obj), method='Powell', options={'disp': True})
-
+        min = minimize(minimize_func, par, args=(self.cell_obj, self.maximize), method='Powell')
+        self.cell_obj.coords.r, self.cell_obj.coords.xl, self.cell_obj.coords.xr = min.x[:3]
+        self.cell_obj.coords.coeff = np.array(min.x[3:])
         return min.x, min.fun
+
+    def optimize_stepwise(self):
+        i = 0
+        diff_prev = 0
+        while i <3:
+            v, diff = self.optimize_r()
+            v, diff = self.optimize_endcaps()
+            v, diff = self.optimize_fit()
+
+            print('Current minimize value: {}'.format(diff))
+            if diff_prev == diff:
+                i += 1
+            diff_prev = diff
 
 
 class BinaryOptimizer(OptimizerBase):
-    pass
 
+    def __init__(self, cell_obj):
+        self.cell_obj = cell_obj
+
+    def optimize_r(self):
+        def minimize_func(r, cell_obj):
+            print(r)
+            binary = cell_obj.coords.rc < r
+            diff = np.sum(np.logical_xor(cell_obj.data.binary_img, binary))
+            print(diff)
+            return diff
+
+        r_guess = self.cell_obj.coords.r
+        min = minimize(minimize_func, r_guess, args=self.cell_obj, method='Powell')
+        self.cell_obj.coords.r = min.x
+        return min.x, min.fun
+
+    def optimize_endcaps(self):
+        def minimize_func_xlr(x_lr, cell_obj):
+            cell_obj.coords.xl, cell_obj.coords.xr = x_lr
+            binary = cell_obj.coords.rc < cell_obj.coords.r
+            diff = np.sum(np.logical_xor(cell_obj.data.binary_img, binary))
+            return diff
+
+        x_lr = [self.cell_obj.coords.xl, self.cell_obj.coords.xr]  # Initial guesses for endcap coordinates
+
+        min = minimize(minimize_func_xlr, x_lr, args=self.cell_obj, method='Powell')
+        self.cell_obj.coords.xl, self.cell_obj.coords.xr = x_lr
+        return min.x, min.fun
+
+    def optimize_fit(self):
+        def minimize_func_fit(coeff, cell_obj):
+            cell_obj.coords.coeff = coeff
+            binary = cell_obj.coords.rc < cell_obj.coords.r
+            diff = np.sum(np.logical_xor(cell_obj.data.binary_img, binary))
+            return diff
+
+        coeff = self.cell_obj.coords.coeff
+        min = minimize(minimize_func_fit, coeff, args=self.cell_obj, method='Powell', options={'disp': False, 'xtol':1e-1, 'ftol':1e-1})
+
+        self.cell_obj.coords.coeff = min.x
+        return min.x, min.fun
+
+    def optimize_overall(self, method='Powell'):
+        def minimize_func_overall(par, cell_obj):
+              # todo check len
+            cell_obj.coords.r, cell_obj.coords.xl, cell_obj.coords.xr = par[:3]
+            coeff = np.array(par[3:])
+            cell_obj.coords.coeff = coeff
+
+            binary = cell_obj.coords.rc < cell_obj.coords.r
+            diff = np.sum(np.logical_xor(cell_obj.data.binary_img, binary))
+            return diff
+
+        par = np.array([self.cell_obj.coords.r, self.cell_obj.coords.xl, self.cell_obj.coords.xr] + list(self.cell_obj.coords.coeff))
+
+        min = minimize(minimize_func_overall, par, args=self.cell_obj,
+                   method=method, options={'disp': True, 'xtol':1e-2, 'ftol':1e-2,})
+        self.cell_obj.coords.r, self.cell_obj.coords.xl, self.cell_obj.coords.xr = min.x[:3]
+        self.cell_obj.coords.coeff = np.array(min.x[3:])
+
+        return min.x, min.fun
+
+    def optimize_stepwise(self):
+        i = 0
+        diff_prev = 0
+        while i <3:
+            v, diff = self.optimize_r()
+            v, diff = self.optimize_endcaps()
+            v, diff = self.optimize_fit()
+
+            print('Current minimize value: {}'.format(diff))
+            if diff_prev == diff:
+                i += 1
+            diff_prev = diff
