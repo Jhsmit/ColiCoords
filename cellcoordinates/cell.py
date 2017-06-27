@@ -26,7 +26,7 @@ class Cell(object):
     ----------
     rotate : bool, optional
         If True and a binary image is provided, the cell and associated data is rotated to align it horizontally
-    brightfield_img : :obj:`np.ndarray`, optional 
+    bf_img : :obj:`np.ndarray`, optional
         Numpy array of shape MxN with the cell's binary image
     binary_img : :obj:`np.ndarray`, optional 
         Numpy array of shape MxN with the cell's binary image
@@ -37,10 +37,10 @@ class Cell(object):
                 
     """
 
-    def __init__(self, rotate=True, bf_img=None, binary_img=None, fl_data=None, storm_data=None, **args, **kwargs):
+    def __init__(self, bf_img=None, binary_img=None, fl_data=None, storm_data=None, **args, **kwargs):
         #todo assert shapes of all images and storm data
 
-        self.data = Data(rotate=rotate, bf_img=bf_img, binary_img=binary_img, fl_data=fl_data, storm_data=storm_data)
+        self.data = Data(bf_img=bf_img, binary_img=binary_img, fl_data=fl_data, storm_data=storm_data)
         self.coords = Coordinates()
 
     def optimize(self, optimize_method=None, maximize='photons'):

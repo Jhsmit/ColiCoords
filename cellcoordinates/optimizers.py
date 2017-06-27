@@ -2,7 +2,6 @@ import numpy as np
 from scipy.optimize import minimize, minimize_scalar
 
 
-
 class OptimizerBase(object):
     """ Base class for cell coordinate optimizers 
     """
@@ -22,8 +21,6 @@ class STORMOptimizer(OptimizerBase):
     
     """
 
-
-
     def __init__(self, cell_obj, maximize='photons'):
         """
 
@@ -32,14 +29,13 @@ class STORMOptimizer(OptimizerBase):
         """
         self.cell_obj = cell_obj
 
-
     def optimize_r(self):
         def minimize_func(r, storm_data, cell_obj):
             r_vals = cell_obj.get_r(storm_data['x'], storm_data['y'])
             bools = r_vals < np.abs(r)
 
             photons = np.sum(storm_data['photons'][bools])
-            points = np.sum(bools)
+            #points = np.sum(bools)
             cell_obj.r = np.abs(r)
             area = cell_obj.area
             # r_g.append(r)

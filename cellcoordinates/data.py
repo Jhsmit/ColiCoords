@@ -70,7 +70,6 @@ class STORMTable(np.ndarray):
         return obj
 
 
-
 class STORMImage(np.ndarray):
     def __new__(cls, input_array, label=None, metadata=None):
         """STORM recontructed image
@@ -103,15 +102,15 @@ class Data(object):
     """
 
     theta = 0
+
+    #todo read metadata from config
     metadata = {
         'img_pixelsize': 80,
         'storm_pixelsize': 16,
         'shape': None
     }
 
-
-
-    def __init__(self, rotate=True, binary_img=None, brightfield_img=None, fl_data=None, storm_data=None, *args, **kwargs):
+    def __init__(self, binary_img=None, brightfield_img=None, fl_data=None, storm_data=None, *args, **kwargs):
         d = {'binary': binary_img, 'brightfield': brightfield_img, 'fluorescence': fl_data, 'storm': storm_data}
         data_dict = {k: v for k, v in d.items() if v is not None}
 
@@ -168,7 +167,6 @@ class Data(object):
         assert(shapes[1:] == shapes[:-1])
         if shapes:
             self.metadata['shape'] = shapes[0]
-
 
         #todo allow multiple channels
         self.storm_data = STORMTable(storm_data)
