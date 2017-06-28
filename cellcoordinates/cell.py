@@ -37,11 +37,17 @@ class Cell(object):
                 
     """
 
-    def __init__(self, bf_img=None, binary_img=None, fl_data=None, storm_data=None, *args, **kwargs):
-        #todo assert shapes of all images and storm data
+    def __init__(self, bf_img=None, binary_img=None, fl_data=None, storm_data=None, label='', *args, **kwargs):
+        if 'data_dict' in kwargs:
+            data_dict = kwargs['data_dict']
+            bf_img = data_dict.pop('brightfield', None)
+            binary_img = data_dict.pop('binary', None)
+            storm_data = data_dict.pop('storm_data', None)
+            fl_data = data_dict
 
         self.data = Data(bf_img=bf_img, binary_img=binary_img, fl_data=fl_data, storm_data=storm_data)
         self.coords = Coordinates(self.data)
+        self.label = label
 
     def optimize(self, method=None, maximize='photons'):
         if not method:
@@ -61,8 +67,8 @@ class Cell(object):
             raise ValueError("Invalid value for optimize_method")
 
         #todo optimizer as property
-        optimizer.execute()
-     #   optimizer.optimize_overall()
+        #optimizer.execute()
+        optimizer.optimize_overall()
 
     @property
     def length(self):
@@ -99,8 +105,6 @@ class Cell(object):
 
         bins = np.arange(0, stop+step, step)
         xvals = bins + 0.5 * step  # xval is the middle of the bin
-        print(xvals)
-        import matplotlib.pyplot as plt
 
         if not src:
             data = self.data.fl_dict.values()[0]
@@ -112,9 +116,6 @@ class Cell(object):
             except KeyError:
                 raise ValueError('Chosen data not found')
 
-       # plt.imshow(self.coords.y_coords)
-       #plt.show()
-
         if data.ndim == 2:
             yvals = bin_func(self.coords.rc, data, bins)
         elif data.ndim == 3:
@@ -123,6 +124,7 @@ class Cell(object):
             raise ValueError('Invalid fluorescence image dimensions')
 
         return xvals, yvals
+
 
 class Coordinates(object):
     """Cell's coordinate system described by the polynomial f(x) and associated functions

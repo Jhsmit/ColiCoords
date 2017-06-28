@@ -85,7 +85,7 @@ class STORMImage(np.ndarray):
         obj.metadata = metadata
         return obj
 
-#todo this shoud be a dict?
+#todo this shoud be a dict? (use open microscopy format?)
 class MetaData(np.ndarray):
     def __new__(cls, input_array, label=None, metadata=None):
         if input_array is None:
@@ -139,3 +139,8 @@ class Data(object):
             h, xedges, yedges = np.histogram2d(storm_data['x'], storm_data['y'], bins=[x_bins, y_bins])
 
             self.storm_img = STORMImage(h.T)
+
+        self.data_dict = {'binary': self.binary_img,
+                          'brightfield': self.bf_img,
+                          'storm_data': self.storm_data}
+        self.data_dict.update(self.fl_dict)
