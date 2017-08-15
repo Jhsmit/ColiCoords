@@ -24,16 +24,16 @@ class Cell(object):
     
     Parameters
     ----------
-    rotate : bool, optional
-        If True and a binary image is provided, the cell and associated data is rotated to align it horizontally
     bf_img : :obj:`np.ndarray`, optional
         Numpy array of shape MxN with the cell's binary image
     binary_img : :obj:`np.ndarray`, optional 
         Numpy array of shape MxN with the cell's binary image
-    fl_data : :obj:`np.ndarray` or dict, optional
+    fl_data : dict, optional
         Fluorescence data either dict, np.npdarray (or directly the corresponding objects)
     storm_data : :obj:`np.ndarray`
         Storm coordinates (x, y) in ImageJ coordinates
+    label : string,
+        Label identifing the cell object
                 
     """
 
@@ -72,6 +72,7 @@ class Cell(object):
 
     @property
     def length(self):
+        """float: Length of the cell obtained by integration of the spine arc length from xl to xr"""
         a0, a1, a2 = self.coords.coeff
         xr, xl = self.coords.xl, self.coords.xr
         l = (1 / (4 * a2)) * (
@@ -83,11 +84,12 @@ class Cell(object):
 
     @property
     def area(self):
+        """float: Area of the cell in squared pixels"""
         return 2*self.length*self.coords.r + np.pi*self.coords.r**2
 
     @property
     def volume(self):
-        #todo check dis math
+        """float: Volume of the cell in cubic pixels"""
         return np.pi*self.coords.r**2*self.length + (4/3)*np.pi*self.coords.r**3
 
     #todo choose fluorescence channel or storm
@@ -228,26 +230,57 @@ class Coordinates(object):
     #todo check this 05 buissisnesese
     @property
     def x_coords(self):
+        """ obj:`np.ndarray`: Matrix of shape m x n equal to cell image with cartesian x-coordinates."""
         ymax = self.shape[0]
         xmax = self.shape[1]
         return np.repeat(np.arange(xmax), ymax).reshape(xmax, ymax).T + 0.5
 
     @property
     def y_coords(self):
+        """ obj:`np.ndarray`: Matrix of shape m x n equal to cell image with cartesian y-coordinates."""
         ymax = self.shape[0]
         xmax = self.shape[1]
         return np.repeat(np.arange(ymax), xmax).reshape(ymax, xmax)[::-1, :] + 0.5
 
     @property
     def xc(self):
+        """obj:`np.ndarray`: Matrix of shape m x n equal to cell image with x coordinates on p(x)"""
         return self.calc_xc(self.x_coords, self.y_coords)
+
+    @property
+    def yc(self):
+        """obj:`np.ndarray`: Matrix of shape m x n equal to cell image with y coordinates on p(x)"""
+        return self.px(self.xc)
 
     @property
     def rc(self):
         return self.calc_rc(self.x_coords, self.y_coords)
 
+    @property
     def psi(self):
-        pass
+        psi_rad = np.arcsin(np.divide(self.y_coords - self.yc, self.rc))
+
+        return psi_rad * (180/np.pi)
+
+    def px(self, x_arr):
+        """
+        Function to call the polynomial describing the cell spine
+
+        Parameters
+        ----------
+
+        x_arr : obj:`np.ndarray`
+            Input x array
+
+        Returns
+        -------
+        obj: `np.ndarray`
+            Output array of shape equal to input array with values p(x)
+
+        """
+
+        a0, a1, a2 = self.coeff
+        return a0 + a1*x_arr + a2*x_arr**2
 
     @staticmethod
     def _initial_guesses(data):
