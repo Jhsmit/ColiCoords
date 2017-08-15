@@ -57,7 +57,7 @@ def process_cell(rotate=True, binary_img=None, bf_img=None, fl_data=None, storm_
 
 
 def _rotate_storm(storm_data, theta, shape=None):
-    theta *= np.pi / 180
+    theta *= np.pi / 180  # to radians
     x = storm_data['x']
     y = storm_data['y']
 
