@@ -13,13 +13,6 @@ class InputWindow(QtGui.QMainWindow): # todo could use some renaming at some poi
     def __init__(self):
         super(InputWindow, self).__init__()
 
-        print(sb)
-        # sh = sb.sizeHint()
-        # print(QtGui.QStyle.PM_ScrollBarExtent)
-        # print(sh.width())
-        # print(sh.height())
-        # QtGui.QScrollBar()
-
         #Left Column, input
         self.input_list = ListWidget()
      #   print(DataInputQCustomWidget().sizeHint().width())
@@ -42,8 +35,8 @@ class InputWindow(QtGui.QMainWindow): # todo could use some renaming at some poi
 
         vbox_input.addLayout(hbox)
 
+        #Middle column, output
         vbox_output = QtGui.QVBoxLayout()
-
         vbox_output.addWidget(QtGui.QLabel('Output:'))
 
         output_form = QtGui.QFormLayout()

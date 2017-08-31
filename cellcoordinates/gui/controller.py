@@ -32,7 +32,7 @@ class InputController(object):
                 assert len(file_list) == list_len
             list_len = len(file_list)
             shape = tifffile.imread(file_list[0]).shape
-            data_arr = np.empty((len(file_list), shape[0], shape[1]))
+            data_arr = np.empty((len(file_list), shape[0], shape[1])).astype('uint16')
 
             for idx, f in enumerate(file_list):
                 data_arr[idx] = tifffile.imread(f)
