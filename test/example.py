@@ -1,30 +1,57 @@
 import tifffile
 import matplotlib.pyplot as plt
-
+import numpy as np
 from cellcoordinates.preprocess import process_cell
+from cellcoordinates.fileIO import save
+from cellcoordinates.plot import CellPlot
+from cellcoordinates.cell import Cell
 
 fl_img = tifffile.imread('test_data/flu1.tif')
 binary_img = tifffile.imread('test_data/binary1.tif')
 
-# plt.imshow(fl_img)
+
+cell = process_cell(rotate='binary', binary_img=binary_img, fl_data={'514': fl_img})
+#cell.optimize(method='binary')
+
+
+x, y = np.arange(10)**2, np.arange(10)+20
+print(x, y)
+xm, ym = cell.coords.transform(x, y, src='cart', tgt='matrix')
+print(xm, ym)
+xc, yc = cell.coords.transform(xm, ym, src='matrix', tgt='cart')
+print(xc, yc)
+
+p = CellPlot(cell)
+
+plt.imshow(cell.data.data_dict['514'])
+p.plot_outline()
+plt.show()
+
+#
+# save('cell.tif', cell)
+#
+# plt.imshow(cell.data.data_dict['514'])
+# plt.show()
+
+#
+# print(cell.data.data_dict['514'].dtype)
+#
+# with tifffile.TiffWriter('testtif.tif', imagej=True) as t:
+#     t.save(cell.data.data_dict['514'])
+
+# plt.imshow(cell.coords.y_coords)
 # plt.show()
 #
-# plt.imshow(binary_img)
+# plt.imshow(cell.coords.rc)
+# plt.show()
+#
+# plt.imshow(cell.coords.xc)
+# plt.show()
+#
+# plt.imshow(cell.coords.psi, interpolation='nearest', cmap='viridis')
 # plt.show()
 
-cell = process_cell(rotate='binary', binary_img=binary_img, fl_data={'514':fl_img})
-print(cell.coords.xl, cell.coords.xr)
-plt.imshow(cell.coords.rc)
-plt.show()
-# plt.imshow(cell.data.fl_img_514)
+
+#
+# plt.plot(*cell.radial_distribution(50, 1, '514'))
 # plt.show()
-print(cell.coords.coeff)
-cell.optimize(method='binary')
-print(cell.coords.coeff)
-
-
-plt.imshow(cell.coords.rc)
-plt.show()
-
-plt.plot(*cell.radial_distribution(50, 1, '514'))
-plt.show()
