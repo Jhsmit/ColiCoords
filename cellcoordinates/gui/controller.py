@@ -80,15 +80,6 @@ class ImageSelectController(object):
             iw.show()
         self.nw.show()
 
-    def set_frame(self, i):
-        self.index = i
-        self.index = self.index % self.length
-
-        self.nw.current_frame_text.setText(str(self.index))
-
-        for iw in self.iws:
-            iw.set_frame(self.index)
-        self.nw.exclude_cb.setChecked(bool(self.exclude_bools[self.index]))
 
     def _done(self):
         for name, data in self.data_dict.items():
@@ -126,6 +117,20 @@ class ImageSelectController(object):
             self._next()
         elif event.key() == QtCore.Qt.Key_E:
             self.exclude()
+
+    def set_frame(self, i):
+        if i >= self.length:
+            self.index = self.length - 1
+        elif i < 0:
+            self.index = 0
+        else:
+            self.index = i
+        
+        self.nw.current_frame_text.setText(str(self.index))
+
+        for iw in self.iws:
+            iw.set_frame(self.index)
+        self.nw.exclude_cb.setChecked(bool(self.exclude_bools[self.index]))
 
     def _frame_text(self):
         i = int(self.nw.current_frame_text.text())
