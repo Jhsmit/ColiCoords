@@ -4,6 +4,7 @@ import math
 from scipy.ndimage.interpolation import rotate as scipy_rotate
 from config import cfg
 
+
 class DataBaseClass(object):
     pass
 
@@ -13,11 +14,14 @@ class BinaryImage(np.ndarray):
         if input_array is None:
             return None
 
-        bool_arr = input_array.astype(bool)
-        assert np.array_equal(input_array, bool_arr)
+        #bool_arr = input_array.astype(bool)
+        #assert np.array_equal(input_array, bool_arr)
+        assert input_array.dtype == 'int'
         #todo test connectedness l, n = mh.label(bool_arr)
 
-        obj = np.asarray(bool_arr).view(cls)
+        #todo binary is now saved as int
+
+        obj = np.asarray(input_array).view(cls)
         obj.label = label
         obj.metadata = metadata
         return obj
@@ -85,23 +89,15 @@ class STORMImage(np.ndarray):
         obj.metadata = metadata
         return obj
 
-#todo this shoud be a dict? (use open microscopy format?)
-class MetaData(np.ndarray):
-    def __new__(cls, input_array, label=None, metadata=None):
-        if input_array is None:
-            return None
-        obj = np.asarray(input_array).view(cls)
-        obj.label = label
-        obj.metadata = metadata
-        return obj
+#todo this shoud be a dict? (use open microscopy format?) (XML)
+class MetaData(dict):
+    pass
 
 
 class Data(object):
     """
     Parent object for all data classes
     """
-
-    theta = 0
 
     def __init__(self, binary_img=None, bf_img=None, fl_data=None, storm_data=None, *args, **kwargs):
         img_data = [binary_img, bf_img] + [v for v in fl_data.values()]

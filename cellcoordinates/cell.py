@@ -20,6 +20,11 @@ class Cell(object):
         Class containing all data
     coords: obj:`Coordinates` 
         Class describing cell's coordinate system and associated functions
+    #todo perhaps move this shizzle to a dedicated metadataclass
+    img_name : str:
+        Name of the image from which the cell originated
+    label : int:
+        cell number in the original labeled binary
         
     
     Parameters
@@ -32,12 +37,12 @@ class Cell(object):
         Fluorescence data either dict, np.npdarray (or directly the corresponding objects)
     storm_data : :obj:`np.ndarray`
         Storm coordinates (x, y) in ImageJ coordinates
-    label : string,
-        Label identifing the cell object
+    label : str,
+        Label identifying the cell object
                 
     """
 
-    def __init__(self, bf_img=None, binary_img=None, fl_data=None, storm_data=None, label='', *args, **kwargs):
+    def __init__(self, bf_img=None, binary_img=None, fl_data=None, storm_data=None, *args, **kwargs):
         if 'data_dict' in kwargs:
             data_dict = kwargs['data_dict']
             bf_img = data_dict.pop('brightfield', None)
@@ -47,11 +52,13 @@ class Cell(object):
 
         self.data = Data(bf_img=bf_img, binary_img=binary_img, fl_data=fl_data, storm_data=storm_data)
         self.coords = Coordinates(self.data)
-        self.label = label
+        if 'label' in kwargs:
+            print('move labels to global metadata')
+            pass
 
-    def optimize(self, method=None, maximize='photons'):
+    def optimize(self, method=None, maximize='photons', verbose=True):
         if not method:
-            if self.data.binary_img and not self.data.storm_data:
+            if self.data.binary_img is not None and self.data.storm_data is None:
                 optimizer = BinaryOptimizer(self)
             elif not self.data.binary_img and self.data.storm_data:
                 optimizer = STORMOptimizer(self, maximize=maximize)
@@ -68,7 +75,7 @@ class Cell(object):
 
         #todo optimizer as property
         #optimizer.execute()
-        optimizer.optimize_overall()
+        optimizer.optimize_overall(verbose=verbose)
 
     @property
     def length(self):
@@ -250,7 +257,7 @@ class Coordinates(object):
     @property
     def yc(self):
         """obj:`np.ndarray`: Matrix of shape m x n equal to cell image with y coordinates on p(x)"""
-        return self.px(self.xc)
+        return self.p(self.xc)
 
     @property
     def rc(self):
@@ -259,10 +266,9 @@ class Coordinates(object):
     @property
     def psi(self):
         psi_rad = np.arcsin(np.divide(self.y_coords - self.yc, self.rc))
-
         return psi_rad * (180/np.pi)
 
-    def px(self, x_arr):
+    def p(self, x_arr):
         """
         Function to call the polynomial describing the cell spine
 
@@ -282,6 +288,52 @@ class Coordinates(object):
         a0, a1, a2 = self.coeff
         return a0 + a1*x_arr + a2*x_arr**2
 
+    def p_dx(self, x_arr):
+        """
+        Function to call the first derivative of the polynomial describing the cell spine to coordinate x
+
+        Parameters
+        ----------
+
+        x_arr : obj:`np.ndarray`
+            Input x array
+
+        Returns
+        -------
+        obj: `np.ndarray`
+            Output array of shape equal to input array with values p'(x)
+
+        """
+
+        a0, a1, a2 = self.coeff
+        return a1 + a2 * x_arr
+
+    def transform(self, x, y, src='cart', tgt='mpl'):
+        if src == 'cart':
+            xt1 = x
+            yt1 = y
+        elif src == 'mpl':
+            xt1 = x
+            yt1 = self.shape[0] - y
+        elif src == 'matrix':
+            yt1 = self.shape[0] - x - 0.5
+            xt1 = y + 0.5
+        else:
+            raise ValueError("Invalid source coordinates")
+
+        if tgt == 'cart':
+            xt2 = xt1
+            yt2 = yt1
+        elif tgt == 'mpl':
+            xt2 = xt1
+            yt2 = self.shape[0] - yt1
+        elif tgt == 'matrix':
+            xt2 = self.shape[0] - yt1 - 0.5
+            yt2 = xt1 - 0.5
+        else:
+            raise ValueError("Invalid target coordinates")
+        return xt2, yt2
+
     @staticmethod
     def _initial_guesses(data):
         if data.binary_img is not None:
@@ -297,3 +349,5 @@ class Coordinates(object):
             NotImplementedError("Optimization based on only storm data is not implemented")
 
         return xl, xr, r, coeff
+
+

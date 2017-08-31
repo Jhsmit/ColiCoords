@@ -1,13 +1,81 @@
 import mahotas as mh
 import numpy as np
 import math
+import tifffile
+import os
+
 from scipy.ndimage.interpolation import rotate as scipy_rotate
 from data import Data, BinaryImage, FluorescenceMovie, FluorescenceImage, STORMTable, STORMImage
 from cell import Cell
 from config import cfg
 
 
-def process_cell(rotate=True, binary_img=None, bf_img=None, fl_data=None, storm_data=None):
+#temp
+import matplotlib.pyplot as plt
+
+def batch_flu_images(binary_files, flu_files_dict, bf_files=None, pad_width=2, cell_frac=0.5, rotate='binary'):
+    #only when fluorescence images are available
+    assert type(flu_files_dict) == dict
+    for a in flu_files_dict.values():
+        assert len(binary_files) == len(a)
+
+    for i, b_fp in enumerate(binary_files):
+        binary = tifffile.imread(b_fp)
+        b_name = os.path.splitext(os.path.basename(b_fp))[0]
+
+        # Check the binary image for a too large fraction of cells or no cells
+        if (binary > 0).mean() > cell_frac or binary.mean() == 0.:
+            print('Image {}: Too many or no cells'.format(b_name))
+            continue
+
+        fl_data = {}
+        for k, v in flu_files_dict.items():
+            fl_data[k] = tifffile.imread(v[i])
+
+        bf_img = tifffile.imread(bf_files[i]) if bf_files else None
+
+        for cell in cell_generator(binary, fl_data=fl_data, bf_img=bf_img, pad_width=pad_width, rotate=rotate, img_name=b_name):
+            yield cell
+
+
+def cell_generator(labeled_binary, fl_data=None, bf_img=None, storm_data=None, pad_width=2, rotate=True, img_name='unknown'):
+    for i in np.unique(labeled_binary)[1:]:
+        binary = (labeled_binary == i).astype('int')
+        min1, max1, min2, max2 = mh.bbox(binary)
+        min1p, max1p, min2p, max2p = min1 - pad_width, max1 + pad_width, min2 - pad_width, max2 + pad_width
+        bin_selection = labeled_binary[min1p:max1p, min2p:max2p]
+
+        try:
+            assert min1p > 0 and min2p > 0 and max1p < binary.shape[0] and max2p < binary.shape[1]
+        except AssertionError:
+            print('Cell {} on image {}: on the edge of the image'.format(i, img_name))
+            continue
+
+        try:
+            assert len(np.unique(bin_selection)) == 2
+        except AssertionError:
+            print('Cell {} on image {}: multiple cells per selection'.format(i, img_name))
+            continue
+
+        bin_selection = bin_selection.astype(bool)
+
+        fl_selection = None
+        if fl_data:
+            fl_selection = {}
+            for k, v in fl_data.items():
+                fl_selection[k] = v[min1-pad_width:max1+pad_width, min2-pad_width:max2+pad_width]
+
+        bf_selection = bf_img[min1-pad_width:max1+pad_width, min2-pad_width:max2+pad_width] if bf_img is not None else None
+
+        if storm_data:
+            raise NotImplementedError('STORM data handling not yet implemented')
+
+        cell = process_cell(binary_img=bin_selection, bf_img=bf_selection, fl_data=fl_selection, storm_data=None, rotate=rotate)
+        yield cell
+
+
+def process_cell(binary_img=None, bf_img=None, fl_data=None, storm_data=None, rotate=True):
+    #binary etc images are pre-padded
     d = {'binary': binary_img, 'brightfield': bf_img, 'fluorescence': fl_data, 'storm': storm_data}
     data_dict = {k: v for k, v in d.items() if v is not None}
     assert len(data_dict) != 0
@@ -30,7 +98,7 @@ def process_cell(rotate=True, binary_img=None, bf_img=None, fl_data=None, storm_
                     raise ValueError('Invalid rotation data source specified')
 
     if binary_img is not None:
-        binary_img = scipy_rotate(binary_img, -theta)
+        binary_img = scipy_rotate(binary_img.astype('int'), -theta)
 
     # if fl_data:
     fl_dict = {}

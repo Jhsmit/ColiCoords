@@ -21,7 +21,7 @@ class STORMOptimizer(OptimizerBase):
     
     """
 
-    def __init__(self, cell_obj, maximize='photons'):
+    def __init__(self, cell_obj, maximize='photons', verbose=True):
         """
         :param storm_data: structured array with entries x, y, photons. x, y coordinates are in cartesian coords
         :param cell_obj: Cell object
@@ -166,7 +166,7 @@ class BinaryOptimizer(OptimizerBase):
         self.cell_obj.coords.coeff = min.x
         return min.x, min.fun
 
-    def optimize_overall(self, method='Powell'):
+    def optimize_overall(self, method='Powell', verbose=True):
         def minimize_func_overall(par, cell_obj):
               # todo check len
             cell_obj.coords.r, cell_obj.coords.xl, cell_obj.coords.xr = par[:3]
@@ -180,7 +180,7 @@ class BinaryOptimizer(OptimizerBase):
         par = np.array([self.cell_obj.coords.r, self.cell_obj.coords.xl, self.cell_obj.coords.xr] + list(self.cell_obj.coords.coeff))
 
         min = minimize(minimize_func_overall, par, args=self.cell_obj,
-                   method=method, options={'disp': True, 'xtol':1e-2, 'ftol':1e-2,})
+                   method=method, options={'disp': verbose, 'xtol':1e-2, 'ftol':1e-2,})
         self.cell_obj.coords.r, self.cell_obj.coords.xl, self.cell_obj.coords.xr = min.x[:3]
         self.cell_obj.coords.coeff = np.array(min.x[3:])
 
