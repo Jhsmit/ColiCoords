@@ -46,7 +46,6 @@ class InputController(object):
         self.ctrl = ImageSelectController(data_dict, list_len, self.output_path) #todo do something with this controller?
 
 
-
 class ImageSelectController(object):
     index = 0
     length = 0

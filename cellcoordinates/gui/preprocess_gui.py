@@ -13,10 +13,18 @@ class InputWindow(QtGui.QMainWindow): # todo could use some renaming at some poi
     def __init__(self):
         super(InputWindow, self).__init__()
 
+        print(sb)
+        # sh = sb.sizeHint()
+        # print(QtGui.QStyle.PM_ScrollBarExtent)
+        # print(sh.width())
+        # print(sh.height())
+        # QtGui.QScrollBar()
 
         #Left Column, input
-        self.input_list = QtGui.QListWidget()
-
+        self.input_list = ListWidget()
+     #   print(DataInputQCustomWidget().sizeHint().width())
+       # self.input_list.sizeHintForColumn(DataInputQCustomWidget().sizeHint().width())
+#
         add_button = QtGui.QPushButton('Add')
         add_button.clicked.connect(self._add_button_clicked)
 
@@ -63,12 +71,6 @@ class InputWindow(QtGui.QMainWindow): # todo could use some renaming at some poi
         w.setLayout(hbox)
         self.setCentralWidget(w)
 
-    def test_fun(self, e):
-        src = self.sender()
-        print(src)
-        print(e)
-        print('woei')
-
     def _output_path_btn_clicked(self):
         self.output_path = str(QtGui.QFileDialog.getExistingDirectory(self, "Select Directory", self.output_path))
 
@@ -97,6 +99,14 @@ class InputWindow(QtGui.QMainWindow): # todo could use some renaming at some poi
     #     self.input_table.setCellWidget(self.input_table.rowCount() - 1, 1, btn)
     #     self.input_table.resizeRowsToContents()
 
+
+class ListWidget(QtGui.QListWidget):
+    def sizeHint(self):
+        qs = QtCore.QSize()
+        # QtGui.QScrollBar().sizeHint().width()
+        qs.setWidth(DataInputQCustomWidget().sizeHint().width() + 34)
+        qs.setHeight(3*DataInputQCustomWidget().sizeHint().height())
+        return qs
 
 class DataInputQCustomWidget(QtGui.QWidget):
     path = '' #todo choose default dir in config
