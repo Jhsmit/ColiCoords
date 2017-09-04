@@ -5,12 +5,8 @@ from scipy.ndimage.interpolation import rotate as scipy_rotate
 from config import cfg
 
 
-class DataBaseClass(object):
-    pass
-
-
 class BinaryImage(np.ndarray):
-    def __new__(cls, input_array, label=None, metadata=None):
+    def __new__(cls, input_array, name=None, metadata=None):
         if input_array is None:
             return None
 
@@ -28,7 +24,7 @@ class BinaryImage(np.ndarray):
 
 
 class BrightFieldImage(np.ndarray):
-    def __new__(cls, input_array, label=None, metadata=None):
+    def __new__(cls, input_array, name=None, metadata=None):
         if input_array is None:
             return None
         obj = np.asarray(input_array).view(cls)
@@ -38,16 +34,6 @@ class BrightFieldImage(np.ndarray):
 
 
 class FluorescenceImage(np.ndarray):
-    def __new__(cls, input_array, label=None, metadata=None):
-        if input_array is None:
-            return None
-        obj = np.asarray(input_array).view(cls)
-        obj.label = label
-        obj.metadata = metadata
-        return obj
-
-
-class FluorescenceMovie(np.ndarray):
     def __new__(cls, input_array, label=None, metadata=None):
         if input_array is None:
             return None
@@ -98,7 +84,7 @@ class Data(object):
     """
     Parent object for all data classes
     """
-
+    #todo move this from init to function calls so empty data class can be initiated
     def __init__(self, binary_img=None, bf_img=None, fl_data=None, storm_data=None, *args, **kwargs):
         img_data = [binary_img, bf_img] + [v for v in fl_data.values()]
         shapes = [img.shape[:2] for img in img_data if img is not None]
@@ -110,14 +96,9 @@ class Data(object):
 
         self.fl_dict = {}
         for k, v in fl_data.items():
-            if v.ndim == 2:
                 d = FluorescenceImage(v)
                 self.fl_dict[k] = d
-                setattr(self, 'fl_img_' + k, d)
-            elif v.ndim == 3:
-                d = FluorescenceMovie(v)
-                self.fl_dict[k] = d
-                setattr(self, 'fl_mov_' + k, d)
+                setattr(self, 'flu_' + k, d)
 
         self.storm_data = STORMTable(storm_data)
 

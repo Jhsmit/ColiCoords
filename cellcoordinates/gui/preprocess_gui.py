@@ -5,6 +5,7 @@ import sys
 import numpy as np
 pg.setConfigOptions(imageAxisOrder='row-major')
 
+#todo allow input of img stack as input data as well
 
 #https://blog.manash.me/quick-qt-3-how-to-dynamically-create-qlistwidgetitem-and-add-it-onto-qlistwidget-4bca5bacaa01
 class InputWindow(QtGui.QMainWindow): # todo could use some renaming at some point
@@ -79,7 +80,7 @@ class InputWindow(QtGui.QMainWindow): # todo could use some renaming at some poi
 
     def _remove_button_clicked(self):
         del_item = self.input_list.takeItem(self.input_list.currentRow())
-        del(del_item)
+        del del_item
 
     # def _add_table_row(self, name):
     #     label = QtGui.QLabel(name + str(self.input_table.rowCount()))
@@ -101,8 +102,9 @@ class ListWidget(QtGui.QListWidget):
         qs.setHeight(3*DataInputQCustomWidget().sizeHint().height())
         return qs
 
+
 class DataInputQCustomWidget(QtGui.QWidget):
-    path = '' #todo choose default dir in config
+    path = ''  #todo choose default dir in config
 
     def __init__(self, parent=None):
         super(DataInputQCustomWidget, self).__init__(parent)

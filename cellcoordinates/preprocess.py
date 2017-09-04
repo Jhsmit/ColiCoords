@@ -5,13 +5,13 @@ import tifffile
 import os
 
 from scipy.ndimage.interpolation import rotate as scipy_rotate
-from data import Data, BinaryImage, FluorescenceMovie, FluorescenceImage, STORMTable, STORMImage
+from data import Data, BinaryImage, FluorescenceImage, STORMTable, STORMImage
 from cell import Cell
 from config import cfg
 
-
 #temp
 import matplotlib.pyplot as plt
+
 
 def batch_flu_images(binary_files, flu_files_dict, bf_files=None, pad_width=2, cell_frac=0.5, rotate='binary'):
     #only when fluorescence images are available

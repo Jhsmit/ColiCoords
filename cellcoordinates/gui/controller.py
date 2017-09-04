@@ -1,5 +1,7 @@
 from images_select import NavigationWindow, ImageWindow
 from preprocess_gui import InputWindow
+from cell_objects import CellObjectWindow
+from ..data import Data
 from PyQt4 import QtCore
 import numpy as np
 import os
@@ -11,7 +13,6 @@ def listdir_fullpath(d):
 
 
 class InputController(object):
-    output_path = ''
 
     def __init__(self):
         self.iw = InputWindow()
@@ -22,10 +23,11 @@ class InputController(object):
         data_dict = {}
         list_len = None
         for i in range(self.iw.input_list.count()):
-
+            #todo make common function for this with universal data type dict format
+            # -> put it in one of those handy data classes we have lying aroudn
             item = self.iw.input_list.item(i)
             w = self.iw.input_list.itemWidget(item)
-            assert w.path is not None
+            assert w.path
 
             file_list = listdir_fullpath(w.path)
             if list_len:
@@ -41,9 +43,38 @@ class InputController(object):
             assert name is not None
             data_dict[name] = data_arr
 
-        self.output_path = self.iw.output_path
-        assert self.output_path is not None
-        self.ctrl = ImageSelectController(data_dict, list_len, self.output_path) #todo do something with this controller?
+        assert self.iw.output_path
+        self.ctrl = ImageSelectController(data_dict, list_len, self.iw.output_path) #todo do something with this controller?
+
+    def _launch_cell_objects(self):
+        data = self._prepare_data()
+
+    def _prepare_data(self):
+        data_dict = {}
+        fl_data = {}
+        list_len = None
+        for i in range(self.iw.input_list.count()):
+            # todo make common function for this with universal data type dict format
+            # -> put it in one of those handy data classes we have lying aroudn
+            item = self.iw.input_list.item(i)
+            w = self.iw.input_list.itemWidget(item)
+            assert w.path
+
+            file_list = listdir_fullpath(w.path)
+            if list_len:
+                assert len(file_list) == list_len
+            list_len = len(file_list)
+            shape = tifffile.imread(file_list[0]).shape
+            data_arr = np.empty((len(file_list), shape[0], shape[1])).astype('uint16')
+
+            for idx, f in enumerate(file_list):
+                data_arr[idx] = tifffile.imread(f)
+
+            name = w.name_lineedit.text()
+            assert name
+            dtype = w.dtype_combobox.currentText()
+
+
 
 
 class ImageSelectController(object):
@@ -79,7 +110,6 @@ class ImageSelectController(object):
         for iw in self.iws:
             iw.show()
         self.nw.show()
-
 
     def _done(self):
         for name, data in self.data_dict.items():
@@ -125,7 +155,7 @@ class ImageSelectController(object):
             self.index = 0
         else:
             self.index = i
-        
+
         self.nw.current_frame_text.setText(str(self.index))
 
         for iw in self.iws:
@@ -147,3 +177,11 @@ class ImageSelectController(object):
 
     def _last(self):
         self.set_frame(self.length - 1)
+
+
+class CellObjectController(object):
+    def __init__(self):
+        super(CellObjectController, self).__init__()
+
+        self.cow = CellObjectWindow()
+        self.cow.show()
