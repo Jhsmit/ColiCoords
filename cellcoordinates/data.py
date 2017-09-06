@@ -12,8 +12,8 @@ class BinaryImage(np.ndarray):
 
         #bool_arr = input_array.astype(bool)
         #assert np.array_equal(input_array, bool_arr)
-        print(input_array.dtype)
-        assert input_array.dtype in ['int', 'uint', 'uint16', 'uint32']
+        #either boolean or labeled binary
+        assert input_array.dtype in ['int', 'uint', 'uint16', 'uint32', 'bool']
         #todo test connectedness l, n = mh.label(bool_arr)
 
         #todo binary is now saved as int
@@ -92,7 +92,8 @@ class Data(object):
     """
 
     flu_dict = {}
-    data_dict = {}
+    data_dict = {}  #stores by dtype or name
+    name_dict = {}  #stores by name
     shape = None
 
     binary_img = None
@@ -100,11 +101,14 @@ class Data(object):
     storm_table = None
     storm_img = None
 
+    idx = 0
+
+
     def __init__(self, *args, **kwargs):
         pass
 
-    def add_datasets(self, binary_img=None, bf_img=None, fl_data=None, storm_table=None, *args, **kwargs):
-        img_data = [binary_img, bf_img] + [v for v in fl_data.values()]
+    def add_datasets(self, binary_img=None, bf_img=None, flu_data=None, storm_table=None, *args, **kwargs):
+        img_data = [binary_img, bf_img] + [v for v in flu_data.values()]
         shapes = [img.shape[:2] for img in img_data if img is not None]
         assert (shapes[1:] == shapes[:-1])
         self.shape = shapes[0] if len(shapes) > 0 else None
@@ -113,7 +117,7 @@ class Data(object):
         self.brightfield_img = BrightFieldImage(bf_img)
 
         self.flu_dict = {}
-        for k, v in fl_data.items():
+        for k, v in flu_data.items():
                 d = FluorescenceImage(v)
                 self.flu_dict[k] = d
                 setattr(self, 'flu_' + k, d)
@@ -144,36 +148,48 @@ class Data(object):
         dclass = dclass.lower()
         if name is None:
             name = dclass
+        assert name not in [d.name for d in self.data_dict.values()]
         if dclass == 'binary':
             assert self.binary_img is None
-            self._check_shape(data.shape)
+            self._check_shape(data.shape, data.ndim)
             self.binary_img = BinaryImage(data, name=name, metadata=metadata)
             self.data_dict['binary'] = self.binary_img
+            name = 'binary' if not name else name
+            self.name_dict[name] = self.binary_img
         elif dclass == 'brightfield':
             assert self.brightfield_img is None
-            self._check_shape(data.shape)
+            self._check_shape(data.shape, data.ndim)
             self.brightfield_img = BrightFieldImage(data, name=name, metadata=metadata)
             self.data_dict['brightfield'] = self.brightfield_img
+            name = 'brightfield' if not name else name
+            self.name_dict[name] = self.brightfield_img
         elif dclass == 'fluorescence':
             assert name
             assert name not in self.flu_dict
-            self._check_shape(data.shape)
+            self._check_shape(data.shape, data.ndim)
             f = FluorescenceImage(data, name=name, metadata=metadata)
             self.flu_dict[name] = f
             setattr(self, 'flu_' + name, f)
         elif dclass == 'storm':
+            #todo some checks to make sure there is a frame entry in the table when ndim == 3
             assert 'storm_table' not in self.data_dict
             self.storm_table = STORMTable(data, name=name, metadata=metadata)
             self.data_dict['storm_table'] = self.storm_table
+            name = 'storm_table' if not name else name
+            self.name_dict[name] = self.storm_table
+
 
             assert 'storm_img' not in self.data_dict
             img = self._get_storm_img(data)
+            name = 'storm_img' if not name else name + '_img'
             self.storm_img = STORMImage(img, name=name, metadata=metadata)
             self.data_dict['storm_img'] = self.storm_img
+            self.name_dict[name] = self.storm_img
         else:
             raise ValueError('Invalid data class')
 
         self.data_dict.update(self.flu_dict)
+        self.name_dict.update(self.flu_dict)
 
     def _get_storm_img(self, storm_table):
         if self.shape:
@@ -190,14 +206,46 @@ class Data(object):
 
         return h.T
 
-    def _check_shape(self, shape):
+    def _check_shape(self, shape, ndim):
         if self.shape:
             assert shape == self.shape
+            assert ndim == self.ndim
         else:
             self.shape = shape
+            self.ndim = ndim
 
+    def from_name(self, name):
+        idx
 
     @property
     def dclasses(self):
-        return None
+        return np.unique([d.dclass for d in self.data_dict.values()])
 
+    @property
+    def names(self):
+        return [d.name for d in self.data_dict.values()]
+
+    def __len__(self):
+        if self.ndim == 3:
+            return self.shape[0]
+        elif self.ndim == 2:
+            return 1
+        else:
+            raise ValueError
+
+    def __next__(self):
+        if self.ndim == 2:
+            self.idx = 0
+            raise StopIteration
+        data = Data()
+        for v in self.data_dict.values():
+            data.add_data(v[self.idx], v.dclass, name=v.name, metadata=v.metadata)
+        self.idx += 1
+        if self.idx >= self.length:
+            self.idx = 0
+            raise StopIteration
+        else:
+            return data
+
+
+    next = __next__

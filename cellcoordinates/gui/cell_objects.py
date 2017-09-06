@@ -37,10 +37,10 @@ class CellObjectWindow(QtGui.QMainWindow):
         self.optimize_datasrc_cbb.addItems(self.data_names) # todo input this
         form2.addRow(QtGui.QLabel('Data source'), self.optimize_datasrc_cbb)
 
-        self.optimize_method_cb = QtGui.QComboBox()
-        self.optimize_method_cb.addItems(['Binary', 'Localizations', 'Photons'])
+        self.optimize_method_cbb = QtGui.QComboBox()
+        self.optimize_method_cbb.addItems(['Binary', 'Localizations', 'Photons'])
         #todo additems
-        form2.addRow(QtGui.QLabel('Optimization method'), self.optimize_method_cb)
+        form2.addRow(QtGui.QLabel('Optimization method'), self.optimize_method_cbb)
 
         left_vbox.addLayout(form2)
         left_vbox.addStretch(1)

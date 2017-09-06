@@ -42,16 +42,16 @@ class Cell(object):
                 
     """
 
-    def __init__(self, bf_img=None, binary_img=None, fl_data=None, storm_table=None, *args, **kwargs):
+    def __init__(self, bf_img=None, binary_img=None, flu_data=None, storm_table=None, *args, **kwargs):
         if 'data_dict' in kwargs:
             data_dict = kwargs['data_dict']
             bf_img = data_dict.pop('brightfield', None)
             binary_img = data_dict.pop('binary', None)
             storm_table = data_dict.pop('storm_data', None)
-            fl_data = data_dict
+            flu_data = data_dict
 
         self.data = Data()
-        self.data.add_datasets(bf_img=bf_img, binary_img=binary_img, fl_data=fl_data, storm_table=storm_table)
+        self.data.add_datasets(bf_img=bf_img, binary_img=binary_img, fl_data=flu_data, storm_table=storm_table)
         self.coords = Coordinates(self.data)
         if 'label' in kwargs:
             print('move labels to global metadata')

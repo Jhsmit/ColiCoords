@@ -38,7 +38,7 @@ app = QtGui.QApplication(sys.argv)
 
 
 
-ctrl = CellObjectController(data)
+ctrl = CellObjectController(data, '')
 ctrl.show()
 
 sys.exit(app.exec_())
