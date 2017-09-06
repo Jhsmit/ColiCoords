@@ -33,6 +33,7 @@ class ImageWindow(QtGui.QMainWindow):
 
 class NavigationWindow(QtGui.QMainWindow):
     keyPressed = QtCore.pyqtSignal(QtGui.QKeyEvent)
+    closed = QtCore.pyqtSignal()
 
     def __init__(self):
         super(NavigationWindow, self).__init__()
@@ -68,6 +69,10 @@ class NavigationWindow(QtGui.QMainWindow):
         w = QtGui.QWidget()
         w.setLayout(vbox_overall)
         self.setCentralWidget(w)
+
+    def closeEvent(self, event):
+        self.closed.emit()
+        event.accept()
 
     def keyPressEvent(self, event):
         super(NavigationWindow, self).keyPressEvent(event)

@@ -121,7 +121,7 @@ def process_cell(binary_img=None, bf_img=None, fl_data=None, storm_data=None, ro
     if storm_data is not None:
         storm_data = _rotate_storm(storm_data, theta, shape=shape)
 
-    return Cell(bf_img=bf_img, binary_img=binary_img, fl_data=fl_dict, storm_data=storm_data)
+    return Cell(bf_img=bf_img, binary_img=binary_img, fl_data=fl_dict, storm_table=storm_data)
 
 
 def _rotate_storm(storm_data, theta, shape=None):

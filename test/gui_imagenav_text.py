@@ -1,4 +1,5 @@
 from cellcoordinates.gui.controller import ImageSelectController
+from cellcoordinates.data import Data
 import sys
 from PyQt4 import QtGui
 import tifffile
@@ -10,29 +11,33 @@ def listdir_fullpath(d):
 
 bin_files = listdir_fullpath(r'test_data/ds1/binary')
 bf_files = listdir_fullpath(r'test_data/ds1/brightfield')
+flu_files = listdir_fullpath(r'test_data/ds1/fluorescence')
 
-print(bin_files)
 
-bin_arr = np.empty((len(bin_files), 512, 512))
+bin_arr = np.empty((len(bin_files), 512, 512)).astype('uint16')
 for i, f in enumerate(bin_files):
     bin_arr[i] = tifffile.imread(f)
 
-
-bf_arr = np.empty((len(bin_files), 512, 512))
+bf_arr = np.empty((len(bin_files), 512, 512)).astype('uint16')
 for i, f in enumerate(bf_files):
     bf_arr[i] = tifffile.imread(f)
 
+flu_arr = np.empty((len(bin_files), 512, 512)).astype('uint16')
+for i, f in enumerate(flu_files):
+    flu_arr[i] = tifffile.imread(f)
 
-data_dict = {}
-data_dict['binary'] = bin_arr
-data_dict['brightfield'] = bf_arr
-print(bin_arr.shape)
+
+data = Data()
+data.add_data(bin_arr, 'binary')
+data.add_data(bf_arr, 'brightfield')
+print(data.brightfield_img.shape)
+#data.add_data()
 
 app = QtGui.QApplication(sys.argv)
 
 
 
-ctrl = ImageSelectController(data_dict, len(bin_files))
+ctrl = ImageSelectController(data, len(bin_files))
 
 
 

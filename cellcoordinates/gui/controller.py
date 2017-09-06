@@ -17,9 +17,15 @@ class InputController(object):
     def __init__(self):
         self.iw = InputWindow()
         self.iw.image_filter_button.clicked.connect(self._launch_image_filter)
+
+    def show(self):
         self.iw.show()
 
     def _launch_image_filter(self):
+        self.data = self._prepare_data()
+        self.ctrl = ImageSelectController(self.data, self.iw.output_path)
+
+    def _launch_image_filter_dep(self):
         data_dict = {}
         list_len = None
         for i in range(self.iw.input_list.count()):
@@ -47,11 +53,10 @@ class InputController(object):
         self.ctrl = ImageSelectController(data_dict, list_len, self.iw.output_path) #todo do something with this controller?
 
     def _launch_cell_objects(self):
-        data = self._prepare_data()
+        self.data = self._prepare_data()
 
     def _prepare_data(self):
-        data_dict = {}
-        fl_data = {}
+        data = Data()
         list_len = None
         for i in range(self.iw.input_list.count()):
             # todo make common function for this with universal data type dict format
@@ -72,28 +77,29 @@ class InputController(object):
 
             name = w.name_lineedit.text()
             assert name
-            dtype = w.dtype_combobox.currentText()
+            dclass = w.dclass_combobox.currentText()
 
+            data.add_data(data_arr, dclass, name=name)
 
+        return data
 
 
 class ImageSelectController(object):
     index = 0
     length = 0
 
-    def __init__(self, data_dict, length, output_path):
-        # data dict: k; name of the data, v; 3d array (z, x, y)
+    def __init__(self, data, output_path):
+        # data: Data object, image data should be 3d; z, row, column
         super(ImageSelectController, self).__init__()
-        self.length = length
+        self.data = data
+        self.length = len(self.data.data_dict.values()[0])
         self.output_path = output_path
-        self.data_dict = data_dict
         self.exclude_bools = np.zeros(self.length).astype(bool)
-
         self.nw = NavigationWindow()
 
         self.iws = []
-        for k, v in data_dict.items():
-            iw = ImageWindow(v, parent=self.nw, title=k)
+        for k, v in self.data.data_dict.items():
+            iw = ImageWindow(v, parent=None, title=k)
             self.iws.append(iw)
 
         self.nw.first_button.clicked.connect(self._first)
@@ -107,9 +113,15 @@ class ImageSelectController(object):
         self.nw.exclude_cb.clicked.connect(self._exclude_cb_checked)
         self.nw.done_button.clicked.connect(self._done)
 
+        self.nw.closed.connect(self._nw_closed)
+
         for iw in self.iws:
             iw.show()
         self.nw.show()
+
+    def _nw_closed(self):
+        for iw in self.iws:
+            iw.close()
 
     def _done(self):
         for name, data in self.data_dict.items():
@@ -180,8 +192,10 @@ class ImageSelectController(object):
 
 
 class CellObjectController(object):
-    def __init__(self):
+    def __init__(self, data):
         super(CellObjectController, self).__init__()
 
-        self.cow = CellObjectWindow()
+        self.cow = CellObjectWindow(data)
+
+    def show(self):
         self.cow.show()

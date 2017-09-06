@@ -113,9 +113,9 @@ class DataInputQCustomWidget(QtGui.QWidget):
         self.name_lineedit = QtGui.QLineEdit()
         form.addRow(QtGui.QLabel('Name:'), self.name_lineedit)
 
-        self.dtype_combobox = QtGui.QComboBox()
-        self.dtype_combobox.addItems(['Binary', 'Brightfield', 'Fluorescence', 'STORM',])
-        form.addRow(QtGui.QLabel('Data Type:'), self.dtype_combobox)
+        self.dclass_combobox = QtGui.QComboBox()
+        self.dclass_combobox.addItems(['Binary', 'Brightfield', 'Fluorescence', 'STORM', ])
+        form.addRow(QtGui.QLabel('Data Type:'), self.dclass_combobox)
 
         self.path_button = QtGui.QPushButton("Browse")
         self.path_button.clicked.connect(self.path_button_clicked)

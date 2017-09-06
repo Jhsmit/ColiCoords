@@ -1,13 +1,14 @@
 from PyQt4 import QtGui, QtCore
 from ..config import cfg
 
-
+#todo data dict ->ordereddict?
 #todo make controller load defaults after initialization
 class CellObjectWindow(QtGui.QMainWindow):
-    def __init__(self, parent=None):
+    def __init__(self, data, parent=None):
         super(CellObjectWindow, self).__init__(parent=parent)
-        self.data_types = ['lorem', 'ipsum']
-        data_types = self.data_types
+        self.data = data
+        #bascially get all names of datasets which are not brighfield
+        self.data_names = [d.name for d in data.data_dict.values() if d.dclass in ['Binary', 'Fluorescence', 'STORMTable']]
         left_vbox = QtGui.QVBoxLayout()
         left_vbox.addWidget(QtGui.QLabel('Options'))
 
@@ -24,7 +25,7 @@ class CellObjectWindow(QtGui.QMainWindow):
         form1.addRow(QtGui.QLabel('Max cell fraction'), self.max_fraction_le)
 
         self.rotate_cbb = QtGui.QComboBox()
-        self.rotate_cbb.addItems(data_types + ['None']) #todo input this
+        self.rotate_cbb.addItems(self.data_names + ['None']) #todo input this
         form1.addRow(QtGui.QLabel('Rotate'), self.rotate_cbb)
 
         left_vbox.addLayout(form1)
@@ -33,10 +34,11 @@ class CellObjectWindow(QtGui.QMainWindow):
         form2 = QtGui.QFormLayout()
 
         self.optimize_datasrc_cbb = QtGui.QComboBox()
-        self.optimize_datasrc_cbb.addItems(data_types) # todo input this
+        self.optimize_datasrc_cbb.addItems(self.data_names) # todo input this
         form2.addRow(QtGui.QLabel('Data source'), self.optimize_datasrc_cbb)
 
         self.optimize_method_cb = QtGui.QComboBox()
+        self.optimize_method_cb.addItems(['Binary', 'Localizations', 'Photons'])
         #todo additems
         form2.addRow(QtGui.QLabel('Optimization method'), self.optimize_method_cb)
 
@@ -97,8 +99,8 @@ class CellObjectWindow(QtGui.QMainWindow):
         self.setCentralWidget(w)
 
     def _add_button_clicked(self):
-        dtypes = self.data_types
-        widget = DistributionOutputQCustomWidget(dtypes, parent=self)
+        dnames = [d.name for d in self.data.data_dict.values() if d.dclass in ['Fluorescence', 'STORMTable']]
+        widget = DistributionOutputQCustomWidget(dnames, parent=self)
 
         list_item = QtGui.QListWidgetItem(self.dist_list)
         list_item.setSizeHint(widget.sizeHint())
@@ -111,13 +113,13 @@ class CellObjectWindow(QtGui.QMainWindow):
 
 
 class DistributionOutputQCustomWidget(QtGui.QWidget):
-    def __init__(self, data_types, parent=None):
+    def __init__(self, dnames, parent=None):
         super(DistributionOutputQCustomWidget, self).__init__(parent=parent)
         vbox = QtGui.QVBoxLayout()
         form1 = QtGui.QFormLayout()
 
         self.data_src_cbb = QtGui.QComboBox()
-        self.data_src_cbb.addItems(data_types)
+        self.data_src_cbb.addItems(dnames)
         form1.addRow(QtGui.QLabel('Data source:'), self.data_src_cbb)
 
         vbox.addLayout(form1)
