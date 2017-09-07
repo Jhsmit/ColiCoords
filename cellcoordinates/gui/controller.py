@@ -4,7 +4,7 @@ from ..config import cfg
 from cell_objects import CellObjectWindow
 from ..data import Data
 from ..cell import Cell
-from PyQt4 import QtCore
+from PyQt4 import QtCore, QtGui
 import mahotas as mh
 import numpy as np
 import os
@@ -201,28 +201,35 @@ class CellObjectController(object):
     def __init__(self, data, output_path):
         super(CellObjectController, self).__init__()
         self.input_data = data
-        self.cow = CellObjectWindow(data)
+        self.output_path = output_path
+
+        if QtGui.QApplication.instance() is not None:
+            self.cow = CellObjectWindow(data)
+        else:
+            self.cow = None
 
     def show(self):
         self.cow.show()
 
     def _done(self):
-        cell_list = self._create_cell_objects()
-        self._optimize_coords(cell_list)
-        self._create_output()
-
-    def _create_cell_objects(self):
-        #todo generalize this function for calling from console
         cell_frac = float(self.cow.max_fraction_le.text())
         pad_width = int(self.cow.pad_width_le.text())
         rotate = self.cow.rotate_cbb.currentText()
+        cell_list = self._create_cell_objects(self.input_data, cell_frac, pad_width, rotate)
 
+        data_src = self.cow.optimize_datasrc_cbb.currentText()
+        optimize_method = self.cow.optimize_method_cbb.currentText()
+
+        self._optimize_coords(cell_list, data_src, optimize_method)
+        self._create_output()
+
+    def _create_cell_objects(self, input_data, cell_frac, pad_width, rotate):
         cell_list = []
-        for i, data in enumerate(self.input_data):
+        for i, data in enumerate(input_data):
 
             assert 'Binary' in data.dclasses
-            binary = self.data.binary_img
-            if (binary > 0).mean() > cell_frac or binary == 0.:
+            binary = data.binary_img
+            if (binary > 0).mean() > cell_frac or binary.mean() == 0.:
                 print('Image {} {}: Too many or no cells').format(binary.name, i)
 
             #Iterate over all cells in the image
@@ -230,7 +237,7 @@ class CellObjectController(object):
                 selected_binary = (binary == l).astype('int')
                 min1, max1, min2, max2 = mh.bbox(selected_binary)
                 min1p, max1p, min2p, max2p = min1 - pad_width, max1 + pad_width, min2 - pad_width, max2 + pad_width
-                bin_selection = binary[min1p:max1p, min2p:max2p]
+                bin_selection = selected_binary[min1p:max1p, min2p:max2p]
 
                 try:
                     assert min1p > 0 and min2p > 0 and max1p < binary.shape[0] and max2p < binary.shape[1]
@@ -244,61 +251,59 @@ class CellObjectController(object):
                     print('Cell {} on image {} {}: multiple cells per selection'.format(l, binary.name, i))
                     continue
 
-            bin_selection = bin_selection.astype(bool)
+            bin_selection = bin_selection.astype(int)  # Otherwise the rotation result looks funny
 
             flu_selection = None
-            if self.input_data.flu_dict:
+            if data.flu_dict:
                 flu_selection = {}
-                for k, v in self.self.input_data.flu_dict.items():
+                for k, v in data.flu_dict.items():
                     flu_selection[k] = v[min1 - pad_width:max1 + pad_width, min2 - pad_width:max2 + pad_width]
 
-            bf_selection = self.input_data.brightfield[min1 - pad_width:max1 + pad_width,
-                           min2 - pad_width:max2 + pad_width] if self.input_data.brightfield is not None else None
+            bf_selection = data.brightfield_img[min1 - pad_width:max1 + pad_width,
+                           min2 - pad_width:max2 + pad_width] if data.brightfield_img is not None else None
 
-            if self.input_data.storm_table:
+            if data.storm_table:
                 raise NotImplementedError('Handling of STORM data not implemented')
 
             # Calculate rotation angle and rotate selections
             if rotate:
                 #assert (-> get by name)
-                r_data = self.input_data.name_dict[rotate]
+                r_data = data.data_dict[rotate]
+                print(r_data.dclass)
                 assert r_data.ndim == 2
                 theta = _calc_orientation(r_data)
             else:
                 theta = 0
+            import matplotlib.pyplot as plt
+            # plt.imshow(bin_selection)
+            # plt.show()
 
-            bin_rotated = scipy_rotate(bin_selection, -theta)
-            bf_rotated = scipy_rotate(bf_selection, -theta) if bf_selection else None
+
+            bin_rotated = scipy_rotate(bin_selection, theta)  #todo change if its ever allowed not to have binary
+            bf_rotated = scipy_rotate(bf_selection, theta) if bf_selection is not None else None
+
+            plt.imshow(bin_rotated)
+            plt.show()
 
             flu_rotated = {}
             for k, v in flu_selection.items():
-                flu_rotated[k] = scipy_rotate(v, -theta)
+                flu_rotated[k] = scipy_rotate(v, theta)
 
             #Make cell object and add all the data
-            c = Cell(bf_img=bf_rotated, binary_img=bin_rotated, fl_data=flu_rotated, storm_table=None)
+            #todo change cell initation and data adding interface
+            c = Cell(bf_img=bf_rotated, binary_img=bin_rotated, flu_data=flu_rotated, storm_table=None)
             cell_list.append(c)
 
         return cell_list
 
-    def _optimize_coords(self, cell_list):
-        data_src = self.cow.optimize_datasrc_cbb.currentText()
-        optimize_method = self.cow.optimize_method_cbb.currentText()
-        if optimize_method is not 'Binary':
-            raise NotImplementedError
-        dclass = self.input_data.name_dict(data_src).dclass
-        if dclass is not 'Binary':
-            raise NotImplementedError
-
-
-
+    def _optimize_coords(self, cell_list, dclass=None, method='photons', verbose=True):
+        #todo verbose option in GUI
+        for c in cell_list:
+            c.optimize(dclass=dclass, method=method, verbose=verbose)
 
 
     def _create_output(self):
         pass
-
-
-
-
 
 def _calc_orientation(data_elem):
     if data_elem.dclass in ['Binary', 'Fluorescence']:

@@ -57,8 +57,8 @@ class Cell(object):
             print('move labels to global metadata')
             pass
 
-    def optimize(self, method=None, maximize='photons', verbose=True):
-        if not method:
+    def optimize(self, dclass=None, method='photons', verbose=True):
+        if not dclass:
             if self.data.binary_img is not None and self.data.storm_data is None:
                 optimizer = BinaryOptimizer(self)
             elif not self.data.binary_img and self.data.storm_data:
@@ -67,10 +67,14 @@ class Cell(object):
                 raise ValueError("Please specify optimize method")
             elif not self.data.binary_img and not self.data.storm_data:
                 raise ValueError("Please specify optimize method")
-        elif method == 'binary':
+
+        elif dclass == 'Binary':
             optimizer = BinaryOptimizer(self)
-        elif method == 'STORM':
-            optimizer = STORMOptimizer(self, maximize=maximize)
+        elif dclass == 'Fluorescence':
+            raise NotImplementedError
+            #optimizer = FluorescenceOptimizer(self)
+        elif dclass == 'STORM':
+            optimizer = STORMOptimizer(self, method=method)
         else:
             raise ValueError("Invalid value for optimize_method")
 

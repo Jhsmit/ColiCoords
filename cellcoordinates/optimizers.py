@@ -21,13 +21,13 @@ class STORMOptimizer(OptimizerBase):
     
     """
 
-    def __init__(self, cell_obj, maximize='photons', verbose=True):
+    def __init__(self, cell_obj, method='photons', verbose=True):
         """
         :param storm_data: structured array with entries x, y, photons. x, y coordinates are in cartesian coords
         :param cell_obj: Cell object
         """
         self.cell_obj = cell_obj
-        self.maximize = maximize
+        self.method = method
 
     def optimize_r(self):
         def minimize_func(r, cell_obj, maximize):
@@ -45,7 +45,7 @@ class STORMOptimizer(OptimizerBase):
             return -p/area
 
         r_guess = self.cell_obj.coords.r
-        min = minimize(minimize_func, r_guess, args=(self.cell_obj, self.maximize), method='Powell')
+        min = minimize(minimize_func, r_guess, args=(self.cell_obj, self.method), method='Powell')
         self.cell_obj.coords.r = min.x
         return min.x, min.fun
 
@@ -63,7 +63,7 @@ class STORMOptimizer(OptimizerBase):
             return -p/cell_obj.area
 
         x_lr = [self.cell_obj.coords.xl, self.cell_obj.coords.xr]
-        min = minimize(minimize_func, x_lr, args=(self.cell_obj, self.maximize), method='Powell')
+        min = minimize(minimize_func, x_lr, args=(self.cell_obj, self.method), method='Powell')
         self.cell_obj.xl, self.cell_obj.xr = x_lr
         return min.x, min.fun
 
@@ -82,7 +82,7 @@ class STORMOptimizer(OptimizerBase):
             return -p/cell_obj.area
 
         coeff = self.cell_obj.coords.coeff
-        min = minimize(minimize_func, coeff, args=(self.cell_obj, self.maximize), method='Powell')
+        min = minimize(minimize_func, coeff, args=(self.cell_obj, self.method), method='Powell')
 
         return min.x, min.fun
 
@@ -103,7 +103,7 @@ class STORMOptimizer(OptimizerBase):
 
         par = [self.cell_obj.r, self.cell_obj.xl, self.cell_obj.xr] + list(self.cell_obj.c_coords.coeff)
 
-        min = minimize(minimize_func, par, args=(self.cell_obj, self.maximize), method='Powell')
+        min = minimize(minimize_func, par, args=(self.cell_obj, self.method), method='Powell')
         self.cell_obj.coords.r, self.cell_obj.coords.xl, self.cell_obj.coords.xr = min.x[:3]
         self.cell_obj.coords.coeff = np.array(min.x[3:])
         return min.x, min.fun
@@ -198,3 +198,7 @@ class BinaryOptimizer(OptimizerBase):
             if diff_prev == diff:
                 i += 1
             diff_prev = diff
+
+
+class FluorescenceOptimizer(OptimizerBase):
+    pass

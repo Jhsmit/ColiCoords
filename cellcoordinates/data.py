@@ -105,6 +105,7 @@ class Data(object):
         self.shape = None
 
     def add_datasets(self, binary_img=None, bf_img=None, flu_data=None, storm_table=None, *args, **kwargs):
+        flu_data = {} if flu_data == None else flu_data
         img_data = [binary_img, bf_img] + [v for v in flu_data.values()]
         shapes = [img.shape[:2] for img in img_data if img is not None]
         assert (shapes[1:] == shapes[:-1])
@@ -147,7 +148,6 @@ class Data(object):
             name = dclass
         else:
             name = str(name)
-        print(name)
 
         assert name not in [d.name for d in self.data_dict.values()]
         if dclass == 'Binary':
@@ -227,6 +227,10 @@ class Data(object):
         else:
             raise ValueError
 
+    def __iter__(self):
+        self.idx = 0
+        return self
+
     def __next__(self):
         if not hasattr(self, 'ndim'):
             raise StopIteration
@@ -238,7 +242,7 @@ class Data(object):
         for v in self.data_dict.values():
             data.add_data(v[self.idx], v.dclass, name=v.name, metadata=v.metadata)
         self.idx += 1
-        if self.idx >= self.length:
+        if self.idx >= len(self):
             self.idx = 0
             raise StopIteration
         else:
