@@ -29,6 +29,7 @@ class InputController(object):
     def _launch_image_filter(self):
         self.data = self._prepare_data()
         self.ctrl = ImageSelectController(self.data, self.iw.output_path)
+        self.ctrl.show()
 
     def _launch_image_filter_dep(self):
         data_dict = {}
@@ -59,6 +60,8 @@ class InputController(object):
 
     def _launch_cell_objects(self):
         self.data = self._prepare_data()
+        self.ctrl = CellObjectController(self.data, self.iw.output_path)
+        self.ctrl.show()
 
     def _prepare_data(self):
         data = Data()
@@ -286,10 +289,9 @@ class CellObjectController(object):
         if dclass is not 'Binary':
             raise NotImplementedError
 
-        
 
 
-        for c in cell_list:
+
 
     def _create_output(self):
         pass

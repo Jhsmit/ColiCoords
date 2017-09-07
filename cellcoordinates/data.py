@@ -91,21 +91,18 @@ class Data(object):
     Parent object for all data classes
     """
 
-    flu_dict = {}
-    data_dict = {}  #stores by dtype or name
-    name_dict = {}  #stores by name
-    shape = None
-
-    binary_img = None
-    brightfield_img = None
-    storm_table = None
-    storm_img = None
-
-    idx = 0
-
-
     def __init__(self, *args, **kwargs):
-        pass
+        self.data_dict = {}
+        self.flu_dict = {}  #needed or new initialized class doesnt have empty dicts!!!oneone
+        self.name_dict = {}
+
+        self.binary_img = None
+        self.brightfield_img = None
+        self.storm_table = None
+        self.storm_img = None
+
+        self.idx = 0
+        self.shape = None
 
     def add_datasets(self, binary_img=None, bf_img=None, flu_data=None, storm_table=None, *args, **kwargs):
         img_data = [binary_img, bf_img] + [v for v in flu_data.values()]
@@ -139,51 +136,49 @@ class Data(object):
 
             self.storm_img = STORMImage(h.T)
 
-        self.data_dict = {'binary': self.binary_img,
-                          'brightfield': self.brightfield_img,
-                          'storm_table': self.storm_table}
+        #todoo old names
+        self.data_dict = {'Binary': self.binary_img,
+                          'Brightfield': self.brightfield_img,
+                          'STORMTable': self.storm_table}
         self.data_dict.update(self.flu_dict)
 
     def add_data(self, data, dclass, name=None, metadata=None):
-        dclass = dclass.lower()
-        if name is None:
+        if name in ['', u'', r'', None]:
             name = dclass
+        else:
+            name = str(name)
+        print(name)
+
         assert name not in [d.name for d in self.data_dict.values()]
-        if dclass == 'binary':
+        if dclass == 'Binary':
             assert self.binary_img is None
             self._check_shape(data.shape, data.ndim)
             self.binary_img = BinaryImage(data, name=name, metadata=metadata)
-            self.data_dict['binary'] = self.binary_img
-            name = 'binary' if not name else name
-            self.name_dict[name] = self.binary_img
-        elif dclass == 'brightfield':
+            self.data_dict[name] = self.binary_img
+        elif dclass == 'Brightfield':
             assert self.brightfield_img is None
             self._check_shape(data.shape, data.ndim)
             self.brightfield_img = BrightFieldImage(data, name=name, metadata=metadata)
-            self.data_dict['brightfield'] = self.brightfield_img
-            name = 'brightfield' if not name else name
-            self.name_dict[name] = self.brightfield_img
-        elif dclass == 'fluorescence':
+            self.data_dict[name] = self.brightfield_img
+        elif dclass == 'Fluorescence':
             assert name
             assert name not in self.flu_dict
             self._check_shape(data.shape, data.ndim)
             f = FluorescenceImage(data, name=name, metadata=metadata)
-            self.flu_dict[name] = f
             setattr(self, 'flu_' + name, f)
-        elif dclass == 'storm':
-            #todo some checks to make sure there is a frame entry in the table when ndim == 3
-            assert 'storm_table' not in self.data_dict
+            self.flu_dict[name] = f
+        elif dclass == 'STORMTable':
+            #todo some checks to make sure there is a frame entry in the table when ndim == 3 and vice versa
+            assert 'STORMTable' not in self.data_dict
             self.storm_table = STORMTable(data, name=name, metadata=metadata)
-            self.data_dict['storm_table'] = self.storm_table
-            name = 'storm_table' if not name else name
+            self.data_dict['STORMTable'] = self.storm_table
             self.name_dict[name] = self.storm_table
 
-
-            assert 'storm_img' not in self.data_dict
+            assert 'STORMImage' not in self.data_dict
             img = self._get_storm_img(data)
-            name = 'storm_img' if not name else name + '_img'
+            name = 'STORMImage' if name is 'STORMTable' else name + '_img'
             self.storm_img = STORMImage(img, name=name, metadata=metadata)
-            self.data_dict['storm_img'] = self.storm_img
+            self.data_dict['STORMImage'] = self.storm_img
             self.name_dict[name] = self.storm_img
         else:
             raise ValueError('Invalid data class')
@@ -214,9 +209,6 @@ class Data(object):
             self.shape = shape
             self.ndim = ndim
 
-    def from_name(self, name):
-        idx
-
     @property
     def dclasses(self):
         return np.unique([d.dclass for d in self.data_dict.values()])
@@ -226,7 +218,9 @@ class Data(object):
         return [d.name for d in self.data_dict.values()]
 
     def __len__(self):
-        if self.ndim == 3:
+        if not hasattr(self, 'ndim'):
+            return 0
+        elif self.ndim == 3:
             return self.shape[0]
         elif self.ndim == 2:
             return 1
@@ -234,9 +228,12 @@ class Data(object):
             raise ValueError
 
     def __next__(self):
+        if not hasattr(self, 'ndim'):
+            raise StopIteration
         if self.ndim == 2:
             self.idx = 0
             raise StopIteration
+
         data = Data()
         for v in self.data_dict.values():
             data.add_data(v[self.idx], v.dclass, name=v.name, metadata=v.metadata)

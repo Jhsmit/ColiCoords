@@ -63,7 +63,7 @@ class CellObjectWindow(QtGui.QMainWindow):
         self.cell_length_ascii_cb = QtGui.QCheckBox('ASCII')
 
         #todo put this in grpbox
-        labels = ['Radius', 'Lenght', 'Area', 'Volume']
+        labels = ['Radius', 'Length', 'Area', 'Volume']
         self.cell_prop_cbs = [QtGui.QCheckBox(l) for l in labels]
         self.cell_prop_ascii_cbs = [QtGui.QCheckBox('ASCII') for l in labels]
 

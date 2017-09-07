@@ -45,9 +45,9 @@ class Cell(object):
     def __init__(self, bf_img=None, binary_img=None, flu_data=None, storm_table=None, *args, **kwargs):
         if 'data_dict' in kwargs:
             data_dict = kwargs['data_dict']
-            bf_img = data_dict.pop('brightfield', None)
-            binary_img = data_dict.pop('binary', None)
-            storm_table = data_dict.pop('storm_data', None)
+            bf_img = data_dict.pop('Brightfield', None)
+            binary_img = data_dict.pop('Binary', None)
+            storm_table = data_dict.pop('STORMTable', None)
             flu_data = data_dict
 
         self.data = Data()
