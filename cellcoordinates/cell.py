@@ -368,3 +368,31 @@ class Coordinates(object):
         return xl, xr, r, coeff
 
 
+class CellList(object):
+    def __init__(self, cell_list):
+        self.cell_list = cell_list
+
+    def __len__(self):
+        return self.cell_list.__len__()
+
+    def __iter__(self):
+        return self.cell_list.__iter__()
+
+    def __getitem__(self, key):
+        return self.cell_list.__getitem__(key)
+
+    def __setitem__(self, key, value):
+        self.cell_list.__setitem__(key, value)
+
+    def __delitem__(self, key):
+        self.cell_list.__delitem__(key)
+
+    def __reversed__(self):
+        return self.cell_list.__reversed__()
+
+    def __contains__(self, item):
+        return self.cell_list.__contains__(item)
+
+    @property
+    def length(self):
+        return

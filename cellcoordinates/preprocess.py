@@ -107,7 +107,7 @@ def process_cell(binary_img=None, bf_img=None, fl_data=None, storm_data=None, ro
             if v.ndim == 2:
                 fl_dict[k] = scipy_rotate(v, -theta)
             elif v.ndim == 3:
-                fl_dict[k] == scipy_rotate(v, -theta, axes=(1,0))
+                fl_dict[k] = scipy_rotate(v, -theta, axes=(1,0))
 
     if bf_img is not None:
         bf_img = scipy_rotate(bf_img, -theta)

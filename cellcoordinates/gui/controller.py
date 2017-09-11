@@ -1,8 +1,9 @@
-from images_select import NavigationWindow, ImageWindow
-from preprocess_gui import InputWindow
+from cellcoordinates.gui.images_select import NavigationWindow, ImageWindow
+import sys
+from cellcoordinates.gui.preprocess_gui import InputWindow
 from ..config import cfg
-from cell_objects import CellObjectWindow
-from ..data import Data
+from cellcoordinates.gui.cell_objects import CellObjectWindow
+from ..data_models import Data
 from ..cell import Cell
 from ..fileIO import save, load
 from PyQt4 import QtCore, QtGui
@@ -284,8 +285,8 @@ class CellObjectController(object):
             bin_rotated = scipy_rotate(bin_selection, theta)  #todo change if its ever allowed not to have binary
             bf_rotated = scipy_rotate(bf_selection, theta) if bf_selection is not None else None
 
-            plt.imshow(bin_rotated)
-            plt.show()
+            # plt.imshow(bin_rotated)
+            # plt.show()
 
             flu_rotated = {}
             for k, v in flu_selection.items():
@@ -318,7 +319,15 @@ class CellObjectController(object):
             save(name, c)
 
     def _create_histograms(self):
-        pass
+        #Histograms of different properties of the cells via its coordinate system
+        labels = ['Radius', 'Length', 'Area', 'Volume']
+        cell_prop = [cb.isChecked() for cb in self.cow.cell_prop_cbs]
+        cell_prop_ascii = [cb.isChecked() for cb in self.cow.cell_prop_ascii_cbs]
+
+        for l, c, a in zip(labels, cell_prop, cell_prop_ascii):
+            #todo perhaps at some point make object out of cell list (which will be useful for postprocessing as well)
+            values = 1
+
 
 
 def _calc_orientation(data_elem):

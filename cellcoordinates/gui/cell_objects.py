@@ -45,6 +45,7 @@ class CellObjectWindow(QtGui.QMainWindow):
         left_vbox.addLayout(form2)
         left_vbox.addStretch(1)
 
+        #MIDDLE BOX#
         middle_vbox = QtGui.QVBoxLayout()
         middle_vbox.addWidget(QtGui.QLabel('Output'))
 
@@ -73,6 +74,7 @@ class CellObjectWindow(QtGui.QMainWindow):
         middle_vbox.addLayout(form3)
         middle_vbox.addStretch(1)
 
+        #RIGHT BOX#
         right_vbox = QtGui.QVBoxLayout()
         right_vbox.addWidget(QtGui.QLabel('Distributions'))
 
