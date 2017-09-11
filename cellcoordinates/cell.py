@@ -53,9 +53,14 @@ class Cell(object):
             binary_img = data_dict.pop('Binary', None)
             storm_table = data_dict.pop('STORMTable', None)
             flu_data = data_dict
+            self.data = Data()
+            self.data.add_datasets(bf_img=bf_img, binary_img=binary_img, flu_data=flu_data, storm_table=storm_table)
+        elif 'data_obj' in kwargs:
+            self.data = kwargs['data_obj']
+        else:
+            self.data = Data()
+            self.data.add_datasets(bf_img=bf_img, binary_img=binary_img, flu_data=flu_data, storm_table=storm_table)
 
-        self.data = Data()
-        self.data.add_datasets(bf_img=bf_img, binary_img=binary_img, flu_data=flu_data, storm_table=storm_table)
         self.coords = Coordinates(self.data)
         if 'label' in kwargs:
             print('move labels to global metadata')
@@ -395,4 +400,12 @@ class CellList(object):
 
     @property
     def length(self):
-        return
+        return np.array([c.length for c in self])
+
+    @property
+    def area(self):
+        return np.array([c.area for c in self])
+
+    @property
+    def volume(self):
+        return np.array([c.volume for c in self])

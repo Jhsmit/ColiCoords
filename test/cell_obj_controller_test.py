@@ -1,5 +1,5 @@
 from cellcoordinates.gui.controller import CellObjectController
-from cellcoordinates.data import Data
+from cellcoordinates.data_models import Data
 from test_functions import generate_testdata
 import sys
 import tifffile

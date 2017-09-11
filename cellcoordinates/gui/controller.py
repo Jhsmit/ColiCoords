@@ -14,6 +14,8 @@ import tifffile
 import math
 from scipy.ndimage.interpolation import rotate as scipy_rotate
 
+import matplotlib.pyplot as plt
+
 
 def listdir_fullpath(d):
     return [os.path.join(d, f) for f in os.listdir(d)]
@@ -229,73 +231,48 @@ class CellObjectController(object):
     def _create_cell_objects(self, input_data, cell_frac, pad_width, rotate):
         cell_list = []
         for i, data in enumerate(input_data):
-
             assert 'Binary' in data.dclasses
+
+            #todo fix labeled binary in binary image!!!oneoneone
             binary = data.binary_img
             if (binary > 0).mean() > cell_frac or binary.mean() == 0.:
                 print('Image {} {}: Too many or no cells').format(binary.name, i)
+                continue
 
-            #Iterate over all cells in the image
+            # Iterate over all cells in the image
             for l in np.unique(binary)[1:]:
                 selected_binary = (binary == l).astype('int')
                 min1, max1, min2, max2 = mh.bbox(selected_binary)
                 min1p, max1p, min2p, max2p = min1 - pad_width, max1 + pad_width, min2 - pad_width, max2 + pad_width
-                bin_selection = selected_binary[min1p:max1p, min2p:max2p]
 
                 try:
-                    assert min1p > 0 and min2p > 0 and max1p < binary.shape[0] and max2p < binary.shape[1]
+                    assert min1p > 0 and min2p > 0 and max1p < data.shape[0] and max2p < data.shape[1]
                 except AssertionError:
                     print('Cell {} on image {} {}: on the edge of the image'.format(l, binary.name, i))
                     continue
-
                 try:
-                    assert len(np.unique(bin_selection)) == 2
+                    assert len(np.unique(binary[min1p:max1p, min2p:max2p])) == 2
                 except AssertionError:
-                    print('Cell {} on image {} {}: multiple cells per selection'.format(l, binary.name, i))
+                    print('Cell {} on image {} {}: multiple cells per selection'.format(l, output_data.binary_img.name, i))
                     continue
 
-            bin_selection = bin_selection.astype(int)  # Otherwise the rotation result looks funny
+                output_data = data[min1p:max1p, min2p:max2p]
+                output_data.binary_img //= output_data.binary_img.max()
 
-            flu_selection = None
-            if data.flu_dict:
-                flu_selection = {}
-                for k, v in data.flu_dict.items():
-                    flu_selection[k] = v[min1 - pad_width:max1 + pad_width, min2 - pad_width:max2 + pad_width]
+                # Calculate rotation angle and rotate selections
+                if rotate:
+                    r_data = output_data.data_dict[rotate]
+                    assert r_data.ndim == 2
+                    theta = _calc_orientation(r_data)
+                else:
+                    theta = 0
 
-            bf_selection = data.brightfield_img[min1 - pad_width:max1 + pad_width,
-                           min2 - pad_width:max2 + pad_width] if data.brightfield_img is not None else None
+                rotated_data = output_data.rotate(theta)
 
-            if data.storm_table:
-                raise NotImplementedError('Handling of STORM data not implemented')
-
-            # Calculate rotation angle and rotate selections
-            if rotate:
-                #assert (-> get by name)
-                r_data = data.data_dict[rotate]
-                print(r_data.dclass)
-                assert r_data.ndim == 2
-                theta = _calc_orientation(r_data)
-            else:
-                theta = 0
-            import matplotlib.pyplot as plt
-            # plt.imshow(bin_selection)
-            # plt.show()
-
-
-            bin_rotated = scipy_rotate(bin_selection, theta)  #todo change if its ever allowed not to have binary
-            bf_rotated = scipy_rotate(bf_selection, theta) if bf_selection is not None else None
-
-            # plt.imshow(bin_rotated)
-            # plt.show()
-
-            flu_rotated = {}
-            for k, v in flu_selection.items():
-                flu_rotated[k] = scipy_rotate(v, theta)
-
-            #Make cell object and add all the data
-            #todo change cell initation and data adding interface
-            c = Cell(bf_img=bf_rotated, binary_img=bin_rotated, flu_data=flu_rotated, storm_table=None)
-            cell_list.append(c)
+                #Make cell object and add all the data
+                #todo change cell initation and data adding interface
+                c = Cell(data_obj=rotated_data)
+                cell_list.append(c)
 
         return cell_list
 
@@ -388,4 +365,4 @@ def _rotate_storm(storm_data, theta, shape=None):
     storm_out['x'] = xr
     storm_out['y'] = yr
 
-    return storm_out
+    return storm_out  #ha ha

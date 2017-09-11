@@ -104,6 +104,7 @@ class Data(object):
         self.idx = 0
         self.shape = None
 
+    #todo depracate the hell out of this one
     def add_datasets(self, binary_img=None, bf_img=None, flu_data=None, storm_table=None, *args, **kwargs):
         flu_data = {} if flu_data == None else flu_data
         img_data = [binary_img, bf_img] + [v for v in flu_data.values()]
@@ -217,6 +218,19 @@ class Data(object):
     def names(self):
         return [d.name for d in self.data_dict.values()]
 
+    def rotate(self, theta):
+        data = Data()
+        for v in self.data_dict.values():
+            if v.dclass == 'STORMTable':
+                rotated = _rotate_storm(v, -theta)
+            elif v.dclass == 'STORMImage':
+                continue
+            else:
+                rotated = scipy_rotate(v, -theta)
+
+            data.add_data(rotated, v.dclass, name=v.name, metadata=v.metadata)
+        return data
+
     def __len__(self):
         if not hasattr(self, 'ndim'):
             return 0
@@ -248,5 +262,44 @@ class Data(object):
         else:
             return data
 
+    def __getitem__(self, key):
+        print(key)
+        data = Data()
+        for v in self.data_dict.values():
+            if v.dclass == 'STORMTable':
+                raise NotImplementedError()
+            elif v.dclass == 'STORMImage':
+                continue
+            print(v.dclass)
+            data.add_data(v[key], v.dclass, name=v.name, metadata=v.metadata)
+        return data
 
     next = __next__
+
+
+def _rotate_storm(storm_data, theta, shape=None):
+    theta *= np.pi / 180  # to radians
+    x = storm_data['x']
+    y = storm_data['y']
+
+    if shape:
+        xmax = shape[0] * cfg.IMG_PIXELSIZE
+        ymax = shape[1] * cfg.IMG_PIXELSIZE
+    else:
+        xmax = int(storm_data['x'].max()) + 2 * cfg.STORM_PIXELSIZE
+        ymax = int(storm_data['y'].max()) + 2 * cfg.STORM_PIXELSIZE
+
+    x -= xmax / 2
+    y -= ymax / 2
+
+    xr = x * np.cos(theta) + y * np.sin(theta)
+    yr = y * np.cos(theta) - x * np.sin(theta)
+
+    xr += xmax / 2
+    yr += ymax / 2
+
+    storm_out = np.copy(storm_data)
+    storm_out['x'] = xr
+    storm_out['y'] = yr
+
+    return storm_out

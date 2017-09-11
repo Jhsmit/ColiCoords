@@ -26,6 +26,9 @@ class CellTest(ArrayTestCase):
         self.assertEqual(len(cl), 8)
         self.assertTrue(cl[3] in cl)
 
+        vol = cl.volume
+        self.assertEqual(len(vol), 8)
+        print(vol)
 
 if __name__ == '__main__':
     unittest.main()

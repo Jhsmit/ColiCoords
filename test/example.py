@@ -8,8 +8,11 @@ fl_img = tifffile.imread('test_data/flu1.tif')
 binary_img = tifffile.imread('test_data/binary1.tif')
 
 
-cell = process_cell(rotate='binary', binary_img=binary_img, fl_data={'514': fl_img})
+cell = process_cell(rotate='binary', binary_img=binary_img, flu_data={'514': fl_img})
 #cell.optimize(method='binary')
+
+plt.imshow(cell.data.binary_img)
+plt.show()
 
 
 x, y = np.arange(10)**2, np.arange(10)+20

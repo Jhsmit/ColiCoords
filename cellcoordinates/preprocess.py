@@ -27,17 +27,17 @@ def batch_flu_images(binary_files, flu_files_dict, bf_files=None, pad_width=2, c
             print('Image {}: Too many or no cells'.format(b_name))
             continue
 
-        fl_data = {}
+        flu_data = {}
         for k, v in flu_files_dict.items():
-            fl_data[k] = tifffile.imread(v[i])
+            flu_data[k] = tifffile.imread(v[i])
 
         bf_img = tifffile.imread(bf_files[i]) if bf_files else None
 
-        for cell in cell_generator(binary, fl_data=fl_data, bf_img=bf_img, pad_width=pad_width, rotate=rotate, img_name=b_name):
+        for cell in cell_generator(binary, flu_data=flu_data, bf_img=bf_img, pad_width=pad_width, rotate=rotate, img_name=b_name):
             yield cell
 
 
-def cell_generator(labeled_binary, fl_data=None, bf_img=None, storm_data=None, pad_width=2, rotate=True, img_name='unknown'):
+def cell_generator(labeled_binary, flu_data=None, bf_img=None, storm_data=None, pad_width=2, rotate=True, img_name='unknown'):
     for i in np.unique(labeled_binary)[1:]:
         binary = (labeled_binary == i).astype('int')
         min1, max1, min2, max2 = mh.bbox(binary)
@@ -59,9 +59,9 @@ def cell_generator(labeled_binary, fl_data=None, bf_img=None, storm_data=None, p
         bin_selection = bin_selection.astype(bool)
 
         fl_selection = None
-        if fl_data:
+        if flu_data:
             fl_selection = {}
-            for k, v in fl_data.items():
+            for k, v in flu_data.items():
                 fl_selection[k] = v[min1-pad_width:max1+pad_width, min2-pad_width:max2+pad_width]
 
         bf_selection = bf_img[min1-pad_width:max1+pad_width, min2-pad_width:max2+pad_width] if bf_img is not None else None
@@ -69,13 +69,13 @@ def cell_generator(labeled_binary, fl_data=None, bf_img=None, storm_data=None, p
         if storm_data:
             raise NotImplementedError('STORM data handling not yet implemented')
 
-        cell = process_cell(binary_img=bin_selection, bf_img=bf_selection, fl_data=fl_selection, storm_data=None, rotate=rotate)
+        cell = process_cell(binary_img=bin_selection, bf_img=bf_selection, flu_data=fl_selection, storm_data=None, rotate=rotate)
         yield cell
 
 
-def process_cell(binary_img=None, bf_img=None, fl_data=None, storm_data=None, rotate=True):
+def process_cell(binary_img=None, bf_img=None, flu_data=None, storm_data=None, rotate='binary'):
     #binary etc images are pre-padded
-    d = {'binary': binary_img, 'brightfield': bf_img, 'fluorescence': fl_data, 'storm': storm_data}
+    d = {'binary': binary_img, 'brightfield': bf_img, 'fluorescence': flu_data, 'storm': storm_data}
     data_dict = {k: v for k, v in d.items() if v is not None}
     assert len(data_dict) != 0
     theta = 0
@@ -95,14 +95,14 @@ def process_cell(binary_img=None, bf_img=None, fl_data=None, storm_data=None, ro
                     theta = _calc_orientation(rotate, orient_img)
                 except KeyError:
                     raise ValueError('Invalid rotation data source specified')
-
+    print(theta)
     if binary_img is not None:
         binary_img = scipy_rotate(binary_img.astype('int'), -theta)
 
     # if fl_data:
     fl_dict = {}
-    if type(fl_data) == dict:
-        for k, v in fl_data.items():
+    if type(flu_data) == dict:
+        for k, v in flu_data.items():
             #todo: cval
             if v.ndim == 2:
                 fl_dict[k] = scipy_rotate(v, -theta)

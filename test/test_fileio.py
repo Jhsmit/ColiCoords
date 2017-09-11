@@ -11,7 +11,7 @@ class FileIOTest(ArrayTestCase):
     def setUp(self):
         bin_img = tifffile.imread('test_data/binary1.tif')
         flu_img = tifffile.imread('test_data/flu1.tif')
-        self.cell_obj = process_cell(rotate='binary', binary_img=bin_img, fl_data={'514': flu_img})
+        self.cell_obj = process_cell(rotate='binary', binary_img=bin_img, flu_data={'514': flu_img})
 
         self.cell_obj.optimize(method='binary')
 
