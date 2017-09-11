@@ -4,7 +4,7 @@ import tifffile
 import os
 from xml.etree import cElementTree as etree
 import warnings
-from cell import Cell
+from cellcoordinates.cell import Cell
 
 def save(file_path, cell_obj, imagej=False):
     ext = os.path.splitext(file_path)[1]

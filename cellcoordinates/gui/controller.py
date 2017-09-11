@@ -4,6 +4,7 @@ from ..config import cfg
 from cell_objects import CellObjectWindow
 from ..data import Data
 from ..cell import Cell
+from ..fileIO import save, load
 from PyQt4 import QtCore, QtGui
 import mahotas as mh
 import numpy as np
@@ -221,7 +222,8 @@ class CellObjectController(object):
         optimize_method = self.cow.optimize_method_cbb.currentText()
 
         self._optimize_coords(cell_list, data_src, optimize_method)
-        self._create_output()
+        self._create_output(cell_list)
+        #purrhaps cell_list should be an attribute
 
     def _create_cell_objects(self, input_data, cell_frac, pad_width, rotate):
         cell_list = []
@@ -296,14 +298,28 @@ class CellObjectController(object):
 
         return cell_list
 
+    #staticmethods?
     def _optimize_coords(self, cell_list, dclass=None, method='photons', verbose=True):
         #todo verbose option in GUI
         for c in cell_list:
             c.optimize(dclass=dclass, method=method, verbose=verbose)
 
+    def _create_output(self, cell_list):
+        if self.cow.cell_obj_cb.isChecked():
+            ext = self.cow.cell_obj_cbb.currentText()
+            path = os.path.join(self.output_path, 'cell_objects')
+            if not os.path.exists(path):
+                os.mkdir(path)
+            self._save_cellobjects(cell_list, path, ext)
 
-    def _create_output(self):
+    def _save_cellobjects(self, cell_list, path, ext):
+        for c in cell_list:
+            name = os.path.join(path, c.label + ext)
+            save(name, c)
+
+    def _create_histograms(self):
         pass
+
 
 def _calc_orientation(data_elem):
     if data_elem.dclass in ['Binary', 'Fluorescence']:

@@ -2,9 +2,7 @@ import tifffile
 import matplotlib.pyplot as plt
 import numpy as np
 from cellcoordinates.preprocess import process_cell
-from cellcoordinates.fileIO import save
 from cellcoordinates.plot import CellPlot
-from cellcoordinates.cell import Cell
 
 fl_img = tifffile.imread('test_data/flu1.tif')
 binary_img = tifffile.imread('test_data/binary1.tif')
@@ -22,7 +20,7 @@ xc, yc = cell.coords.transform(xm, ym, src='matrix', tgt='cart')
 print(xc, yc)
 
 p = CellPlot(cell)
-
+print(cell.data.data_dict.keys())
 plt.imshow(cell.data.data_dict['514'])
 p.plot_outline()
 plt.show()

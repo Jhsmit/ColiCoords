@@ -1,6 +1,28 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.patches as mpatches
+import seaborn.timeseries
+from cellcoordinates.config import cfg
+import seaborn as sns
+
+#todo add src
+def _plot_std_bars(*args, central_data=None, ci=None, data=None, **kwargs):
+    std = data.std(axis=0)
+    ci = np.asarray((central_data - std, central_data + std))
+    kwargs.update({"central_data": central_data, "ci": ci, "data": data})
+    seaborn.timeseries._plot_ci_bars(*args, **kwargs)
+
+def _plot_std_band(*args, central_data=None, ci=None, data=None, **kwargs):
+    std = data.std(axis=0)
+    ci = np.asarray((central_data - std, central_data + std))
+    kwargs.update({"central_data": central_data, "ci": ci, "data": data})
+    seaborn.timeseries._plot_ci_band(*args, **kwargs)
+
+seaborn.timeseries._plot_std_bars = _plot_std_bars
+seaborn.timeseries._plot_std_band = _plot_std_band
+
+
+
 
 
 class CellPlot(object):
@@ -81,6 +103,18 @@ class CellPlot(object):
         x_all, y_all = self.c.coords.transform(x_all, y_all, src='cart', tgt=coords)
 
         plt.plot(x_all, y_all, color='r', **kwargs)
+
+    def plot_dist(self, mode='r', src=''):
+        if mode == 'r':
+            x, y = self.c.radial_distribution(cfg.R_DIST_STOP, cfg.R_DIST_STEP, src=src)
+        elif mode == 'l':
+            raise NotImplementedError
+        elif mode == 'a':
+            raise NotImplementedError
+        else:
+            raise ValueError('Distribution mode {} not supported'.format(mode))
+
+        plt.plot(x, y)
 
     def _plot_intercept_line(self, x_pos, coords='cart', **kwargs):
         x = np.linspace(x_pos - 10, x_pos + 10, num=200)

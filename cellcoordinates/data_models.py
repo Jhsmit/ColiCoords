@@ -2,7 +2,7 @@ import mahotas as mh
 import numpy as np
 import math
 from scipy.ndimage.interpolation import rotate as scipy_rotate
-from config import cfg
+from cellcoordinates.config import cfg
 
 
 class BinaryImage(np.ndarray):

@@ -6,8 +6,8 @@ import numpy as np
 from scipy.ndimage.interpolation import rotate as scipy_rotate
 from symfit import Fit
 
-from data import Data
-from optimizers import STORMOptimizer, BinaryOptimizer
+from cellcoordinates.data_models import Data
+from cellcoordinates.optimizers import STORMOptimizer, BinaryOptimizer
 
 
 # todo obj or class? in docstring
@@ -39,7 +39,11 @@ class Cell(object):
         Storm coordinates (x, y) in ImageJ coordinates
     label : str,
         Label identifying the cell object
-                
+
+
+    --> name: name referring original image
+    --> idx: index of the cell in the labelled binary
+    --> label: property returning {}{}.format(name, idx) or sth
     """
 
     def __init__(self, bf_img=None, binary_img=None, flu_data=None, storm_table=None, *args, **kwargs):
@@ -51,7 +55,7 @@ class Cell(object):
             flu_data = data_dict
 
         self.data = Data()
-        self.data.add_datasets(bf_img=bf_img, binary_img=binary_img, fl_data=flu_data, storm_table=storm_table)
+        self.data.add_datasets(bf_img=bf_img, binary_img=binary_img, flu_data=flu_data, storm_table=storm_table)
         self.coords = Coordinates(self.data)
         if 'label' in kwargs:
             print('move labels to global metadata')
@@ -59,13 +63,13 @@ class Cell(object):
 
     def optimize(self, dclass=None, method='photons', verbose=True):
         if not dclass:
-            if self.data.binary_img is not None and self.data.storm_data is None:
+            if self.data.binary_img is not None and self.data.storm_table is None:
                 optimizer = BinaryOptimizer(self)
-            elif not self.data.binary_img and self.data.storm_data:
-                optimizer = STORMOptimizer(self, maximize=maximize)
-            elif self.data.binary_img and self.data.storm_data:
+            elif not self.data.binary_img and self.data.storm_table:
+                optimizer = STORMOptimizer(self, method=method)
+            elif self.data.binary_img and self.data.storm_table:
                 raise ValueError("Please specify optimize method")
-            elif not self.data.binary_img and not self.data.storm_data:
+            elif not self.data.binary_img and not self.data.storm_table:
                 raise ValueError("Please specify optimize method")
 
         elif dclass == 'Binary':
@@ -104,6 +108,14 @@ class Cell(object):
         """float: Volume of the cell in cubic pixels"""
         return np.pi*self.coords.r**2*self.length + (4/3)*np.pi*self.coords.r**3
 
+    @property
+    def label(self):
+        try:
+            return '{}{}'.format(self.name, str(self.label).zfill(2))
+        except AttributeError:
+            return None
+
+
     #todo choose fluorescence channel or storm
     def radial_distribution(self, stop, step, src=''):
         def bin_func(r, flu, bins):
@@ -121,12 +133,12 @@ class Cell(object):
         xvals = bins + 0.5 * step  # xval is the middle of the bin
 
         if not src:
-            data = self.data.fl_dict.values()[0]
+            data = list(self.data.flu_dict.values())[0] #yuck
         elif src == 'storm':
             raise NotImplementedError('Calculating radial distribution of STORM data not yet implemented')
         else:
             try:
-                data = self.data.fl_dict[src]
+                data = self.data.data_dict[src]
             except KeyError:
                 raise ValueError('Chosen data not found')
 
