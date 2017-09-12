@@ -42,6 +42,15 @@ class CellObjectWindow(QtGui.QMainWindow):
         #todo additems
         form2.addRow(QtGui.QLabel('Optimization method'), self.optimize_method_cbb)
 
+        self.refine_optimize_cbb = QtGui.QComboBox()
+        self.refine_optimize_cbb.addItems(['None'] + self.data_names)
+        form2.addRow(QtGui.QLabel('Refine Optimization'), self.refine_optimize_cbb)
+
+        self.refine_optimize_method_cbb = QtGui.QComboBox()
+        self.refine_optimize_method_cbb.addItems(['Binary', 'Localizations', 'Photons'])
+        form2.addRow(QtGui.QLabel('Refine Method'), self.refine_optimize_method_cbb)
+
+
         left_vbox.addLayout(form2)
         left_vbox.addStretch(1)
 

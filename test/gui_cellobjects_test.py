@@ -1,7 +1,7 @@
 from PyQt4 import QtGui
 import sys
 from cellcoordinates.gui.controller import CellObjectController
-from cellcoordinates.data import Data
+from cellcoordinates.data_models import Data
 import tifffile
 import os
 import numpy as np
@@ -29,8 +29,8 @@ for i, f in enumerate(flu_files):
 
 
 data = Data()
-data.add_data(bin_arr, 'binary')
-data.add_data(bf_arr, 'brightfield')
+data.add_data(bin_arr, 'Binary')
+data.add_data(bf_arr, 'Brightfield')
 print(data.brightfield_img.shape)
 #data.add_data()
 
