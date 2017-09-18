@@ -66,7 +66,9 @@ class InputWindow(QtGui.QMainWindow): # todo could use some renaming at some poi
         self.setCentralWidget(w)
 
     def _output_path_btn_clicked(self):
-        self.output_path = str(QtGui.QFileDialog.getExistingDirectory(self, "Select Directory", self.output_path))
+        path = str(QtGui.QFileDialog.getExistingDirectory(self, "Select Directory", self.output_path))
+        if path:
+            self.output_path = path
 
     def _add_button_clicked(self):
         self._add_list_item()
@@ -123,9 +125,10 @@ class DataInputQCustomWidget(QtGui.QWidget):
 
         self.setLayout(form)
 
-
     def path_button_clicked(self):
-        self.path = str(QtGui.QFileDialog.getExistingDirectory(self, "Select Directory", self.path))
+        path = str(QtGui.QFileDialog.getExistingDirectory(self, "Select Directory", self.path))
+        if path:
+            self.path = path
 
 
 class AddDataDialog(QtGui.QDialog):

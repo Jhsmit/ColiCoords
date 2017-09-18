@@ -1,6 +1,10 @@
 from test_functions import generate_testdata
 from cellcoordinates.gui.controller import CellObjectController
 from cellcoordinates.cell import CellList
+from cellcoordinates.plot import CellPlot
+
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 
 data = generate_testdata()
@@ -10,18 +14,19 @@ print(cell_list)
 
 cl = CellList(cell_list)
 
-for c in cl:
-    print(c)
+c = cl[0]
+p = CellPlot(c)
 
-c5 = cl[5]
-print(c5)
-print(len(cl))
+print(c.coords)
+print(c.label)
 
-del cl[5]
 
-print(len(cl))
 
-for c in reversed(cl):
-    print(c)
+length = cl.length
 
-print(cl[3] in cl)
+print(len(length))
+sns.distplot(length)
+sns.plt.show()
+
+plt.hist(length, bins='fd')
+plt.show()

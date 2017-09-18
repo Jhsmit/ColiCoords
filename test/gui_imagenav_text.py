@@ -1,5 +1,5 @@
 from cellcoordinates.gui.controller import ImageSelectController
-from cellcoordinates.data import Data
+from cellcoordinates.data_models import Data
 import sys
 from PyQt4 import QtGui
 import tifffile
@@ -28,8 +28,8 @@ for i, f in enumerate(flu_files):
 
 
 data = Data()
-data.add_data(bin_arr, 'binary')
-data.add_data(bf_arr, 'brightfield')
+data.add_data(bin_arr, 'Binary')
+data.add_data(bf_arr, 'Brightfield')
 print(data.brightfield_img.shape)
 #data.add_data()
 
@@ -37,7 +37,7 @@ app = QtGui.QApplication(sys.argv)
 
 
 
-ctrl = ImageSelectController(data, len(bin_files))
+ctrl = ImageSelectController(data, '')
 
 
 

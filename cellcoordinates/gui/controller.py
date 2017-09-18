@@ -12,6 +12,7 @@ import numpy as np
 import os
 import tifffile
 import math
+import seaborn as sns
 from scipy.ndimage.interpolation import rotate as scipy_rotate
 
 import matplotlib.pyplot as plt
@@ -102,7 +103,7 @@ class ImageSelectController(object):
         # data: Data object, image data should be 3d; z, row, column
         super(ImageSelectController, self).__init__()
         self.data = data
-        self.length = len(self.data.data_dict.values()[0])
+        self.length = len(self.data)
         self.output_path = output_path
         self.exclude_bools = np.zeros(self.length).astype(bool)
         self.nw = NavigationWindow()
@@ -125,6 +126,7 @@ class ImageSelectController(object):
 
         self.nw.closed.connect(self._nw_closed)
 
+    def show(self):
         for iw in self.iws:
             iw.show()
         self.nw.show()
@@ -134,7 +136,7 @@ class ImageSelectController(object):
             iw.close()
 
     def _done(self):
-        for name, data in self.data_dict.items():
+        for name, data in self.data.data_dict.items():
             name = str(name) #Otherwise QString
             export_data = data[~self.exclude_bools]
 
@@ -219,16 +221,22 @@ class CellObjectController(object):
         cell_frac = float(self.cow.max_fraction_le.text())
         pad_width = int(self.cow.pad_width_le.text())
         rotate = self.cow.rotate_cbb.currentText()
-        cell_list = self._create_cell_objects(self.input_data, cell_frac, pad_width, rotate)
+        self.cell_list = self._create_cell_objects(self.input_data, cell_frac, pad_width, rotate)
 
         data_src = self.cow.optimize_datasrc_cbb.currentText()
         optimize_method = self.cow.optimize_method_cbb.currentText()
 
-        self._optimize_coords(cell_list, data_src, optimize_method)
-        self._create_output(cell_list)
-        #purrhaps cell_list should be an attribute
+        self._optimize_coords(data_src, optimize_method)
+
+
+        self._save_cellobjects()
+
+
+        self._create_histograms()
+
 
     def _create_cell_objects(self, input_data, cell_frac, pad_width, rotate):
+        #todo move this function to preprocess and import
         cell_list = []
         for i, data in enumerate(input_data):
             assert 'Binary' in data.dclasses
@@ -277,34 +285,37 @@ class CellObjectController(object):
         return cell_list
 
     #staticmethods?
-    def _optimize_coords(self, cell_list, dclass=None, method='photons', verbose=True):
+    def _optimize_coords(self, dclass=None, method='photons', verbose=True):
         #todo verbose option in GUI
-        for c in cell_list:
+        for c in self.cell_list:
             c.optimize(dclass=dclass, method=method, verbose=verbose)
 
-    def _create_output(self, cell_list):
+    def _save_cellobjects(self):
         if self.cow.cell_obj_cb.isChecked():
             ext = self.cow.cell_obj_cbb.currentText()
             path = os.path.join(self.output_path, 'cell_objects')
             if not os.path.exists(path):
                 os.mkdir(path)
-            self._save_cellobjects(cell_list, path, ext)
-
-    def _save_cellobjects(self, cell_list, path, ext):
-        for c in cell_list:
-            name = os.path.join(path, c.label + ext)
-            save(name, c)
+            for c in self.cell_list:
+                name = os.path.join(path, c.label + ext)
+                save(name, c)
 
     def _create_histograms(self):
+        assert hasattr(self, 'cell_list')
         #Histograms of different properties of the cells via its coordinate system
         labels = ['Radius', 'Length', 'Area', 'Volume']
+        units = [r' ($\um$)', r' ($\um$)', r' ($\um^{2}$)', r' ($\um^{3} / fL)']
         cell_prop = [cb.isChecked() for cb in self.cow.cell_prop_cbs]
         cell_prop_ascii = [cb.isChecked() for cb in self.cow.cell_prop_ascii_cbs]
 
-        for l, c, a in zip(labels, cell_prop, cell_prop_ascii):
-            #todo perhaps at some point make object out of cell list (which will be useful for postprocessing as well)
-            values = 1
-
+        for l, u, bool_c, bool_a in zip(labels, units, cell_prop, cell_prop_ascii):
+            values = getattr(self.cell_list, l)
+            if bool_c:
+                plt.figure()
+                ax = sns.distplot(values, kde=False)
+                ax.settitle('Cell ' + l)
+                ax.ylabel('Cell count')
+                ax.xlable(l + u)
 
 
 def _calc_orientation(data_elem):

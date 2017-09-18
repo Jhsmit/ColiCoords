@@ -263,14 +263,12 @@ class Data(object):
             return data
 
     def __getitem__(self, key):
-        print(key)
         data = Data()
         for v in self.data_dict.values():
             if v.dclass == 'STORMTable':
                 raise NotImplementedError()
             elif v.dclass == 'STORMImage':
                 continue
-            print(v.dclass)
             data.add_data(v[key], v.dclass, name=v.name, metadata=v.metadata)
         return data
 

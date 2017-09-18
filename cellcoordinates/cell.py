@@ -95,7 +95,7 @@ class Cell(object):
     def length(self):
         """float: Length of the cell obtained by integration of the spine arc length from xl to xr"""
         a0, a1, a2 = self.coords.coeff
-        xr, xl = self.coords.xl, self.coords.xr
+        xl, xr = self.coords.xl, self.coords.xr
         l = (1 / (4 * a2)) * (
             ((a1 + 2 * a2 * xr) * np.sqrt(1 + (a1 + 2 * a2 * xr) ** 2) + np.arcsinh((a1 + 2 * a2 * xr))) -
             ((a1 + 2 * a2 * xl) * np.sqrt(1 + (a1 + 2 * a2 * xl) ** 2) + np.arcsinh((a1 + 2 * a2 * xl)))
@@ -364,7 +364,6 @@ class Coordinates(object):
             l = (area - np.pi*r**2) / (2*r)
             y_cen, x_cen = mh.center_of_mass(data.binary_img)
             xl, xr = x_cen - l/2, x_cen + l/2
-
             coeff = np.array([y_cen, 0.01, 0.0001])
 
         elif data.storm_data:
@@ -374,6 +373,11 @@ class Coordinates(object):
 
 
 class CellList(object):
+
+    def append(self, cell_obj):
+        assert isinstance(cell_obj, Cell)
+        self.cell_list.append(cell_obj)
+
     def __init__(self, cell_list):
         self.cell_list = cell_list
 
