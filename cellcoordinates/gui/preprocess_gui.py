@@ -7,6 +7,7 @@ pg.setConfigOptions(imageAxisOrder='row-major')
 
 #todo allow input of img stack as input data as well
 
+
 #https://blog.manash.me/quick-qt-3-how-to-dynamically-create-qlistwidgetitem-and-add-it-onto-qlistwidget-4bca5bacaa01
 class InputWindow(QtGui.QMainWindow): # todo could use some renaming at some point
     output_path = ''

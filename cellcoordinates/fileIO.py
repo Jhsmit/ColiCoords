@@ -21,7 +21,8 @@ def save(file_path, cell_obj, imagej=False):
             attr_grp.attrs.create('coeff', cell_obj.coords.coeff)
 
             #todo python 3 compatiblity: https://github.com/h5py/h5py/issues/441
-            attr_grp.attrs.create('label', cell_obj.name.encode())
+            if cell_obj.label:
+                attr_grp.attrs.create('label', cell_obj.label.encode())
 
             data_grp = f.create_group('data')
             for k, v in cell_obj.data.data_dict.items():
@@ -55,7 +56,7 @@ def load(file_path):
             attr_dict = dict(attr_grp.attrs.items())
             for a in ['r', 'xl', 'xr', 'coeff']:
                 setattr(c.coords, a, attr_dict.get(a))
-            c.name = attr_dict.get('name')
+            c.name = attr_dict.get('label')
 
         return c
 

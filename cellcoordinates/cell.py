@@ -92,6 +92,10 @@ class Cell(object):
         optimizer.optimize_overall(verbose=verbose)
 
     @property
+    def radius(self):
+        return self.coords.r
+
+    @property
     def length(self):
         """float: Length of the cell obtained by integration of the spine arc length from xl to xr"""
         a0, a1, a2 = self.coords.coeff
@@ -378,8 +382,8 @@ class CellList(object):
         assert isinstance(cell_obj, Cell)
         self.cell_list.append(cell_obj)
 
-    def __init__(self, cell_list):
-        self.cell_list = cell_list
+    def __init__(self, cell_list=None):
+        self.cell_list = cell_list if cell_list else []
 
     def __len__(self):
         return self.cell_list.__len__()
@@ -403,6 +407,10 @@ class CellList(object):
         return self.cell_list.__contains__(item)
 
     @property
+    def radius(self):
+        return np.array([c.radius for c in self])
+
+    @property
     def length(self):
         return np.array([c.length for c in self])
 
@@ -413,3 +421,7 @@ class CellList(object):
     @property
     def volume(self):
         return np.array([c.volume for c in self])
+
+    @property
+    def label(self):
+        return np.array([c.label for c in self])

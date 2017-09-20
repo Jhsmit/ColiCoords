@@ -32,14 +32,13 @@ data = Data()
 data.add_data(bin_arr, 'Binary')
 data.add_data(bf_arr, 'Brightfield')
 print(data.brightfield_img.shape)
-#data.add_data()
 
+data_s = data[:2, :, :]
+print(data_s.shape)
 
 app = QtGui.QApplication(sys.argv)
 
-
-
-ctrl = CellObjectController(data, '')
+ctrl = CellObjectController(data_s, 'test_data/output')
 ctrl.show()
 
 sys.exit(app.exec_())

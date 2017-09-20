@@ -50,9 +50,12 @@ class CellObjectWindow(QtGui.QMainWindow):
         self.refine_optimize_method_cbb.addItems(['Binary', 'Localizations', 'Photons'])
         form2.addRow(QtGui.QLabel('Refine Method'), self.refine_optimize_method_cbb)
 
-
         left_vbox.addLayout(form2)
         left_vbox.addStretch(1)
+
+        self.done_button = QtGui.QPushButton('Done!')
+        left_vbox.addWidget(self.done_button)
+
 
         #MIDDLE BOX#
         middle_vbox = QtGui.QVBoxLayout()

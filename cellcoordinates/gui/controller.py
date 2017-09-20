@@ -4,7 +4,7 @@ from cellcoordinates.gui.preprocess_gui import InputWindow
 from ..config import cfg
 from cellcoordinates.gui.cell_objects import CellObjectWindow
 from ..data_models import Data
-from ..cell import Cell
+from ..cell import Cell, CellList
 from ..fileIO import save, load
 from PyQt4 import QtCore, QtGui
 import mahotas as mh
@@ -13,6 +13,7 @@ import os
 import tifffile
 import math
 import seaborn as sns
+import os
 from scipy.ndimage.interpolation import rotate as scipy_rotate
 
 import matplotlib.pyplot as plt
@@ -214,6 +215,8 @@ class CellObjectController(object):
         else:
             self.cow = None
 
+        self.cow.done_button.clicked.connect(self._done)
+
     def show(self):
         self.cow.show()
 
@@ -230,14 +233,13 @@ class CellObjectController(object):
 
 
         self._save_cellobjects()
-
-
         self._create_histograms()
+       # self._save_metadata()
 
 
     def _create_cell_objects(self, input_data, cell_frac, pad_width, rotate):
         #todo move this function to preprocess and import
-        cell_list = []
+        cell_list = CellList()
         for i, data in enumerate(input_data):
             assert 'Binary' in data.dclasses
 
@@ -296,26 +298,59 @@ class CellObjectController(object):
             path = os.path.join(self.output_path, 'cell_objects')
             if not os.path.exists(path):
                 os.mkdir(path)
-            for c in self.cell_list:
-                name = os.path.join(path, c.label + ext)
-                save(name, c)
+            for i, c in enumerate(self.cell_list):
+                name = 'No_label_' + str(i).zfill(3) if not c.label else c.label
+                name += ext
+                fullpath = os.path.join(path, name)
+
+                save(fullpath, c)
 
     def _create_histograms(self):
         assert hasattr(self, 'cell_list')
         #Histograms of different properties of the cells via its coordinate system
-        labels = ['Radius', 'Length', 'Area', 'Volume']
-        units = [r' ($\um$)', r' ($\um$)', r' ($\um^{2}$)', r' ($\um^{3} / fL)']
-        cell_prop = [cb.isChecked() for cb in self.cow.cell_prop_cbs]
-        cell_prop_ascii = [cb.isChecked() for cb in self.cow.cell_prop_ascii_cbs]
+        labels = np.array(['Radius', 'Length', 'Area', 'Volume'])
+        units = np.array([r' ($\mu m$)', r' ($\mu m$)', r' ($\mu m^{2}$)', r' ($\mu m^{3}$ / fL)'])
+        f_um = cfg.IMG_PIXELSIZE / 1000
+        conv_f = np.array([f_um, f_um, f_um**2, f_um**3])
+        cell_prop = np.array([cb.isChecked() for cb in self.cow.cell_prop_cbs])
+        cell_prop_ascii = np.array([cb.isChecked() for cb in self.cow.cell_prop_ascii_cbs])
 
-        for l, u, bool_c, bool_a in zip(labels, units, cell_prop, cell_prop_ascii):
-            values = getattr(self.cell_list, l)
+        if np.any(cell_prop):
+            figure_out_path = os.path.join(self.output_path, 'figures')
+            if not os.path.exists(figure_out_path):
+                os.mkdir(figure_out_path)
+
+        ascii_data = [self.cell_list.label]
+        for l, u, f, bool_c, bool_a in zip(labels, units, conv_f, cell_prop, cell_prop_ascii):
+            values = getattr(self.cell_list, l.lower())
             if bool_c:
                 plt.figure()
-                ax = sns.distplot(values, kde=False)
-                ax.settitle('Cell ' + l)
-                ax.ylabel('Cell count')
-                ax.xlable(l + u)
+                ax = sns.distplot(values * f, kde=False)
+                ax.set_title('Cell ' + l)
+                ax.set_ylabel('Cell count')
+                ax.set_xlabel(l + u)
+                plt.savefig(os.path.join(figure_out_path, l + '_dist.png'))
+            if bool_a:
+                ascii_data.append(values * f)
+
+        if np.any(cell_prop_ascii):
+            ascii_out_path = os.path.join(self.output_path, 'ascii')
+            if not os.path.exists(ascii_out_path):
+                os.mkdir(ascii_out_path)
+
+            n_cols = np.sum(cell_prop_ascii)
+            names = ['Cell label'] + list(labels[cell_prop_ascii]) #todo make this crap into a function for smitsuite
+            widths = [12] + n_cols * [5]
+            types = ['S12'] + n_cols * [float]
+            fmt = '%5s' + n_cols * ' %5.2f'
+
+            export_data = np.zeros(len(self.cell_list), dtype=[(n, t) for n, t in zip(names, types)])
+            for data, name in zip(ascii_data, names):
+                export_data[name] = data
+
+            header = ' '.join([n.rjust(w, ' ') for n, w in zip(names, widths)])
+            fullpath = os.path.join(ascii_out_path, 'cell_properties.txt')
+            np.savetxt(fullpath, export_data, header=header, fmt=fmt)
 
 
 def _calc_orientation(data_elem):
