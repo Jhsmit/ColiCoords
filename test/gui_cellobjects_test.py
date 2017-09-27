@@ -31,6 +31,7 @@ for i, f in enumerate(flu_files):
 data = Data()
 data.add_data(bin_arr, 'Binary')
 data.add_data(bf_arr, 'Brightfield')
+data.add_data(flu_arr, 'Fluorescence')
 print(data.brightfield_img.shape)
 
 data_s = data[:2, :, :]

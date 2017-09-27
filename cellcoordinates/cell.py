@@ -153,7 +153,7 @@ class Cell(object):
 
         if data.ndim == 2:
             yvals = bin_func(self.coords.rc, data, bins)
-        elif data.ndim == 3:
+        elif data.ndim == 3: #todo check is this still works
             yvals = np.vstack([bin_func(self.coords.rc, d, bins) for d in data])
         else:
             raise ValueError('Invalid fluorescence image dimensions')
@@ -378,6 +378,11 @@ class Coordinates(object):
 
 class CellList(object):
 
+    def optimize(self, dclass=None, method='photons', verbose=True):
+        #todo threaded and shit
+        for c in self:
+            c.optimize(dclass=dclass, method=method, verbose=verbose)
+
     def append(self, cell_obj):
         assert isinstance(cell_obj, Cell)
         self.cell_list.append(cell_obj)
@@ -405,6 +410,15 @@ class CellList(object):
 
     def __contains__(self, item):
         return self.cell_list.__contains__(item)
+
+    def radial_distribution(self, stop, step, src=''):
+        numpoints = len(np.arange(0, stop+step, step))
+        out_arr = np.zeros((len(self), numpoints))
+        for i, c in enumerate(self):
+            x, y = c.radial_distribution(stop, step, src=src)
+            out_arr[i] = y
+
+        return x, out_arr
 
     @property
     def radius(self):

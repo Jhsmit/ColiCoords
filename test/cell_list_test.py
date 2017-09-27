@@ -1,7 +1,7 @@
 from test_functions import generate_testdata
 from cellcoordinates.gui.controller import CellObjectController
 from cellcoordinates.cell import CellList
-from cellcoordinates.plot import CellPlot
+from cellcoordinates.plot import CellPlot, CellListPlot
 
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -12,21 +12,36 @@ ctrl = CellObjectController(data, '')
 cell_list = ctrl._create_cell_objects(data, 0.5, 2, 'Binary')
 print(cell_list)
 
-cl = CellList(cell_list)
+cl = CellList(cell_list[:10])
+cl.optimize()
 
 c = cl[0]
 p = CellPlot(c)
 
-print(c.coords)
-print(c.label)
+
+clp = CellListPlot(cl)
+plt.figure()
+p.plot_outline(coords='mpl')
+plt.imshow(c.data.binary_img)
+plt.show()
 
 
 
-length = cl.length
+# clp.hist_property('length')
+# plt.show()
+#
+# plt.figure()
+# clp.hist_property('radius')
+# plt.show()
+#
+# plt.figure()
+# clp.hist_property('area')
+# plt.show()
+#
+# plt.figure()
+# clp.hist_property('volume')
+# plt.show()
 
-print(len(length))
-sns.distplot(length)
-sns.plt.show()
-
-plt.hist(length, bins='fd')
+plt.figure()
+clp.plot_dist(mode='r', src='Fluorescence')
 plt.show()

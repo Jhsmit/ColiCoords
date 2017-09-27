@@ -5,6 +5,7 @@ from ..config import cfg
 from cellcoordinates.gui.cell_objects import CellObjectWindow
 from ..data_models import Data
 from ..cell import Cell, CellList
+from ..plot import CellPlot, CellListPlot
 from ..fileIO import save, load
 from PyQt4 import QtCore, QtGui
 import mahotas as mh
@@ -212,10 +213,9 @@ class CellObjectController(object):
 
         if QtGui.QApplication.instance() is not None:
             self.cow = CellObjectWindow(data)
+            self.cow.done_button.clicked.connect(self._done)
         else:
             self.cow = None
-
-        self.cow.done_button.clicked.connect(self._done)
 
     def show(self):
         self.cow.show()
@@ -225,15 +225,16 @@ class CellObjectController(object):
         pad_width = int(self.cow.pad_width_le.text())
         rotate = self.cow.rotate_cbb.currentText()
         self.cell_list = self._create_cell_objects(self.input_data, cell_frac, pad_width, rotate)
+        self.cell_list_plot = CellListPlot(self.cell_list)
 
         data_src = self.cow.optimize_datasrc_cbb.currentText()
         optimize_method = self.cow.optimize_method_cbb.currentText()
 
         self._optimize_coords(data_src, optimize_method)
 
-
         self._save_cellobjects()
-        self._create_histograms()
+        self._save_histograms()
+        self._save_distributions()
        # self._save_metadata()
 
 
@@ -305,7 +306,7 @@ class CellObjectController(object):
 
                 save(fullpath, c)
 
-    def _create_histograms(self):
+    def _save_histograms(self):
         assert hasattr(self, 'cell_list')
         #Histograms of different properties of the cells via its coordinate system
         labels = np.array(['Radius', 'Length', 'Area', 'Volume'])
@@ -348,9 +349,37 @@ class CellObjectController(object):
             for data, name in zip(ascii_data, names):
                 export_data[name] = data
 
+            #todo fix column alignment
             header = ' '.join([n.rjust(w, ' ') for n, w in zip(names, widths)])
             fullpath = os.path.join(ascii_out_path, 'cell_properties.txt')
             np.savetxt(fullpath, export_data, header=header, fmt=fmt)
+
+    def _save_distributions(self):
+        for i in range(self.cow.dist_list.count()):
+            item = self.cow.dist_list.item(i)
+            w = self.cow.dist_list.itemWidget(item)
+
+            data_src = w.data_src_cbb.currentText()
+            if not np.any(w.cbs):
+                continue
+            if not os.path.exists(os.path.join(self.output_path, 'distributions')):
+                os.mkdir(os.path.join(self.output_path, 'distributions'))
+            if not os.path.exists(os.path.join(self.output_path, 'distributions', data_src)):
+                os.mkdir(os.path.join(self.output_path, 'distributions', data_src))
+
+            dists = ['r', 'l', 'alpha']
+            for dist, cbs in dists, w.cbs:
+                if np.any(cbs):
+
+                    if dist == 'r':
+                        x, out_arr = self.cell_list.radial_distribution(cfg.R_DIST_STOP, cfg.R_DIST_STEP, src=data_src)
+
+
+                    #plotting and writing to disk
+                    if cbs[0]:
+                        pass
+
+
 
 
 def _calc_orientation(data_elem):

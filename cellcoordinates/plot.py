@@ -5,7 +5,7 @@ import seaborn.timeseries
 from cellcoordinates.config import cfg
 import seaborn as sns
 
-#todo add src
+#todo add src, python 2
 def _plot_std_bars(*args, central_data=None, ci=None, data=None, **kwargs):
     std = data.std(axis=0)
     ci = np.asarray((central_data - std, central_data + std))
@@ -21,6 +21,67 @@ def _plot_std_band(*args, central_data=None, ci=None, data=None, **kwargs):
 seaborn.timeseries._plot_std_bars = _plot_std_bars
 seaborn.timeseries._plot_std_band = _plot_std_band
 
+
+class CellListPlot(object):
+    def __init__(self, cell_list):
+        self.cell_list = cell_list
+
+    def hist_property(self, tgt='length'):
+        if tgt == 'length':
+            values = np.array([c.length for c in self.cell_list]) * (cfg.IMG_PIXELSIZE / 1000)
+            title = 'Cell length'
+            xlabel = r'Length ($\mu m$)'
+        elif tgt == 'radius':
+            values = np.array([c.radius for c in self.cell_list]) * (cfg.IMG_PIXELSIZE / 1000)
+            title = 'Cell radius'
+            xlabel = r'Radius ($\mu m$)'
+        elif tgt == 'area':
+            values = np.array([c.area for c in self.cell_list]) * (cfg.IMG_PIXELSIZE / 1000)**2
+            title = 'Cell area'
+            xlabel = r'Area ($\mu m^{2}$)'
+            #todo check these numbers!!!
+        elif tgt == 'volume':
+            values = np.array([c.volume for c in self.cell_list]) * (cfg.IMG_PIXELSIZE / 1000) ** 3
+            title = 'Cell volume'
+            xlabel = r'Volume ($\mu m^{3}$ / fL)'
+        else:
+            raise ValueError('Invalid target')
+        ax = sns.distplot(values, kde=False)
+        ax.set_title(title)
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel('Cell count')
+
+    def plot_dist(self, mode='r', src='', std='std_band', norm_y=False, norm_x=False, **kwargs):
+        """
+
+        :param mode: r, l, or a for radial, longitinudial or angular
+        :param src: which data source to use
+        :param std: band or bar style std error bars
+        :param norm_y: normalize distribution wrt y
+        :param norm_x normalie distribution wrt r, l, (not alpha)
+        :param kwargs: are passed to plot
+        :return:
+        """
+
+        if mode == 'r':
+            x, out_arr = self.cell_list.radial_distribution(cfg.R_DIST_STOP, cfg.R_DIST_STEP, src=src)
+        elif mode == 'l':
+            raise NotImplementedError()
+        elif mode == 'a':
+            raise NotImplementedError()
+
+        if norm_y:
+            a_max = np.max(out_arr, axis=1)
+            out_arr = out_arr / a_max[:, np.newaxis]
+
+        if norm_x:
+            raise NotImplementedError
+
+        t = x * (cfg.IMG_PIXELSIZE / 1000)
+        sns.tsplot(data=out_arr, time=t, estimator=np.mean, err_style=std, **kwargs)
+        plt.xlabel('Distance ($\mu m$)')
+        plt.ylabel('Signal intensity')
+        plt.tight_layout()
 
 
 

@@ -148,20 +148,22 @@ class DistributionOutputQCustomWidget(QtGui.QWidget):
 
         dists = ['r', 'l', 'alpha']
         dist_names = ['Radial distribution', 'Longitinudududial distribution', 'Angular distribution']
+        self.cbs = [] # list of lists of checkboxes, will have length len(dists)
         for d, n in zip(dists, dist_names):
             gb = QtGui.QGroupBox(n)
             f = QtGui.QFormLayout()
             cb = QtGui.QCheckBox('Normal')
-            setattr(self, d + '_normal_cb', cb)
+            #setattr(self, d + '_normal_cb', cb)
             cb_ascii = QtGui.QCheckBox('ASCII')
-            setattr(self, d + '_normal_ascii_cb', cb_ascii)
+            #setattr(self, d + '_normal_ascii_cb', cb_ascii)
             f.addRow(cb, cb_ascii)
 
             cb_norm = QtGui.QCheckBox('Normalized')
-            setattr(self, d + '_normalized_cb', cb_norm)
+            #setattr(self, d + '_normalized_cb', cb_norm)
             cb_norm_ascii = QtGui.QCheckBox('ASCII')
-            setattr(self, d + 'normalized_ascii_cb', cb_norm_ascii)
+            #setattr(self, d + 'normalized_ascii_cb', cb_norm_ascii)
             f.addRow(cb_norm, cb_norm_ascii)
+            self.cbs.append([cb, cb_ascii, cb_norm, cb_norm_ascii])
 
             gb.setLayout(f)
             vbox.addWidget(gb)
