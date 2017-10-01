@@ -36,7 +36,6 @@ print(data.brightfield_img.shape)
 
 data_s = data[:2, :, :]
 print(data_s.shape)
-
 app = QtGui.QApplication(sys.argv)
 
 ctrl = CellObjectController(data_s, 'test_data/output')

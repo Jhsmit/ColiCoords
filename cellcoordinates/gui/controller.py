@@ -224,19 +224,23 @@ class CellObjectController(object):
         cell_frac = float(self.cow.max_fraction_le.text())
         pad_width = int(self.cow.pad_width_le.text())
         rotate = self.cow.rotate_cbb.currentText()
+
+        print('Creating cell objects...')
         self.cell_list = self._create_cell_objects(self.input_data, cell_frac, pad_width, rotate)
+        print('Found {} cells'.format(len(self.cell_list)))
         self.cell_list_plot = CellListPlot(self.cell_list)
+
 
         data_src = self.cow.optimize_datasrc_cbb.currentText()
         optimize_method = self.cow.optimize_method_cbb.currentText()
 
+        print('Optimizing coordinate system')
         self._optimize_coords(data_src, optimize_method)
 
         self._save_cellobjects()
         self._save_histograms()
         self._save_distributions()
        # self._save_metadata()
-
 
     def _create_cell_objects(self, input_data, cell_frac, pad_width, rotate):
         #todo move this function to preprocess and import
@@ -288,10 +292,12 @@ class CellObjectController(object):
         return cell_list
 
     #staticmethods?
-    def _optimize_coords(self, dclass=None, method='photons', verbose=True):
+    def _optimize_coords(self, dclass=None, method='photons', verbose=False):
         #todo verbose option in GUI
-        for c in self.cell_list:
-            c.optimize(dclass=dclass, method=method, verbose=verbose)
+        # for c in self.cell_list:
+        #     c.optimize(dclass=dclass, method=method, verbose=verbose)
+        #
+        self.cell_list.optimize(dclass=dclass, method=method, verbose=False)
 
     def _save_cellobjects(self):
         if self.cow.cell_obj_cb.isChecked():
@@ -364,20 +370,39 @@ class CellObjectController(object):
                 continue
             if not os.path.exists(os.path.join(self.output_path, 'distributions')):
                 os.mkdir(os.path.join(self.output_path, 'distributions'))
-            if not os.path.exists(os.path.join(self.output_path, 'distributions', data_src)):
-                os.mkdir(os.path.join(self.output_path, 'distributions', data_src))
+            out_dir = os.path.join(self.output_path, 'distributions', data_src)
+            if not os.path.exists(out_dir):
+                os.mkdir(out_dir)
 
-            dists = ['r', 'l', 'alpha']
-            for dist, cbs in dists, w.cbs:
-                if np.any(cbs):
-
+            dists = ['r', 'l', 'a']  #todo alpha or a?
+            for dist, cbs in zip(dists, w.cbs):
+                cbs_bool = [c.isChecked() for c in cbs]
+                if np.any(cbs_bool):
                     if dist == 'r':
                         x, out_arr = self.cell_list.radial_distribution(cfg.R_DIST_STOP, cfg.R_DIST_STEP, src=data_src)
 
+                    elif dist == 'a':
+                        pass
 
                     #plotting and writing to disk
-                    if cbs[0]:
-                        pass
+                    if cbs_bool[0]:              # Normal
+                        plt.figure()
+                        self.cell_list_plot.plot_dist(mode=dist, src=data_src)
+                        plt.savefig(os.path.join(out_dir, dist + '_dist.png'))
+
+                    if cbs_bool[1]:             # Normal ASCII
+                        #todo export as recarray and formatted with cell name information
+                        np.savetxt(os.path.join(out_dir, dist + '_dist.txt'), out_arr)
+
+                    if cbs_bool[2]:             # Normalized
+                        plt.figure()
+                        self.cell_list_plot.plot_dist(mode=dist, src=data_src, norm_y=True)
+                        plt.savefig(os.path.join(out_dir, dist + '_dist_norm.png'))
+
+                    if cbs_bool[3]:             # Normalized ASCII
+                        max_arr = np.max(out_arr, axis=1)
+                        norm_arr = out_arr / max_arr[:, np.newaxis]
+                        np.savetxt(os.path.join(out_dir, dist + '_dist_norm.txt'), norm_arr)
 
 
 

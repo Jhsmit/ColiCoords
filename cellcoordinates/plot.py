@@ -65,6 +65,8 @@ class CellListPlot(object):
 
         if mode == 'r':
             x, out_arr = self.cell_list.radial_distribution(cfg.R_DIST_STOP, cfg.R_DIST_STEP, src=src)
+            out_arr = np.nan_to_num(out_arr)
+            title = 'Radial Distribution'
         elif mode == 'l':
             raise NotImplementedError()
         elif mode == 'a':
@@ -81,8 +83,8 @@ class CellListPlot(object):
         sns.tsplot(data=out_arr, time=t, estimator=np.mean, err_style=std, **kwargs)
         plt.xlabel('Distance ($\mu m$)')
         plt.ylabel('Signal intensity')
+        plt.title(title)
         plt.tight_layout()
-
 
 
 

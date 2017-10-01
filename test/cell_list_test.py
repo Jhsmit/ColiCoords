@@ -20,10 +20,10 @@ p = CellPlot(c)
 
 
 clp = CellListPlot(cl)
-plt.figure()
-p.plot_outline(coords='mpl')
-plt.imshow(c.data.binary_img)
-plt.show()
+# plt.figure()
+# p.plot_outline(coords='mpl')
+# plt.imshow(c.data.binary_img)
+# plt.show()
 
 
 
@@ -43,5 +43,5 @@ plt.show()
 # plt.show()
 
 plt.figure()
-clp.plot_dist(mode='r', src='Fluorescence')
+clp.plot_dist(mode='r', src='Fluorescence', norm_y=False)
 plt.show()

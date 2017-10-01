@@ -166,7 +166,7 @@ class BinaryOptimizer(OptimizerBase):
         self.cell_obj.coords.coeff = min.x
         return min.x, min.fun
 
-    def optimize_overall(self, method='Powell', verbose=True):
+    def optimize_overall(self, method='Powell', verbose=False):
         def minimize_func_overall(par, cell_obj):
               # todo check len
             cell_obj.coords.r, cell_obj.coords.xl, cell_obj.coords.xr = par[:3]

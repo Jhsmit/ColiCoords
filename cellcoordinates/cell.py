@@ -66,7 +66,7 @@ class Cell(object):
             print('move labels to global metadata')
             pass
 
-    def optimize(self, dclass=None, method='photons', verbose=True):
+    def optimize(self, dclass=None, method='photons', verbose=False):
         if not dclass:
             if self.data.binary_img is not None and self.data.storm_table is None:
                 optimizer = BinaryOptimizer(self)
@@ -124,7 +124,6 @@ class Cell(object):
         except AttributeError:
             return None
 
-
     #todo choose fluorescence channel or storm
     def radial_distribution(self, stop, step, src=''):
         def bin_func(r, flu, bins):
@@ -136,7 +135,7 @@ class Cell(object):
             bin_inds = np.digitize(r_sorted,
                                    bins) - 1  # -1 to assure points between 0 and step are in bin 0 (the first)
             yvals = np.bincount(bin_inds, weights=flu_sorted, minlength=len(bins)) / np.bincount(bin_inds, minlength=len(bins))
-            return yvals
+            return np.nan_to_num(yvals)
 
         bins = np.arange(0, stop+step, step)
         xvals = bins + 0.5 * step  # xval is the middle of the bin
@@ -378,7 +377,8 @@ class Coordinates(object):
 
 class CellList(object):
 
-    def optimize(self, dclass=None, method='photons', verbose=True):
+
+    def optimize(self, dclass=None, method='photons', verbose=True):  #todo refactor dclass to data_src or data_name
         #todo threaded and shit
         for c in self:
             c.optimize(dclass=dclass, method=method, verbose=verbose)
@@ -439,3 +439,7 @@ class CellList(object):
     @property
     def label(self):
         return np.array([c.label for c in self])
+
+    @property
+    def name(self):
+        return np.array([c.name for c in self])
