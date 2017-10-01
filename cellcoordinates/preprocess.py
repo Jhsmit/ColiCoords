@@ -4,15 +4,67 @@ import math
 import tifffile
 import os
 
+import warnings
 from scipy.ndimage.interpolation import rotate as scipy_rotate
-from cellcoordinates.cell import Cell
+from cellcoordinates.cell import Cell, CellList
 from cellcoordinates.config import cfg
 
 #temp
 import matplotlib.pyplot as plt
 
 
+def data_to_cells(input_data, pad_width=3, cell_frac=0.5, rotate='Binary'):
+    cell_list = CellList()
+    for i, data in enumerate(input_data):
+        assert 'Binary' in data.dclasses
+
+        #todo fix labeled binary in binary image!!!oneoneone
+        binary = data.binary_img
+        if (binary > 0).mean() > cell_frac or binary.mean() == 0.:
+            print('Image {} {}: Too many or no cells').format(binary.name, i)
+            continue
+
+        # Iterate over all cells in the image
+        for l in np.unique(binary)[1:]:
+            selected_binary = (binary == l).astype('int')
+            min1, max1, min2, max2 = mh.bbox(selected_binary)
+            min1p, max1p, min2p, max2p = min1 - pad_width, max1 + pad_width, min2 - pad_width, max2 + pad_width
+
+            try:
+                assert min1p > 0 and min2p > 0 and max1p < data.shape[0] and max2p < data.shape[1]
+            except AssertionError:
+                print('Cell {} on image {} {}: on the edge of the image'.format(l, binary.name, i))
+                continue
+            try:
+                assert len(np.unique(binary[min1p:max1p, min2p:max2p])) == 2
+            except AssertionError:
+                print('Cell {} on image {} {}: multiple cells per selection'.format(l, output_data.binary_img.name, i))
+                continue
+
+            output_data = data[min1p:max1p, min2p:max2p].copy
+            output_data.binary_img //= output_data.binary_img.max()
+
+            # Calculate rotation angle and rotate selections
+            if rotate:
+                r_data = output_data.data_dict[rotate]
+                assert r_data.ndim == 2
+                theta = _calc_orientation(r_data)
+            else:
+                theta = 0
+
+            rotated_data = output_data.rotate(theta)
+
+            #Make cell object and add all the data
+            #todo change cell initation and data adding interface
+            c = Cell(data_obj=rotated_data)
+            cell_list.append(c)
+
+    return cell_list
+
+
+
 def batch_flu_images(binary_files, flu_files_dict, bf_files=None, pad_width=2, cell_frac=0.5, rotate='binary'):
+    warnings.warn('This is gonna gooooo', DeprecationWarning)
     #only when fluorescence images are available
     assert type(flu_files_dict) == dict
     for a in flu_files_dict.values():
@@ -38,6 +90,7 @@ def batch_flu_images(binary_files, flu_files_dict, bf_files=None, pad_width=2, c
 
 
 def cell_generator(labeled_binary, flu_data=None, bf_img=None, storm_data=None, pad_width=2, rotate=True, img_name='unknown'):
+    warnings.warn('This is gonna gooooo', DeprecationWarning)
     for i in np.unique(labeled_binary)[1:]:
         binary = (labeled_binary == i).astype('int')
         min1, max1, min2, max2 = mh.bbox(binary)
@@ -74,6 +127,7 @@ def cell_generator(labeled_binary, flu_data=None, bf_img=None, storm_data=None, 
 
 
 def process_cell(binary_img=None, bf_img=None, flu_data=None, storm_data=None, rotate='binary'):
+    warnings.warn('This is gonna gooooo', DeprecationWarning)
     #binary etc images are pre-padded
     d = {'binary': binary_img, 'brightfield': bf_img, 'fluorescence': flu_data, 'storm': storm_data}
     data_dict = {k: v for k, v in d.items() if v is not None}
@@ -124,6 +178,7 @@ def process_cell(binary_img=None, bf_img=None, flu_data=None, storm_data=None, r
 
 
 def _rotate_storm(storm_data, theta, shape=None):
+    warnings.warn('This is gonna gooooo', DeprecationWarning)
     theta *= np.pi / 180  # to radians
     x = storm_data['x']
     y = storm_data['y']
@@ -151,7 +206,40 @@ def _rotate_storm(storm_data, theta, shape=None):
     return storm_out
 
 
-def _calc_orientation(dtype, data):
+def _calc_orientation(data_elem):
+    if data_elem.dclass in ['Binary', 'Fluorescence']:
+        img = data_elem
+    elif data_elem.dclass == 'STORMTable':
+        xmax = int(data_elem['x'].max()) + 2 * cfg.STORM_PIXELSIZE
+        ymax = int(data_elem['y'].max()) + 2 * cfg.STORM_PIXELSIZE
+        x_bins = np.arange(0, xmax, cfg.STORM_PIXELSIZE)
+        y_bins = np.arange(0, ymax, cfg.STORM_PIXELSIZE)
+
+        img, xedges, yedges = np.histogram2d(data_elem['x'], data_elem['y'], bins=[x_bins, y_bins])
+
+    else:
+        raise ValueError('Invalid dtype')
+
+    com = mh.center_of_mass(img)
+
+    mu00 = mh.moments(img, 0, 0, com)
+    mu11 = mh.moments(img, 1, 1, com)
+    mu20 = mh.moments(img, 2, 0, com)
+    mu02 = mh.moments(img, 0, 2, com)
+
+    mup_20 = mu20 / mu00
+    mup_02 = mu02 / mu00
+    mup_11 = mu11 / mu00
+
+    theta_rad = 0.5 * math.atan(2 * mup_11 / (mup_20 - mup_02))  # todo math -> numpy
+    theta = theta_rad * (180 / math.pi)
+    if (mup_20 - mup_02) > 0:
+        theta += 90
+
+    return theta
+
+
+def _calc_orientation_dep(dtype, data):
     if dtype in ['binary', 'brightfield']:
         img = data
     elif dtype == 'storm':

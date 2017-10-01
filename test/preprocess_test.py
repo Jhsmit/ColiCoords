@@ -7,8 +7,10 @@ data = generate_testdata()
 print(np.unique(data.binary_img))
 d = data[0]
 
+print(d.binary_img.mean())
+d1 = d.copy()
+print('d1 fresh', d1.binary_img.mean())
+data[0].binary_img += 20
+print(d.binary_img.mean())
+print(d1.binary_img.mean())
 
-cells = [c for c in cell_generator(d.binary_img, d.flu_dict, rotate='binary')]
-
-plt.imshow(cells[0].data.binary_img)
-plt.show()

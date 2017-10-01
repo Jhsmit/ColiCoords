@@ -1,6 +1,7 @@
 from cellcoordinates.gui.images_select import NavigationWindow, ImageWindow
 import sys
 from cellcoordinates.gui.preprocess_gui import InputWindow
+from cellcoordinates.preprocess import data_to_cells
 from ..config import cfg
 from cellcoordinates.gui.cell_objects import CellObjectWindow
 from ..data_models import Data
@@ -226,10 +227,9 @@ class CellObjectController(object):
         rotate = self.cow.rotate_cbb.currentText()
 
         print('Creating cell objects...')
-        self.cell_list = self._create_cell_objects(self.input_data, cell_frac, pad_width, rotate)
+        self.cell_list = data_to_cells(self.input_data, pad_width=pad_width, cell_frac=cell_frac, rotate=rotate)
         print('Found {} cells'.format(len(self.cell_list)))
         self.cell_list_plot = CellListPlot(self.cell_list)
-
 
         data_src = self.cow.optimize_datasrc_cbb.currentText()
         optimize_method = self.cow.optimize_method_cbb.currentText()
@@ -241,55 +241,6 @@ class CellObjectController(object):
         self._save_histograms()
         self._save_distributions()
        # self._save_metadata()
-
-    def _create_cell_objects(self, input_data, cell_frac, pad_width, rotate):
-        #todo move this function to preprocess and import
-        cell_list = CellList()
-        for i, data in enumerate(input_data):
-            assert 'Binary' in data.dclasses
-
-            #todo fix labeled binary in binary image!!!oneoneone
-            binary = data.binary_img
-            if (binary > 0).mean() > cell_frac or binary.mean() == 0.:
-                print('Image {} {}: Too many or no cells').format(binary.name, i)
-                continue
-
-            # Iterate over all cells in the image
-            for l in np.unique(binary)[1:]:
-                selected_binary = (binary == l).astype('int')
-                min1, max1, min2, max2 = mh.bbox(selected_binary)
-                min1p, max1p, min2p, max2p = min1 - pad_width, max1 + pad_width, min2 - pad_width, max2 + pad_width
-
-                try:
-                    assert min1p > 0 and min2p > 0 and max1p < data.shape[0] and max2p < data.shape[1]
-                except AssertionError:
-                    print('Cell {} on image {} {}: on the edge of the image'.format(l, binary.name, i))
-                    continue
-                try:
-                    assert len(np.unique(binary[min1p:max1p, min2p:max2p])) == 2
-                except AssertionError:
-                    print('Cell {} on image {} {}: multiple cells per selection'.format(l, output_data.binary_img.name, i))
-                    continue
-
-                output_data = data[min1p:max1p, min2p:max2p]
-                output_data.binary_img //= output_data.binary_img.max()
-
-                # Calculate rotation angle and rotate selections
-                if rotate:
-                    r_data = output_data.data_dict[rotate]
-                    assert r_data.ndim == 2
-                    theta = _calc_orientation(r_data)
-                else:
-                    theta = 0
-
-                rotated_data = output_data.rotate(theta)
-
-                #Make cell object and add all the data
-                #todo change cell initation and data adding interface
-                c = Cell(data_obj=rotated_data)
-                cell_list.append(c)
-
-        return cell_list
 
     #staticmethods?
     def _optimize_coords(self, dclass=None, method='photons', verbose=False):
@@ -403,8 +354,6 @@ class CellObjectController(object):
                         max_arr = np.max(out_arr, axis=1)
                         norm_arr = out_arr / max_arr[:, np.newaxis]
                         np.savetxt(os.path.join(out_dir, dist + '_dist_norm.txt'), norm_arr)
-
-
 
 
 def _calc_orientation(data_elem):

@@ -187,6 +187,12 @@ class Data(object):
         self.data_dict.update(self.flu_dict)
         self.name_dict.update(self.flu_dict)
 
+    def copy(self):
+        data = Data()
+        for v in self.data_dict.values():
+            data.add_data(np.copy(v), v.dclass, name=v.name, metadata=v.metadata)
+        return data
+
     def _get_storm_img(self, storm_table):
         if self.shape:
             xmax = self.shape[0] * cfg.IMG_PIXELSIZE
