@@ -234,6 +234,7 @@ class CellObjectController(object):
         data_src = self.cow.optimize_datasrc_cbb.currentText()
         optimize_method = self.cow.optimize_method_cbb.currentText()
 
+        #todo opruimen deze shizzle hiero
         print('Optimizing coordinate system')
         self._optimize_coords(data_src, optimize_method)
 

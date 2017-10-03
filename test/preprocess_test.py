@@ -14,3 +14,5 @@ data[0].binary_img += 20
 print(d.binary_img.mean())
 print(d1.binary_img.mean())
 
+print(d1 == data[0])
+

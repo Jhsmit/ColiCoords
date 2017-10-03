@@ -3,6 +3,7 @@ from cellcoordinates.cell import Cell, CellList
 from cellcoordinates.preprocess import process_cell
 from testcase import ArrayTestCase
 from test_functions import generate_testdata
+import hashlib
 from cellcoordinates.gui.controller import CellObjectController
 from cellcoordinates.preprocess import data_to_cells
 import unittest
@@ -21,10 +22,25 @@ class CellTest(ArrayTestCase):
         sl2 = self.data[:, 20:40, 100:200]
         self.assertEqual(sl2.shape, (10, 20, 100))
 
+    def test_data_copy(self):
+        m0 = self.data.binary_img.mean()
+        data_copy = self.data.copy()
+        self.assertEqual(m0, self.data.binary_img.mean())
+        data_copy.binary_img += 20
+
+        self.assertEqual(m0, self.data.binary_img.mean())
+        self.assertEqual(data_copy.binary_img.mean(), m0 + 20)
+
     def test_cell_list(self):
-        ctrl = CellObjectController(self.data, '')
-        cell_list = ctrl._create_cell_objects(self.data, 0.5, 2, 'Binary')
+        print(hashlib.md5(self.data).hexdigest())
         cell_list = data_to_cells(self.data, pad_width=2, cell_frac=0.5, rotate='Binary')
+        print(hashlib.md5(self.data).hexdigest())
+        cell_list = data_to_cells(self.data, pad_width=2, cell_frac=0.5, rotate='Binary')
+        print(hashlib.md5(self.data).hexdigest())
+
+        d = self.data.copy()
+        print(d == self.data)
+
 
         cl = CellList(cell_list)
         self.assertEqual(len(cl), 48)

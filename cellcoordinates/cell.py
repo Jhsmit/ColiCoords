@@ -81,7 +81,6 @@ class Cell(object):
             optimizer = BinaryOptimizer(self)
         elif dclass == 'Fluorescence':
             raise NotImplementedError
-            #optimizer = FluorescenceOptimizer(self)
         elif dclass == 'STORM':
             optimizer = STORMOptimizer(self, method=method)
         else:

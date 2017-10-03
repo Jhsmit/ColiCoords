@@ -41,17 +41,11 @@ def data_to_cells(input_data, pad_width=3, cell_frac=0.5, rotate='Binary'):
                 print('Cell {} on image {} {}: multiple cells per selection'.format(l, output_data.binary_img.name, i))
                 continue
 
-            output_data = data[min1p:max1p, min2p:max2p].copy
+            output_data = data[min1p:max1p, min2p:max2p]
             output_data.binary_img //= output_data.binary_img.max()
 
             # Calculate rotation angle and rotate selections
-            if rotate:
-                r_data = output_data.data_dict[rotate]
-                assert r_data.ndim == 2
-                theta = _calc_orientation(r_data)
-            else:
-                theta = 0
-
+            theta = output_data.data_dict[rotate].orientation if rotate else 0
             rotated_data = output_data.rotate(theta)
 
             #Make cell object and add all the data
@@ -205,7 +199,7 @@ def _rotate_storm(storm_data, theta, shape=None):
 
     return storm_out
 
-
+#todo move to dclasses themselves
 def _calc_orientation(data_elem):
     if data_elem.dclass in ['Binary', 'Fluorescence']:
         img = data_elem

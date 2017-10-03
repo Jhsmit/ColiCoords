@@ -24,6 +24,10 @@ class BinaryImage(np.ndarray):
         obj.dclass = 'Binary'
         return obj
 
+    @property
+    def orientation(self):
+        return _calc_orientation(self)
+
 
 class BrightFieldImage(np.ndarray):
     def __new__(cls, input_array, name=None, metadata=None):
@@ -34,6 +38,10 @@ class BrightFieldImage(np.ndarray):
         obj.metadata = metadata
         obj.dclass = 'Brightfield'
         return obj
+
+    @property
+    def orientation(self):
+        return _calc_orientation(self)
 
 
 class FluorescenceImage(np.ndarray):
@@ -46,6 +54,9 @@ class FluorescenceImage(np.ndarray):
         obj.dclass = 'Fluorescence'
         return obj
 
+    @property
+    def orientation(self):
+        return _calc_orientation(self)
 
 class STORMTable(np.ndarray):
     """STORM data array
@@ -80,6 +91,11 @@ class STORMImage(np.ndarray):
         obj.metadata = metadata
         obj.dclass = 'STORMImage'
         return obj
+
+    @property
+    def orientation(self):
+        return _calc_orientation(self)
+
 
 #todo this shoud be a dict? (use open microscopy format?) (XML)
 class MetaData(dict):
@@ -307,3 +323,23 @@ def _rotate_storm(storm_data, theta, shape=None):
     storm_out['y'] = yr
 
     return storm_out
+
+
+def _calc_orientation(img):
+    com = mh.center_of_mass(img)
+
+    mu00 = mh.moments(img, 0, 0, com)
+    mu11 = mh.moments(img, 1, 1, com)
+    mu20 = mh.moments(img, 2, 0, com)
+    mu02 = mh.moments(img, 0, 2, com)
+
+    mup_20 = mu20 / mu00
+    mup_02 = mu02 / mu00
+    mup_11 = mu11 / mu00
+
+    theta_rad = 0.5 * math.atan(2 * mup_11 / (mup_20 - mup_02))  # todo math -> numpy
+    theta = theta_rad * (180 / math.pi)
+    if (mup_20 - mup_02) > 0:
+        theta += 90
+
+    return theta
