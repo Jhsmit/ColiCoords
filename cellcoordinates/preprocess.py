@@ -56,7 +56,6 @@ def data_to_cells(input_data, pad_width=3, cell_frac=0.5, rotate='Binary'):
     return cell_list
 
 
-
 def batch_flu_images(binary_files, flu_files_dict, bf_files=None, pad_width=2, cell_frac=0.5, rotate='binary'):
     warnings.warn('This is gonna gooooo', DeprecationWarning)
     #only when fluorescence images are available
@@ -180,9 +179,11 @@ def _rotate_storm(storm_data, theta, shape=None):
     if shape:
         xmax = shape[0] * cfg.IMG_PIXELSIZE
         ymax = shape[1] * cfg.IMG_PIXELSIZE
+        offset = 0.5 * shape[0] * ((shape[0]/shape[1]) * np.sin(theta) + np.cos(theta) + 1)
     else:
         xmax = int(storm_data['x'].max()) + 2 * cfg.STORM_PIXELSIZE
         ymax = int(storm_data['y'].max()) + 2 * cfg.STORM_PIXELSIZE
+        offset = 0
 
     x -= xmax / 2
     y -= ymax / 2
@@ -193,14 +194,21 @@ def _rotate_storm(storm_data, theta, shape=None):
     xr += xmax / 2
     yr += ymax / 2
 
+    print('offset', offset)
+    yr += offset
+
+
     storm_out = np.copy(storm_data)
     storm_out['x'] = xr
     storm_out['y'] = yr
 
     return storm_out
 
+
 #todo move to dclasses themselves
 def _calc_orientation(data_elem):
+    warnings.warn('This is gonna gooooo', DeprecationWarning)
+
     if data_elem.dclass in ['Binary', 'Fluorescence']:
         img = data_elem
     elif data_elem.dclass == 'STORMTable':

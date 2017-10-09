@@ -27,11 +27,11 @@ d = data[50:100, 100:150]
 
 
 
-cell_list = data_to_cells(data)
+cell_list = data_to_cells(data, rotate='Binary')
 print(len(cell_list))
 print(data.shape)
 
-c = cell_list[0]
+c = cell_list[3]
 x = c.data.storm_table['x'] / 80
 y = c.data.storm_table['y'] / 80
 

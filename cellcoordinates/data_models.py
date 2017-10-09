@@ -224,7 +224,7 @@ class Data(object):
         data = Data()
         for v in self.data_dict.values():
             if v.dclass == 'STORMTable':
-                rotated = _rotate_storm(v, -theta)
+                rotated = _rotate_storm(v, -theta, shape=self.shape)
             elif v.dclass == 'STORMImage':
                 continue
             else:
@@ -357,15 +357,17 @@ class Data(object):
 
 def _rotate_storm(storm_data, theta, shape=None):
     theta *= np.pi / 180  # to radians
-    x = storm_data['x']
-    y = storm_data['y']
+    x = storm_data['x'].copy()
+    y = storm_data['y'].copy()
 
     if shape:
         xmax = shape[0] * cfg.IMG_PIXELSIZE
         ymax = shape[1] * cfg.IMG_PIXELSIZE
+        offset = 0.5 * shape[0] * ((shape[0]/shape[1]) * np.sin(-theta) + np.cos(-theta) - 1)
     else:
         xmax = int(storm_data['x'].max()) + 2 * cfg.STORM_PIXELSIZE
         ymax = int(storm_data['y'].max()) + 2 * cfg.STORM_PIXELSIZE
+        offset = 0
 
     x -= xmax / 2
     y -= ymax / 2
@@ -375,6 +377,9 @@ def _rotate_storm(storm_data, theta, shape=None):
 
     xr += xmax / 2
     yr += ymax / 2
+
+    print('offset123', offset  * cfg.IMG_PIXELSIZE )
+    yr += (offset * cfg.IMG_PIXELSIZE)
 
     storm_out = np.copy(storm_data)
     storm_out['x'] = xr
