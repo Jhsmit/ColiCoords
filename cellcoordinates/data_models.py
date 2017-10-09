@@ -58,6 +58,7 @@ class FluorescenceImage(np.ndarray):
     def orientation(self):
         return _calc_orientation(self)
 
+
 class STORMTable(np.ndarray):
     """STORM data array
     
@@ -209,6 +210,55 @@ class Data(object):
             data.add_data(np.copy(v), v.dclass, name=v.name, metadata=v.metadata)
         return data
 
+
+
+    @property
+    def dclasses(self):
+        return np.unique([d.dclass for d in self.data_dict.values()])
+
+    @property
+    def names(self):
+        return [d.name for d in self.data_dict.values()]
+
+    def rotate(self, theta):
+        data = Data()
+        for v in self.data_dict.values():
+            if v.dclass == 'STORMTable':
+                rotated = _rotate_storm(v, -theta)
+            elif v.dclass == 'STORMImage':
+                continue
+            else:
+                rotated = scipy_rotate(v, -theta)
+
+            data.add_data(rotated, v.dclass, name=v.name, metadata=v.metadata)
+        return data
+
+    def transform(self, x, y, src='cart', tgt='mpl'):
+        if src == 'cart':
+            xt1 = x
+            yt1 = y
+        elif src == 'mpl':
+            xt1 = x
+            yt1 = self.shape[0] - y
+        elif src == 'matrix':
+            yt1 = self.shape[0] - x - 0.5
+            xt1 = y + 0.5
+        else:
+            raise ValueError("Invalid source coordinates")
+
+        if tgt == 'cart':
+            xt2 = xt1
+            yt2 = yt1
+        elif tgt == 'mpl':
+            xt2 = xt1
+            yt2 = self.shape[0] - yt1
+        elif tgt == 'matrix':
+            xt2 = self.shape[0] - yt1 - 0.5
+            yt2 = xt1 - 0.5
+        else:
+            raise ValueError("Invalid target coordinates")
+        return xt2, yt2
+
     def _get_storm_img(self, storm_table):
         if self.shape:
             xmax = self.shape[0] * cfg.IMG_PIXELSIZE
@@ -232,27 +282,6 @@ class Data(object):
             self.shape = shape
             self.ndim = ndim
 
-    @property
-    def dclasses(self):
-        return np.unique([d.dclass for d in self.data_dict.values()])
-
-    @property
-    def names(self):
-        return [d.name for d in self.data_dict.values()]
-
-    def rotate(self, theta):
-        data = Data()
-        for v in self.data_dict.values():
-            if v.dclass == 'STORMTable':
-                rotated = _rotate_storm(v, -theta)
-            elif v.dclass == 'STORMImage':
-                continue
-            else:
-                rotated = scipy_rotate(v, -theta)
-
-            data.add_data(rotated, v.dclass, name=v.name, metadata=v.metadata)
-        return data
-
     def __len__(self):
         if not hasattr(self, 'ndim'):
             return 0
@@ -271,8 +300,12 @@ class Data(object):
         if not hasattr(self, 'ndim'):
             raise StopIteration
         if self.ndim == 2:
-            self.idx = 0
-            raise StopIteration
+            if self.idx == 0:
+                self.idx += 1
+                return self
+            else:
+                self.idx = 0
+                raise StopIteration
 
         data = Data()
         for v in self.data_dict.values():
@@ -288,10 +321,35 @@ class Data(object):
         data = Data()
         for v in self.data_dict.values():
             if v.dclass == 'STORMTable':
-                raise NotImplementedError()
+                b_z = np.ones(len(v)).astype(bool)
+                if len(key) == 3:
+                    #3d slicing, slices the frames? #todo 3d slicing by frame!
+                    raise NotImplementedError()
+
+                elif len(key) == 2:
+                    ymin, ymax, ystep = key[0].indices(len(v))
+                    xmin, xmax, ystep = key[1].indices(len(v))
+
+                    ymin *= cfg.IMG_PIXELSIZE
+                    ymax *= cfg.IMG_PIXELSIZE
+                    xmin *= cfg.IMG_PIXELSIZE
+                    xmax *= cfg.IMG_PIXELSIZE
+
+                    #Create boolean array to mask entries withing the chosen range
+                    b_xy = (v['x'] > xmin) * (v['x'] < xmax) * (v['y'] > ymin) * (v['y'] < ymax)
+
+                # Choose selected data and copy, rezero x and y
+                b_overall = b_z * b_xy
+                table_out = v[b_overall].copy()
+                table_out['x'] -= xmin
+                table_out['y'] -= ymin
+
+                data.add_data(table_out, v.dclass, name=v.name, metadata=v.metadata)
+
             elif v.dclass == 'STORMImage':
                 continue
-            data.add_data(v[key], v.dclass, name=v.name, metadata=v.metadata)
+            else:
+                data.add_data(v[key], v.dclass, name=v.name, metadata=v.metadata)
         return data
 
     next = __next__
