@@ -375,8 +375,6 @@ class Coordinates(object):
 
 
 class CellList(object):
-
-
     def optimize(self, dclass=None, method='photons', verbose=True):  #todo refactor dclass to data_src or data_name
         #todo threaded and shit
         for c in self:

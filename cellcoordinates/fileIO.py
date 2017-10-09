@@ -71,3 +71,21 @@ def load(file_path):
                 warnings.warn("ome-xml: %s" % e)
                 omexml = omexml.decode('utf-8', 'ignore').encode('utf-8')
                 root = etree.fromstring(omexml)
+
+
+def load_thunderstorm(file_path):
+    """
+    Load a .csv file from THUNDERSTORM output
+    :param file_path: Target file to open
+    :return:
+    """
+
+    assert(os.path.splitext(file_path)[1] == '.csv')
+
+    dtype = {
+        'names': ("id", "frame", "x", "y", "sigma", "intensity", "offset", "bkgstd", "chi2", "uncertainty_xy"),
+        'formats': (int, int, float, float, float, float, float, float, float, float)
+    }
+
+    storm_table = np.genfromtxt(file_path, skip_header=1, dtype=dtype, delimiter=',')
+    return storm_table

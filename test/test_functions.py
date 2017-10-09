@@ -31,3 +31,20 @@ def generate_testdata():
     data.add_data(flu_arr, 'Fluorescence')
 
     return data
+
+
+def generate_stormdata():
+    binary = tifffile.imread(r'test_data/ds2/binary_resized.tif').astype('int')
+
+    dtype = {
+        'names': ("id", "frame", "x", "y", "sigma", "intensity", "offset", "bkgstd", "chi2", "uncertainty_xy"),
+        'formats': (int, int, float, float, float, float, float, float, float, float)
+    }
+
+    storm_table = np.genfromtxt(r'test_data/ds2/storm_table.csv', skip_header=1, dtype=dtype, delimiter=',')
+
+    data = Data()
+    data.add_data(binary, 'Binary')
+    data.add_data(storm_table, 'STORMTable')
+
+    return data
