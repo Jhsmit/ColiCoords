@@ -33,8 +33,8 @@ print(len(cell_list))
 print(data.shape)
 
 c = cell_list[2]
-x = (c.data.storm_table['x'] / 80)#.view(np.ndarray).copy()
-y = (c.data.storm_table['y'] / 80)#.view(np.ndarray).copy()
+x = c.data.storm_table['x']
+y = c.data.storm_table['y']
 
 
 stop = 20
@@ -63,7 +63,7 @@ plt.show()
 
 
 
-x, y = c.radial_distribution(1.5, 0.1, src='STORMTable', storm_weight='points', norm_r=True)
+x, y = c.radial_distribution(2, 0.1, src='STORMTable', storm_weight='points', norm_x=True)
 
 plt.figure()
 plt.plot(x, y)

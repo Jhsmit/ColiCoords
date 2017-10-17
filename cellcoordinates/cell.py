@@ -153,8 +153,8 @@ class Cell(object):
 
         if data_elem.ndim == 1:
             assert data_elem.dclass == 'STORMTable'
-            x = (data_elem['x'] / cfg.IMG_PIXELSIZE)
-            y = (data_elem['y'] / cfg.IMG_PIXELSIZE)
+            x = data_elem['x']
+            y = data_elem['y']
 
             r = self.coords.calc_rc(x, y)
             r = r / self.coords.r if norm_x else r

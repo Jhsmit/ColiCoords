@@ -1,4 +1,5 @@
 from cellcoordinates.data_models import Data
+from cellcoordinates.config import cfg
 import tifffile
 import numpy as np
 import os
@@ -35,6 +36,8 @@ def generate_stormdata():
     }
 
     storm_table = np.genfromtxt(r'test_data/ds2/storm_table.csv', skip_header=1, dtype=dtype, delimiter=',')
+    storm_table['x'] /= cfg.IMG_PIXELSIZE
+    storm_table['y'] /= cfg.IMG_PIXELSIZE
 
     data = Data()
     data.add_data(binary, 'Binary')

@@ -330,11 +330,6 @@ class Data(object):
                     ymin, ymax, ystep = key[0].indices(len(v))
                     xmin, xmax, ystep = key[1].indices(len(v))
 
-                    ymin *= cfg.IMG_PIXELSIZE
-                    ymax *= cfg.IMG_PIXELSIZE
-                    xmin *= cfg.IMG_PIXELSIZE
-                    xmax *= cfg.IMG_PIXELSIZE
-
                     #Create boolean array to mask entries withing the chosen range
                     b_xy = (v['x'] > xmin) * (v['x'] < xmax) * (v['y'] > ymin) * (v['y'] < ymax)
 
@@ -361,12 +356,12 @@ def _rotate_storm(storm_data, theta, shape=None):
     y = storm_data['y'].copy()
 
     if shape:
-        xmax = shape[0] * cfg.IMG_PIXELSIZE
-        ymax = shape[1] * cfg.IMG_PIXELSIZE
+        xmax = shape[0]
+        ymax = shape[1]
         offset = 0.5 * shape[0] * ((shape[0]/shape[1]) * np.sin(-theta) + np.cos(-theta) - 1)
     else:
-        xmax = int(storm_data['x'].max()) + 2 * cfg.STORM_PIXELSIZE
-        ymax = int(storm_data['y'].max()) + 2 * cfg.STORM_PIXELSIZE
+        xmax = int(storm_data['x'].max()) + 2#2 * cfg.STORM_PIXELSIZE
+        ymax = int(storm_data['y'].max()) + 2#2 * cfg.STORM_PIXELSIZE
         offset = 0
 
     x -= xmax / 2
@@ -377,7 +372,7 @@ def _rotate_storm(storm_data, theta, shape=None):
 
     xr += xmax / 2
     yr += ymax / 2
-    yr += (offset * cfg.IMG_PIXELSIZE)
+    yr += offset
 
     storm_out = np.copy(storm_data)
     storm_out['x'] = xr

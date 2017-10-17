@@ -72,7 +72,7 @@ class CellListPlot(object):
             step = cfg.R_DIST_STEP
 
         if mode == 'r':
-            x, out_arr = self.cell_list.radial_distribution(stop, step, src=src, norm_x=norm_x, storm_weight='points')
+            x, out_arr = self.cell_list.radial_distribution(stop, step, src=src, norm_x=norm_x, storm_weight=storm_weights)
             out_arr = np.nan_to_num(out_arr)
             title = 'Radial Distribution'
         elif mode == 'l':
