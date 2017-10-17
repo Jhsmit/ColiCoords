@@ -1,5 +1,5 @@
-# ColiCoordinates
+# ColiCoords
 
-Fitting a coordinate system to banana-shaped cells
+Fitting a coordinate system to banana-shaped cells.
 
-Because real cells have curves
+Because real cells have curves.
