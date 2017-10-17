@@ -1,14 +1,8 @@
 #https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.basinhopping.html#scipy.optimize.basinhopping
 
 import mahotas as mh
-import math
 import numpy as np
-from scipy.ndimage.interpolation import rotate as scipy_rotate
-from symfit import Fit
-
-from cellcoordinates.config import cfg
-from cellcoordinates.data_models import Data
-from cellcoordinates.optimizers import STORMOptimizer, BinaryOptimizer
+from colicoords.optimizers import STORMOptimizer, BinaryOptimizer
 
 
 # todo obj or class? in docstring
@@ -47,25 +41,9 @@ class Cell(object):
     --> label: property returning {}{}.format(name, idx) or sth
     """
 
-    def __init__(self, bf_img=None, binary_img=None, flu_data=None, storm_table=None, *args, **kwargs):
-        if 'data_dict' in kwargs:
-            data_dict = kwargs['data_dict']
-            bf_img = data_dict.pop('Brightfield', None)
-            binary_img = data_dict.pop('Binary', None)
-            storm_table = data_dict.pop('STORMTable', None)
-            flu_data = data_dict
-            self.data = Data()
-            self.data.add_datasets(bf_img=bf_img, binary_img=binary_img, flu_data=flu_data, storm_table=storm_table)
-        elif 'data_obj' in kwargs:
-            self.data = kwargs['data_obj']
-        else:
-            self.data = Data()
-            self.data.add_datasets(bf_img=bf_img, binary_img=binary_img, flu_data=flu_data, storm_table=storm_table)
-
+    def __init__(self, data_object):
+        self.data = data_object
         self.coords = Coordinates(self.data)
-        if 'label' in kwargs:
-            print('move labels to global metadata')
-            pass
 
     def optimize(self, dclass=None, method='photons', verbose=False):
         if not dclass:

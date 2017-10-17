@@ -1,9 +1,9 @@
-from cellcoordinates.gui.images_select import NavigationWindow, ImageWindow
+from colicoords.gui.images_select import NavigationWindow, ImageWindow
 import sys
-from cellcoordinates.gui.preprocess_gui import InputWindow
-from cellcoordinates.preprocess import data_to_cells
+from colicoords.gui.preprocess_gui import InputWindow
+from colicoords.preprocess import data_to_cells
 from ..config import cfg
-from cellcoordinates.gui.cell_objects import CellObjectWindow
+from colicoords.gui.cell_objects import CellObjectWindow
 from ..data_models import Data
 from ..cell import Cell, CellList
 from ..plot import CellPlot, CellListPlot

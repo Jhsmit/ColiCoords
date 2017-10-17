@@ -1,7 +1,7 @@
 from PyQt4 import QtGui
 import sys
-from cellcoordinates.gui.controller import CellObjectController
-from cellcoordinates.data_models import Data
+from colicoords.gui.controller import CellObjectController
+from colicoords.data_models import Data
 import tifffile
 import os
 import numpy as np

@@ -1,6 +1,6 @@
 from test.test_functions import generate_stormdata
 import matplotlib.pyplot as plt
-from cellcoordinates.preprocess import data_to_cells
+from colicoords.preprocess import data_to_cells
 data = generate_stormdata()
 import numpy as np
 print(len(data))

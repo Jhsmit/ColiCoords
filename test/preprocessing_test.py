@@ -1,7 +1,7 @@
 import os
-from cellcoordinates.fileIO import load, save
+from colicoords.fileIO import load, save
 import matplotlib.pyplot as plt
-from cellcoordinates.preprocess import batch_flu_images
+from colicoords.preprocess import batch_flu_images
 
 
 def listdir_fullpath(d):

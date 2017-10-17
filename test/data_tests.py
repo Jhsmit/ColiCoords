@@ -1,4 +1,4 @@
-from cellcoordinates.data import BinaryImage, BrightFieldImage, FluorescenceImage, FluorescenceMovie, STORMTable, Data
+from colicoords.data import BinaryImage, BrightFieldImage, FluorescenceImage, FluorescenceMovie, STORMTable, Data
 
 import numpy as np
 import unittest

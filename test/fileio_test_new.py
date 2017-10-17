@@ -1,7 +1,7 @@
 import tifffile
 import os
-from cellcoordinates.preprocess import process_cell
-from cellcoordinates.fileIO import save
+from colicoords.preprocess import process_cell
+from colicoords.fileIO import save
 
 fl_img = tifffile.imread('test_data/flu1.tif')
 binary_img = tifffile.imread('test_data/binary1.tif')

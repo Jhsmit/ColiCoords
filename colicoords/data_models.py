@@ -2,7 +2,7 @@ import mahotas as mh
 import numpy as np
 import math
 from scipy.ndimage.interpolation import rotate as scipy_rotate
-from cellcoordinates.config import cfg
+from colicoords.config import cfg
 
 
 class BinaryImage(np.ndarray):
@@ -360,8 +360,8 @@ def _rotate_storm(storm_data, theta, shape=None):
         ymax = shape[1]
         offset = 0.5 * shape[0] * ((shape[0]/shape[1]) * np.sin(-theta) + np.cos(-theta) - 1)
     else:
-        xmax = int(storm_data['x'].max()) + 2#2 * cfg.STORM_PIXELSIZE
-        ymax = int(storm_data['y'].max()) + 2#2 * cfg.STORM_PIXELSIZE
+        xmax = int(storm_data['x'].max()) + 2
+        ymax = int(storm_data['y'].max()) + 2
         offset = 0
 
     x -= xmax / 2

@@ -1,7 +1,7 @@
 from test_functions import generate_testdata
-from cellcoordinates.gui.controller import CellObjectController
-from cellcoordinates.cell import CellList
-from cellcoordinates.plot import CellPlot, CellListPlot
+from colicoords.gui.controller import CellObjectController
+from colicoords.cell import CellList
+from colicoords.plot import CellPlot, CellListPlot
 
 import seaborn as sns
 import matplotlib.pyplot as plt

@@ -1,6 +1,6 @@
-from cellcoordinates.fileIO import load, save
-from cellcoordinates.cell import Cell
-from cellcoordinates.preprocess import process_cell
+from colicoords.fileIO import load, save
+from colicoords.cell import Cell
+from colicoords.preprocess import process_cell
 from testcase import ArrayTestCase
 import unittest
 import tifffile

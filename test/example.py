@@ -1,8 +1,8 @@
 import tifffile
 import matplotlib.pyplot as plt
 import numpy as np
-from cellcoordinates.preprocess import process_cell
-from cellcoordinates.plot import CellPlot
+from colicoords.preprocess import process_cell
+from colicoords.plot import CellPlot
 
 fl_img = tifffile.imread('test_data/flu1.tif')
 binary_img = tifffile.imread('test_data/binary1.tif')

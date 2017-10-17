@@ -1,5 +1,5 @@
 from test.test_functions import generate_testdata
-from cellcoordinates.preprocess import batch_flu_images, cell_generator
+from colicoords.preprocess import batch_flu_images, cell_generator
 import matplotlib.pyplot as plt
 import numpy as np
 

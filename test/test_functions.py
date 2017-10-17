@@ -1,5 +1,5 @@
-from cellcoordinates.data_models import Data
-from cellcoordinates.config import cfg
+from colicoords.data_models import Data
+from colicoords.config import cfg
 import tifffile
 import numpy as np
 import os

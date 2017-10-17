@@ -1,4 +1,4 @@
-from cellcoordinates.cell import Cell
+from colicoords.cell import Cell
 import numpy as np
 import unittest
 import tifffile

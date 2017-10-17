@@ -4,7 +4,7 @@ import tifffile
 import os
 from xml.etree import cElementTree as etree
 import warnings
-from cellcoordinates.cell import Cell
+from colicoords.cell import Cell
 
 
 def save(file_path, cell_obj, imagej=False):

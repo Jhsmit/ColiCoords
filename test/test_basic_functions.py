@@ -1,11 +1,11 @@
-from cellcoordinates.fileIO import load, save
-from cellcoordinates.cell import Cell, CellList
-from cellcoordinates.preprocess import process_cell
+from colicoords.fileIO import load, save
+from colicoords.cell import Cell, CellList
+from colicoords.preprocess import process_cell
 from testcase import ArrayTestCase
 from test_functions import generate_testdata
 import hashlib
-from cellcoordinates.gui.controller import CellObjectController
-from cellcoordinates.preprocess import data_to_cells
+from colicoords.gui.controller import CellObjectController
+from colicoords.preprocess import data_to_cells
 import unittest
 import tifffile
 import numpy as np

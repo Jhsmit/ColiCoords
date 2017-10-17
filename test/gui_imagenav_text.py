@@ -1,5 +1,5 @@
-from cellcoordinates.gui.controller import ImageSelectController
-from cellcoordinates.data_models import Data
+from colicoords.gui.controller import ImageSelectController
+from colicoords.data_models import Data
 import sys
 from PyQt4 import QtGui
 import tifffile

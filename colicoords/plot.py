@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.patches as mpatches
 import seaborn.timeseries
-from cellcoordinates.config import cfg
+from colicoords.config import cfg
 import seaborn as sns
 
 #todo add src, python 2

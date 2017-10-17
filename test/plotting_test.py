@@ -1,13 +1,13 @@
-from cellcoordinates.plot import CellPlot
+from colicoords.plot import CellPlot
 
 
 import tifffile
 import matplotlib.pyplot as plt
 import numpy as np
-from cellcoordinates.preprocess import data_to_cells
-from cellcoordinates.fileIO import save
-from cellcoordinates.plot import CellPlot, CellListPlot
-from cellcoordinates.cell import Cell
+from colicoords.preprocess import data_to_cells
+from colicoords.fileIO import save
+from colicoords.plot import CellPlot, CellListPlot
+from colicoords.cell import Cell
 from test_functions import generate_testdata
 
 data = generate_testdata('ds3')
