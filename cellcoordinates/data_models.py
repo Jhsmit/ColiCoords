@@ -377,8 +377,6 @@ def _rotate_storm(storm_data, theta, shape=None):
 
     xr += xmax / 2
     yr += ymax / 2
-
-    print('offset123', offset  * cfg.IMG_PIXELSIZE )
     yr += (offset * cfg.IMG_PIXELSIZE)
 
     storm_out = np.copy(storm_data)

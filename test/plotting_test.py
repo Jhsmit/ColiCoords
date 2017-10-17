@@ -4,21 +4,34 @@ from cellcoordinates.plot import CellPlot
 import tifffile
 import matplotlib.pyplot as plt
 import numpy as np
-from cellcoordinates.preprocess import process_cell
+from cellcoordinates.preprocess import data_to_cells
 from cellcoordinates.fileIO import save
-from cellcoordinates.plot import CellPlot
+from cellcoordinates.plot import CellPlot, CellListPlot
 from cellcoordinates.cell import Cell
+from test_functions import generate_testdata
 
-fl_img = tifffile.imread('test_data/flu1.tif')
-binary_img = tifffile.imread('test_data/binary1.tif')
-
-
-cell = process_cell(rotate='binary', binary_img=binary_img, flu_data={'514': fl_img})
-cell.optimize()
+data = generate_testdata('ds3')
+cell_list = data_to_cells(data, pad_width=2, cell_frac=0.5, rotate='Binary')
+cell_list.optimize(verbose=True)
+cell = cell_list[0]
+cell.optimize(verbose=True)
 
 p = CellPlot(cell)
+clp = CellListPlot(cell_list)
+
+plt.figure()
+p.plot_dist(mode='r', norm_x=True)
+plt.show()
+
+plt.figure()
+p.plot_dist(mode='r', norm_x=False)
+plt.show()
 
 
 plt.figure()
-p.plot_dist(mode='r')
+clp.plot_dist(mode='r', norm_y=True, norm_x=True)
+plt.show()
+#
+plt.figure()
+clp.plot_dist(mode='r', norm_y=True, norm_x=False)
 plt.show()

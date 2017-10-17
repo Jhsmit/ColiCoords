@@ -6,6 +6,7 @@ import numpy as np
 from scipy.ndimage.interpolation import rotate as scipy_rotate
 from symfit import Fit
 
+from cellcoordinates.config import cfg
 from cellcoordinates.data_models import Data
 from cellcoordinates.optimizers import STORMOptimizer, BinaryOptimizer
 
@@ -123,39 +124,59 @@ class Cell(object):
         except AttributeError:
             return None
 
-    #todo choose fluorescence channel or storm
-    def radial_distribution(self, stop, step, src=''):
-        def bin_func(r, flu, bins):
-            r_flat = r.flatten()
-            i_sort = r_flat.argsort()
-            r_sorted = r_flat[i_sort]
-            flu_sorted = flu.flatten()[i_sort]
+    def l_dist(self):
+        pass
 
+    #todo choose fluorescence channel or storm
+    def radial_distribution(self, stop, step, src='', norm_x=False, storm_weight='points'):
+        def bin_func(r, y_weight, bins):
+            i_sort = r.argsort()
+            r_sorted = r[i_sort]
+            y_weight = y_weight[i_sort] if y_weight is not None else y_weight
             bin_inds = np.digitize(r_sorted,
                                    bins) - 1  # -1 to assure points between 0 and step are in bin 0 (the first)
-            yvals = np.bincount(bin_inds, weights=flu_sorted, minlength=len(bins)) / np.bincount(bin_inds, minlength=len(bins))
+            yvals = np.bincount(bin_inds, weights=y_weight, minlength=len(bins))
+            if y_weight is not None:
+                yvals /= np.bincount(bin_inds, minlength=len(bins))
             return np.nan_to_num(yvals)
 
         bins = np.arange(0, stop+step, step)
         xvals = bins + 0.5 * step  # xval is the middle of the bin
 
         if not src:
-            data = list(self.data.flu_dict.values())[0] #yuck
-        elif src == 'storm':
-            raise NotImplementedError('Calculating radial distribution of STORM data not yet implemented')
+            data_elem = list(self.data.flu_dict.values())[0] #yuck
         else:
             try:
-                data = self.data.data_dict[src]
+                data_elem = self.data.data_dict[src]
             except KeyError:
                 raise ValueError('Chosen data not found')
 
-        if data.ndim == 2:
-            yvals = bin_func(self.coords.rc, data, bins)
-        elif data.ndim == 3: #todo check is this still works
-            yvals = np.vstack([bin_func(self.coords.rc, d, bins) for d in data])
+        if data_elem.ndim == 1:
+            assert data_elem.dclass == 'STORMTable'
+            x = (data_elem['x'] / cfg.IMG_PIXELSIZE)
+            y = (data_elem['y'] / cfg.IMG_PIXELSIZE)
+
+            r = self.coords.calc_rc(x, y)
+            r = r / self.coords.r if norm_x else r
+
+            if storm_weight == 'points':
+                y_weight = None
+            elif storm_weight == 'photons':
+                y_weight = data_elem['intensity']
+            else:
+                raise ValueError("storm_weights has to be either 'points' or 'photons'")
+            yvals = bin_func(r, y_weight, bins)
+
+        elif data_elem.ndim == 2:
+            assert data_elem.dclass == 'Fluorescence'
+            r = self.coords.rc / self.coords.r if norm_x else self.coords.rc
+
+            yvals = bin_func(r.flatten(), data_elem.flatten(), bins)
+        elif data_elem.ndim == 3: #todo check if this still works
+            r = self.coords.rc / self.coords.r if norm_x else self.coords.rc
+            yvals = np.vstack([bin_func(r.flatten(), d.flatten(), bins) for d in data_elem])
         else:
             raise ValueError('Invalid fluorescence image dimensions')
-
         return xvals, yvals
 
 
@@ -375,7 +396,7 @@ class Coordinates(object):
 
 
 class CellList(object):
-    def optimize(self, dclass=None, method='photons', verbose=True):  #todo refactor dclass to data_src or data_name
+    def optimize(self, dclass=None, method='photons', verbose=False):  #todo refactor dclass to data_src or data_name
         #todo threaded and shit
         for c in self:
             c.optimize(dclass=dclass, method=method, verbose=verbose)
@@ -408,11 +429,11 @@ class CellList(object):
     def __contains__(self, item):
         return self.cell_list.__contains__(item)
 
-    def radial_distribution(self, stop, step, src=''):
+    def radial_distribution(self, stop, step, src='', norm_x=False, storm_weight='points'):
         numpoints = len(np.arange(0, stop+step, step))
         out_arr = np.zeros((len(self), numpoints))
         for i, c in enumerate(self):
-            x, y = c.radial_distribution(stop, step, src=src)
+            x, y = c.radial_distribution(stop, step, src=src, norm_x=norm_x, storm_weight=storm_weight)
             out_arr[i] = y
 
         return x, out_arr

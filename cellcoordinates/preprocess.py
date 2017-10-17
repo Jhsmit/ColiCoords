@@ -10,7 +10,6 @@ from cellcoordinates.cell import Cell, CellList
 from cellcoordinates.config import cfg
 
 #temp
-import matplotlib.pyplot as plt
 
 
 def data_to_cells(input_data, pad_width=3, cell_frac=0.5, rotate='Binary'):

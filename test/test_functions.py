@@ -11,24 +11,17 @@ bf_files = listdir_fullpath(r'test_data/ds1/brightfield')
 flu_files = listdir_fullpath(r'test_data/ds1/fluorescence')
 
 
-def generate_testdata():
-
-    bin_arr = np.empty((len(bin_files), 512, 512)).astype('uint16')
-    for i, f in enumerate(bin_files):
-        bin_arr[i] = tifffile.imread(f)
-
-    bf_arr = np.empty((len(bin_files), 512, 512)).astype('uint16')
-    for i, f in enumerate(bf_files):
-        bf_arr[i] = tifffile.imread(f)
-
-    flu_arr = np.empty((len(bin_files), 512, 512)).astype('uint16')
-    for i, f in enumerate(flu_files):
-        flu_arr[i] = tifffile.imread(f)
+def generate_data(dataset):
+    dclasses = ['Binary', 'Brightfield', 'Fluorescence']
 
     data = Data()
-    data.add_data(bin_arr, 'Binary')
-    data.add_data(bf_arr, 'Brightfield')
-    data.add_data(flu_arr, 'Fluorescence')
+    for dclass in dclasses:
+        files = listdir_fullpath(os.path.join('test_data', dataset, dclass.lower()))
+        arr = np.empty((len(files), 512, 512)).astype('uint16')
+        for i, f in enumerate(files):
+            arr[i] = tifffile.imread(f)
+
+        data.add_data(arr, dclass)
 
     return data
 
@@ -48,3 +41,9 @@ def generate_stormdata():
     data.add_data(storm_table, 'STORMTable')
 
     return data
+
+def generate_testdata(dataset):
+    if dataset == 'ds2':
+        return generate_stormdata()
+    elif dataset in ['ds1', 'ds3']:
+        return generate_data(dataset)

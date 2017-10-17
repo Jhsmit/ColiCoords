@@ -51,7 +51,7 @@ class CellListPlot(object):
         ax.set_xlabel(xlabel)
         ax.set_ylabel('Cell count')
 
-    def plot_dist(self, mode='r', src='', std='std_band', norm_y=False, norm_x=False, **kwargs):
+    def plot_dist(self, mode='r', src='', std='std_band', norm_y=False, norm_x=False, storm_weights='points', **kwargs):
         """
 
         :param mode: r, l, or a for radial, longitinudial or angular
@@ -63,8 +63,16 @@ class CellListPlot(object):
         :return:
         """
 
+        #todo r units when normed
+        if norm_x:
+            stop = cfg.R_DIST_NORM_STOP
+            step = cfg.R_DIST_NORM_STEP
+        else:
+            stop = cfg.R_DIST_STOP
+            step = cfg.R_DIST_STEP
+
         if mode == 'r':
-            x, out_arr = self.cell_list.radial_distribution(cfg.R_DIST_STOP, cfg.R_DIST_STEP, src=src)
+            x, out_arr = self.cell_list.radial_distribution(stop, step, src=src, norm_x=norm_x, storm_weight='points')
             out_arr = np.nan_to_num(out_arr)
             title = 'Radial Distribution'
         elif mode == 'l':
@@ -76,16 +84,13 @@ class CellListPlot(object):
             a_max = np.max(out_arr, axis=1)
             out_arr = out_arr / a_max[:, np.newaxis]
 
-        if norm_x:
-            raise NotImplementedError
-
-        t = x * (cfg.IMG_PIXELSIZE / 1000)
+        t = x if norm_x else x * (cfg.IMG_PIXELSIZE / 1000)
+        t_units = 'norm' if norm_x else '$\mu m$'
         sns.tsplot(data=out_arr, time=t, estimator=np.mean, err_style=std, **kwargs)
-        plt.xlabel('Distance ($\mu m$)')
+        plt.xlabel('Distance ({})'.format(t_units))
         plt.ylabel('Signal intensity')
         plt.title(title)
         plt.tight_layout()
-
 
 
 class CellPlot(object):
@@ -167,9 +172,20 @@ class CellPlot(object):
 
         plt.plot(x_all, y_all, color='r', **kwargs)
 
-    def plot_dist(self, mode='r', src=''):
+    def plot_dist(self, mode='r', src='', norm_y=False, norm_x=False, storm_weights='points'):
+
         if mode == 'r':
-            x, y = self.c.radial_distribution(cfg.R_DIST_STOP, cfg.R_DIST_STEP, src=src)
+            if norm_x:
+                stop = cfg.R_DIST_NORM_STOP
+                step = cfg.R_DIST_NORM_STEP
+            else:
+                stop = cfg.R_DIST_STOP
+                step = cfg.R_DIST_STEP
+            x, y = self.c.radial_distribution(stop, step, src=src, norm_x=norm_x, storm_weight=storm_weights)
+
+            if norm_y:
+                raise NotImplementedError()
+
         elif mode == 'l':
             raise NotImplementedError
         elif mode == 'a':
