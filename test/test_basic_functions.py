@@ -13,7 +13,7 @@ import numpy as np
 
 class CellTest(ArrayTestCase):
     def setUp(self):
-        self.data = generate_testdata()
+        self.data = generate_testdata('ds1')
 
     def test_data_slicing(self):
         sl1 = self.data[2:5, :, :]

@@ -98,7 +98,7 @@ class Cell(object):
     @property
     def label(self):
         try:
-            return '{}{}'.format(self.name, str(self.label).zfill(2))
+            return '{}{}'.format(self.name, str(self.idx).zfill(2))
         except AttributeError:
             return None
 

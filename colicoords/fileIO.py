@@ -5,6 +5,7 @@ import os
 from xml.etree import cElementTree as etree
 import warnings
 from colicoords.cell import Cell
+from colicoords.data_models import Data
 
 
 def save(file_path, cell_obj, imagej=False):
@@ -27,8 +28,10 @@ def save(file_path, cell_obj, imagej=False):
 
             data_grp = f.create_group('data')
             for k, v in cell_obj.data.data_dict.items():
-                if v is not None:
-                    data_grp.create_dataset(k, data=v)
+                grp = data_grp.create_group(k)
+                grp.create_dataset(k, data=v)
+                grp.attrs.create('dclass', np.string_(v.dclass))
+                #todo metatdata
 
     elif ext == '.tif' or '.tiff':
         with tifffile.TiffWriter(file_path, imagej=imagej) as tif:
@@ -48,10 +51,15 @@ def load(file_path):
     if ext == '.cc':
         with h5py.File(file_path, 'r') as f:
 
+            data_obj = Data()
             data_grp = f['data']
-            data_dict = {item: np.array(data_grp.get(item)) for item in data_grp}
+            for key in list(data_grp.keys()):
+                grp = data_grp[key]
+                data_arr = grp[key]
+                dclass = grp.attrs.get('dclass').decode('UTF-8')
+                data_obj.add_data(data_arr, dclass=dclass, name=key)
 
-            c = Cell(data_dict=data_dict)
+            c = Cell(data_obj)
 
             attr_grp = f['attributes']
             attr_dict = dict(attr_grp.attrs.items())

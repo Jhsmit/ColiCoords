@@ -3,7 +3,7 @@ from distutils.core import setup
 setup(
     name='colicoords',
     version='0.0.1',
-    description='Create a coordinate system in banana-shaped cells.',
+    description='Create a coordinate system in curved cells.',
     author='Jochem Smit',
     author_email='j.h.smit@rug.nl',
     packages=['colicoords'],
