@@ -16,10 +16,10 @@ Lets start out with a simple example where we start out with a binary image of a
 
 |pic1| |pic2|
 
-.. |pic1| image::  /docs/example1/fluorescence_1.png 
+.. |pic1| image::  /examples/example1/fluorescence_1.png 
   :alt: Fluorescence with outline
 
-.. |pic2| image::  /docs/example1/binary_1.png 
+.. |pic2| image::  /examples/example1/binary_1.png 
   :alt: Fluorescence with outlinea
 
 .. code-block:: python
