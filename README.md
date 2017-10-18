@@ -1,4 +1,5 @@
-# CellCoordinates-MKII
-Rewrite of CellCoordinates
+# ColiCoords
 
-Fitting a coordinate system to banana-shaped cells
+Fitting a coordinate system to banana-shaped cells.
+
+Because real cells have curves.
