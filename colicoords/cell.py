@@ -56,11 +56,11 @@ class Cell(object):
             elif not self.data.binary_img and not self.data.storm_table:
                 raise ValueError("Please specify optimize method")
 
-        elif dclass == 'Binary':
+        elif dclass == 'binary':
             optimizer = BinaryOptimizer(self)
-        elif dclass == 'Fluorescence':
+        elif dclass == 'fluorescence':
             raise NotImplementedError
-        elif dclass == 'STORM':
+        elif dclass == 'storm':
             optimizer = STORMOptimizer(self, method=method)
         else:
             raise ValueError("Invalid value for optimize_method")
@@ -103,10 +103,10 @@ class Cell(object):
             return None
 
     def l_dist(self):
-        pass
+        raise NotImplementedError()
 
     #todo choose fluorescence channel or storm
-    def radial_distribution(self, stop, step, src='', norm_x=False, storm_weight='points'):
+    def r_dist(self, stop, step, src='', norm_x=False, storm_weight='points'):
         def bin_func(r, y_weight, bins):
             i_sort = r.argsort()
             r_sorted = r[i_sort]
@@ -130,7 +130,7 @@ class Cell(object):
                 raise ValueError('Chosen data not found')
 
         if data_elem.ndim == 1:
-            assert data_elem.dclass == 'STORMTable'
+            assert data_elem.dclass == 'storm'
             x = data_elem['x']
             y = data_elem['y']
 
@@ -146,7 +146,7 @@ class Cell(object):
             yvals = bin_func(r, y_weight, bins)
 
         elif data_elem.ndim == 2:
-            assert data_elem.dclass == 'Fluorescence'
+            assert data_elem.dclass == 'fluorescence'
             r = self.coords.rc / self.coords.r if norm_x else self.coords.rc
 
             yvals = bin_func(r.flatten(), data_elem.flatten(), bins)
@@ -349,7 +349,7 @@ class Coordinates(object):
             yt2 = yt1
         elif tgt == 'mpl':
             xt2 = xt1
-            yt2 = self.shape[0] - yt1
+            yt2 = self.shape[0] - yt1 # -0.5!!
         elif tgt == 'matrix':
             xt2 = self.shape[0] - yt1 - 0.5
             yt2 = xt1 - 0.5
@@ -375,7 +375,7 @@ class Coordinates(object):
 
 class CellList(object):
     def optimize(self, dclass=None, method='photons', verbose=False):  #todo refactor dclass to data_src or data_name
-        #todo threaded and shit
+        #todo threaded and stuff
         for c in self:
             c.optimize(dclass=dclass, method=method, verbose=verbose)
 
@@ -407,11 +407,11 @@ class CellList(object):
     def __contains__(self, item):
         return self.cell_list.__contains__(item)
 
-    def radial_distribution(self, stop, step, src='', norm_x=False, storm_weight='points'):
+    def r_dist(self, stop, step, src='', norm_x=False, storm_weight='points'):
         numpoints = len(np.arange(0, stop+step, step))
         out_arr = np.zeros((len(self), numpoints))
         for i, c in enumerate(self):
-            x, y = c.radial_distribution(stop, step, src=src, norm_x=norm_x, storm_weight=storm_weight)
+            x, y = c.r_dist(stop, step, src=src, norm_x=norm_x, storm_weight=storm_weight)
             out_arr[i] = y
 
         return x, out_arr

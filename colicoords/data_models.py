@@ -21,7 +21,7 @@ class BinaryImage(np.ndarray):
         obj = np.asarray(input_array).view(cls)
         obj.name = name
         obj.metadata = metadata
-        obj.dclass = 'Binary'
+        obj.dclass = 'binary'
         return obj
 
     @property
@@ -36,7 +36,7 @@ class BrightFieldImage(np.ndarray):
         obj = np.asarray(input_array).view(cls)
         obj.name = name
         obj.metadata = metadata
-        obj.dclass = 'Brightfield'
+        obj.dclass = 'brightfield'
         return obj
 
     @property
@@ -51,7 +51,7 @@ class FluorescenceImage(np.ndarray):
         obj = np.asarray(input_array).view(cls)
         obj.name = name
         obj.metadata = metadata
-        obj.dclass = 'Fluorescence'
+        obj.dclass = 'fluorescence'
         return obj
 
     @property
@@ -73,7 +73,7 @@ class STORMTable(np.ndarray):
         obj = np.asarray(input_array).view(cls)
         obj.name = name
         obj.metadata = metadata
-        obj.dclass = 'STORMTable'
+        obj.dclass = 'storm'
         return obj
 
 
@@ -90,7 +90,7 @@ class STORMImage(np.ndarray):
         obj = np.asarray(input_array).view(cls)
         obj.name = name
         obj.metadata = metadata
-        obj.dclass = 'STORMImage'
+        obj.dclass = 'storm_img'
         return obj
 
     @property
@@ -168,35 +168,35 @@ class Data(object):
             name = str(name)
 
         assert name not in [d.name for d in self.data_dict.values()]
-        if dclass == 'Binary':
+        if dclass == 'binary':
             assert self.binary_img is None
             self._check_shape(data.shape, data.ndim)
             self.binary_img = BinaryImage(data, name=name, metadata=metadata)
             self.data_dict[name] = self.binary_img
-        elif dclass == 'Brightfield':
+        elif dclass == 'brightfield':
             assert self.brightfield_img is None
             self._check_shape(data.shape, data.ndim)
             self.brightfield_img = BrightFieldImage(data, name=name, metadata=metadata)
             self.data_dict[name] = self.brightfield_img
-        elif dclass == 'Fluorescence':
+        elif dclass == 'fluorescence':
             assert name
             assert name not in self.flu_dict
             self._check_shape(data.shape, data.ndim)
             f = FluorescenceImage(data, name=name, metadata=metadata)
             setattr(self, 'flu_' + name, f)
             self.flu_dict[name] = f
-        elif dclass == 'STORMTable':
+        elif dclass == 'storm':
             #todo some checks to make sure there is a frame entry in the table when ndim == 3 and vice versa
-            assert 'STORMTable' not in self.data_dict
+            assert 'storm' not in self.data_dict
             self.storm_table = STORMTable(data, name=name, metadata=metadata)
-            self.data_dict['STORMTable'] = self.storm_table
+            self.data_dict['storm'] = self.storm_table
             self.name_dict[name] = self.storm_table
 
-            assert 'STORMImage' not in self.data_dict
+            assert 'storm_img' not in self.data_dict
             img = self._get_storm_img(data)
-            name = 'STORMImage' if name is 'STORMTable' else name + '_img'
+            name = 'storm_img' if name is 'storm' else name + '_img'
             self.storm_img = STORMImage(img, name=name, metadata=metadata)
-            self.data_dict['STORMImage'] = self.storm_img
+            self.data_dict['storm_img'] = self.storm_img
             self.name_dict[name] = self.storm_img
         else:
             raise ValueError('Invalid data class')
@@ -221,9 +221,9 @@ class Data(object):
     def rotate(self, theta):
         data = Data()
         for v in self.data_dict.values():
-            if v.dclass == 'STORMTable':
+            if v.dclass == 'storm':
                 rotated = _rotate_storm(v, -theta, shape=self.shape)
-            elif v.dclass == 'STORMImage':
+            elif v.dclass == 'storm_img':
                 continue
             else:
                 rotated = scipy_rotate(v, -theta)
@@ -318,7 +318,7 @@ class Data(object):
     def __getitem__(self, key):
         data = Data()
         for v in self.data_dict.values():
-            if v.dclass == 'STORMTable':
+            if v.dclass == 'storm':
                 b_z = np.ones(len(v)).astype(bool)
                 if len(key) == 3:
                     #3d slicing, slices the frames? #todo 3d slicing by frame!
@@ -339,7 +339,7 @@ class Data(object):
 
                 data.add_data(table_out, v.dclass, name=v.name, metadata=v.metadata)
 
-            elif v.dclass == 'STORMImage':
+            elif v.dclass == 'storm_img':
                 continue
             else:
                 data.add_data(v[key], v.dclass, name=v.name, metadata=v.metadata)

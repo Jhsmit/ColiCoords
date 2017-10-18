@@ -63,7 +63,7 @@ plt.show()
 
 
 
-x, y = c.radial_distribution(2, 0.1, src='STORMTable', storm_weight='points', norm_x=True)
+x, y = c.r_dist(2, 0.1, src='STORMTable', storm_weight='points', norm_x=True)
 
 plt.figure()
 plt.plot(x, y)

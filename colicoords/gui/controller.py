@@ -331,7 +331,7 @@ class CellObjectController(object):
                 cbs_bool = [c.isChecked() for c in cbs]
                 if np.any(cbs_bool):
                     if dist == 'r':
-                        x, out_arr = self.cell_list.radial_distribution(cfg.R_DIST_STOP, cfg.R_DIST_STEP, src=data_src)
+                        x, out_arr = self.cell_list.r_dist(cfg.R_DIST_STOP, cfg.R_DIST_STEP, src=data_src)
 
                     elif dist == 'a':
                         pass

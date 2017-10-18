@@ -5,8 +5,9 @@ from colicoords.preprocess import data_to_cells
 from test_functions import generate_testdata
 from colicoords.plot import CellPlot
 
+
 data = generate_testdata('ds3')
-cell_list = data_to_cells(data, pad_width=2, cell_frac=0.5, rotate='Binary')
+cell_list = data_to_cells(data, pad_width=2, cell_frac=0.5, rotate='binary')
 cell_list.optimize(verbose=False)
 cell = cell_list[7]
 cell.optimize(verbose=True)
@@ -14,14 +15,17 @@ cell.optimize(verbose=True)
 print(len(cell_list))
 print(cell_list.length)
 
-plt.imshow(cell.data.brightfield_img)
-plt.show()
 
-plt.imshow(cell.data.flu_Fluorescence)
-plt.show()
+#tifffile.imsave('binary_1.tif', cell.data.binary_img)
+#tifffile.imsave('fluorescence_1.tif', cell.data.flu_fluorescence)
 
-tifffile.imsave('binary_1.tif', cell.data.binary_img)
-tifffile.imsave('fluorescence_1.tif', cell.data.flu_Fluorescence)
+cp = CellPlot(cell)
+
+plt.figure()
+#plt.imshow(cell.data.data_dict['fluorescence'], cmap='viridis')
+plt.imshow(cell.data.binary_img, interpolation='nearest')
+cp.plot_outline(coords='mpl')
+plt.show()
 
 
 #

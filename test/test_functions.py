@@ -14,7 +14,7 @@ flu_files = listdir_fullpath(r'test_data/ds1/fluorescence')
 
 
 def generate_data(dataset):
-    dclasses = ['Binary', 'Brightfield', 'Fluorescence']
+    dclasses = ['binary', 'brightfield', 'fluorescence']
 
     data = Data()
     for dclass in dclasses:
@@ -42,13 +42,21 @@ def generate_stormdata():
     storm_table['y'] /= cfg.IMG_PIXELSIZE
 
     data = Data()
-    data.add_data(binary, 'Binary')
-    data.add_data(storm_table, 'STORMTable')
+    data.add_data(binary, 'binary')
+    data.add_data(storm_table, 'storm')
 
     return data
+
 
 def generate_testdata(dataset):
     if dataset == 'ds2':
         return generate_stormdata()
-    elif dataset in ['ds1', 'ds3']:
+    elif dataset in ['ds1', 'ds3', 'ds4']:
         return generate_data(dataset)
+
+
+if __name__ == '__main__':
+    data = generate_testdata('ds4')
+    tifffile.imsave('binary_stack_2.tif', data.binary_img)
+    tifffile.imsave('brightfield_stack_2.tif', data.brightfield_img)
+    tifffile.imsave('fluorescence_stack_2.tif', data.data_dict['fluorescence'])

@@ -4,7 +4,7 @@ import matplotlib.patches as mpatches
 import seaborn.timeseries
 from colicoords.config import cfg
 import seaborn as sns
-
+sns.set_style('white')
 #todo add src, python 2
 def _plot_std_bars(*args, central_data=None, ci=None, data=None, **kwargs):
     std = data.std(axis=0)
@@ -72,7 +72,7 @@ class CellListPlot(object):
             step = cfg.R_DIST_STEP
 
         if mode == 'r':
-            x, out_arr = self.cell_list.radial_distribution(stop, step, src=src, norm_x=norm_x, storm_weight=storm_weights)
+            x, out_arr = self.cell_list.r_dist(stop, step, src=src, norm_x=norm_x, storm_weight=storm_weights)
             out_arr = np.nan_to_num(out_arr)
             title = 'Radial Distribution'
         elif mode == 'l':
@@ -90,6 +90,9 @@ class CellListPlot(object):
         plt.xlabel('Distance ({})'.format(t_units))
         plt.ylabel('Signal intensity')
         plt.title(title)
+
+        if norm_y:
+            plt.ylim(0, 1.1)
         plt.tight_layout()
 
 
@@ -181,10 +184,10 @@ class CellPlot(object):
             else:
                 stop = cfg.R_DIST_STOP
                 step = cfg.R_DIST_STEP
-            x, y = self.c.radial_distribution(stop, step, src=src, norm_x=norm_x, storm_weight=storm_weights)
+            x, y = self.c.r_dist(stop, step, src=src, norm_x=norm_x, storm_weight=storm_weights)
 
             if norm_y:
-                raise NotImplementedError()
+                y /= y.max()
 
         elif mode == 'l':
             raise NotImplementedError
@@ -193,7 +196,16 @@ class CellPlot(object):
         else:
             raise ValueError('Distribution mode {} not supported'.format(mode))
 
+        x = x if norm_x else x * (cfg.IMG_PIXELSIZE / 1000)
+        xunits = 'norm' if norm_x else '$\mu m$'
+
+        yunits = 'norm' if norm_y else 'a.u.'
+
         plt.plot(x, y)
+        plt.xlabel('Distance ({})'.format(xunits))
+        plt.ylabel('Intensity ({})'.format(yunits))
+        if norm_y:
+            plt.ylim(0, 1.1)
 
     def _plot_intercept_line(self, x_pos, coords='cart', **kwargs):
         x = np.linspace(x_pos - 10, x_pos + 10, num=200)
