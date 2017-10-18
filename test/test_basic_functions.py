@@ -1,6 +1,5 @@
 from colicoords.fileIO import load, save
 from colicoords.cell import Cell, CellList
-from colicoords.preprocess import process_cell
 from testcase import ArrayTestCase
 from test_functions import generate_testdata
 import hashlib

@@ -337,7 +337,7 @@ class Coordinates(object):
             yt1 = y
         elif src == 'mpl':
             xt1 = x
-            yt1 = self.shape[0] - y
+            yt1 = self.shape[0] - y - 0.5
         elif src == 'matrix':
             yt1 = self.shape[0] - x - 0.5
             xt1 = y + 0.5
@@ -349,7 +349,7 @@ class Coordinates(object):
             yt2 = yt1
         elif tgt == 'mpl':
             xt2 = xt1
-            yt2 = self.shape[0] - yt1 # -0.5!!
+            yt2 = self.shape[0] - yt1 - 0.5#!!
         elif tgt == 'matrix':
             xt2 = self.shape[0] - yt1 - 0.5
             yt2 = xt1 - 0.5

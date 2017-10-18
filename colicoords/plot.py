@@ -54,16 +54,15 @@ class CellListPlot(object):
     def plot_dist(self, mode='r', src='', std='std_band', norm_y=False, norm_x=False, storm_weights='points', **kwargs):
         """
 
-        :param mode: r, l, or a for radial, longitinudial or angular
+        :param mode: r, l, or a for radial, longitudinal or angular
         :param src: which data source to use
         :param std: band or bar style std error bars
         :param norm_y: normalize distribution wrt y
-        :param norm_x normalie distribution wrt r, l, (not alpha)
+        :param norm_x normalize distribution wrt r, l, (not alpha)
         :param kwargs: are passed to plot
         :return:
         """
 
-        #todo r units when normed
         if norm_x:
             stop = cfg.R_DIST_NORM_STOP
             step = cfg.R_DIST_NORM_STEP
