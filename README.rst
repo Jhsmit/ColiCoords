@@ -13,23 +13,21 @@ ColiCoords is a python project aimed to make analysis of fluorescence data from 
 Using ColiCoords
 ----------------
 
-Lets start out with a simple example where we start out with a binary image of a horizontally oriented cell as well as a corresponding fluorescence image. To turn this data into a ``Cell`` object we need to first create a ``Data`` class and use the ``add_data`` method to add the images as ``np.ndarray``, as well as indicate the data class (binary, brightfield, fluorescence or storm). This data class is used to initialize a ``Cell`` object. 
+Lets start out with a simple example where we start out with a binary image of a horizontally oriented cell as well as a corresponding fluorescence image. To turn this data into a ``Cell`` object we need to first create a ``Data`` class and use the ``add_data`` method to add the images as a ``np.ndarray``, as well as indicate the data class (binary, brightfield, fluorescence or storm). This data class is used to initialize a ``Cell`` object. 
 
-
-.. image:: /examples/example1/binary_1.png 
-  :alt: Fluorescence with outlinea
-  :width: 59px
-  :heigth: 58px
-  :scale: 500%
-  
+.. raw:: html
+   <h1>This is heading 1</h1>
 
 .. image:: /examples/example1/fluorescence_1.png 
   :alt: Fluorescence with outline
-  :width: 59px
-  :heigth: 58px
-  :scale: 500%
 
 
+
+
+.. raw:: html
+  <embed>
+    <img src="/examples/example1/binary_1.png" width="200px" height="200px" />
+  </embed>
 
 .. code-block:: python
 
