@@ -16,12 +16,12 @@ Using ColiCoords
 Lets start out with a simple example where we start out with a binary image of a horizontally oriented cell as well as a corresponding fluorescence image. To turn this data into a ``Cell`` object we need to first create a ``Data`` class and use the ``add_data`` method to add the images as ``np.ndarray``, as well as indicate the data class (binary, brightfield, fluorescence or storm). This data class is used to initialize a ``Cell`` object. 
 
 
-.. |pic1| image::  /examples/example1/binary_1.png 
+.. image::  /examples/example1/binary_1.png 
   :alt: Fluorescence with outlinea
   :width: 600px
   :scale: 200%
   
-.. |pic2| image::  /examples/example1/fluorescence_1.png 
+.. image::  /examples/example1/fluorescence_1.png 
   :alt: Fluorescence with outline
   :width: 600px
 
