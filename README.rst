@@ -1,4 +1,5 @@
-# ColiCoords
+ColiCoords
+==========
 
 Because real cells have curves.
 
@@ -11,7 +12,15 @@ ColiCoords is a python project aimed to make analysis of fluorescence data from 
 Using ColiCoords
 ----------------
 
-Lets start out with a simple example where we have a binary image of a horizontally oriented cell as well as a corresponding fluorescence image. To turn this data into a ``Cell`` object we need to first create a ``Data`` class and use the ``add_data`` method to add the images as ``np.ndarray``, as well as indicate the data class (binary, brightfield, fluorescence or storm). This data class is used to initialize a ``Cell`` object. 
+Lets start out with a simple example where we start out with a binary image of a horizontally oriented cell as well as a corresponding fluorescence image. To turn this data into a ``Cell`` object we need to first create a ``Data`` class and use the ``add_data`` method to add the images as ``np.ndarray``, as well as indicate the data class (binary, brightfield, fluorescence or storm). This data class is used to initialize a ``Cell`` object. 
+
+|pic1| |pic2|
+
+.. |pic1| image::  /docs/example1/fluorescence_1.png 
+  :alt: Fluorescence with outline
+
+.. |pic2| image::  /docs/example1/binary_1.png 
+  :alt: Fluorescence with outlinea
 
 .. code-block:: python
 
@@ -96,7 +105,7 @@ The data class can also hold a stack of images provided all image shapes match. 
   
 This particular slicing operation selects images 5 through 10 and takes the upper left 100x100 square. STORM data is automatically sliced accordingly if its present in the data class. This is used by the ``data_to_cells`` method to obtain single-cell objects.
 
-..code-block:: python
+.. code-block:: python
   cell_list = data_to_cells(data)
   cell_list.optimize(verbose=False)
   
