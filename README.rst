@@ -18,12 +18,16 @@ Lets start out with a simple example where we start out with a binary image of a
 
 .. image::  /examples/example1/binary_1.png 
   :alt: Fluorescence with outlinea
-  :width: 600px
-  :scale: 200%
+  :width: 59px
+  :heigth: 58px
+  :scale: 500%
+  
   
 .. image::  /examples/example1/fluorescence_1.png 
   :alt: Fluorescence with outline
-  :width: 600px
+  :width: 59px
+  :heigth: 58px
+  :scale: 500%
 
 
 
