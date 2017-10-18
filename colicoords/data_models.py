@@ -210,8 +210,6 @@ class Data(object):
             data.add_data(np.copy(v), v.dclass, name=v.name, metadata=v.metadata)
         return data
 
-
-
     @property
     def dclasses(self):
         return np.unique([d.dclass for d in self.data_dict.values()])
@@ -308,13 +306,13 @@ class Data(object):
                 raise StopIteration
 
         data = Data()
-        for v in self.data_dict.values():
-            data.add_data(v[self.idx], v.dclass, name=v.name, metadata=v.metadata)
-        self.idx += 1
         if self.idx >= len(self):
             self.idx = 0
             raise StopIteration
         else:
+            for v in self.data_dict.values():
+                data.add_data(v[self.idx], v.dclass, name=v.name, metadata=v.metadata)
+            self.idx += 1
             return data
 
     def __getitem__(self, key):

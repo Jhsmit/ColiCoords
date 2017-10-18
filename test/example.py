@@ -1,32 +1,28 @@
 import tifffile
 import matplotlib.pyplot as plt
 import numpy as np
-from colicoords.preprocess import process_cell
+from colicoords.preprocess import data_to_cells
+from test_functions import generate_testdata
 from colicoords.plot import CellPlot
 
-fl_img = tifffile.imread('test_data/flu1.tif')
-binary_img = tifffile.imread('test_data/binary1.tif')
+data = generate_testdata('ds3')
+cell_list = data_to_cells(data, pad_width=2, cell_frac=0.5, rotate='Binary')
+cell_list.optimize(verbose=False)
+cell = cell_list[7]
+cell.optimize(verbose=True)
 
+print(len(cell_list))
+print(cell_list.length)
 
-cell = process_cell(rotate='binary', binary_img=binary_img, flu_data={'514': fl_img})
-#cell.optimize(method='binary')
-
-plt.imshow(cell.data.binary_img)
+plt.imshow(cell.data.brightfield_img)
 plt.show()
 
-
-x, y = np.arange(10)**2, np.arange(10)+20
-print(x, y)
-xm, ym = cell.coords.transform(x, y, src='cart', tgt='matrix')
-print(xm, ym)
-xc, yc = cell.coords.transform(xm, ym, src='matrix', tgt='cart')
-print(xc, yc)
-
-p = CellPlot(cell)
-print(cell.data.data_dict.keys())
-plt.imshow(cell.data.data_dict['514'])
-p.plot_outline()
+plt.imshow(cell.data.flu_Fluorescence)
 plt.show()
+
+tifffile.imsave('binary_1.tif', cell.data.binary_img)
+tifffile.imsave('fluorescence_1.tif', cell.data.flu_Fluorescence)
+
 
 #
 # save('cell.tif', cell)

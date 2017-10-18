@@ -4,6 +4,7 @@ import tifffile
 import numpy as np
 import os
 
+
 def listdir_fullpath(d):
     return [os.path.join(d, f) for f in os.listdir(d)]
 
@@ -18,10 +19,11 @@ def generate_data(dataset):
     data = Data()
     for dclass in dclasses:
         files = listdir_fullpath(os.path.join('test_data', dataset, dclass.lower()))
+        print(files)
         arr = np.empty((len(files), 512, 512)).astype('uint16')
         for i, f in enumerate(files):
             arr[i] = tifffile.imread(f)
-
+        print(arr.shape)
         data.add_data(arr, dclass)
 
     return data
