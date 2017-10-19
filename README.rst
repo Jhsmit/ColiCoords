@@ -9,7 +9,6 @@ Project Goals
 
 ColiCoords is a python project aimed to make analysis of fluorescence data from rodlike cells more streamlined and intuative. These goals are achieved by describing the shape of the cell by a 2nd degree polynomial, and this simple mathematical description together with a data structure to organize cell data on a single cell basis allows for straightforward and detailed analysis. 
 
-
 Using ColiCoords
 ----------------
 
