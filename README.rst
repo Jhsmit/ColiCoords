@@ -1,3 +1,4 @@
+==========
 ColiCoords
 ==========
 
@@ -8,19 +9,24 @@ Project Goals
 
 ColiCoords is a python project aimed to make analysis of fluorescence data from rodlike cells more streamlined and intuative. These goals are achieved by describing the shape of the cell by a 2nd degree polynomial, and this simple mathematical description together with a data structure to organize cell data on a single cell basis allows for straightforward and detailed analysis. 
 
-
 Using ColiCoords
 ----------------
 
-Lets start out with a simple example where we start out with a binary image of a horizontally oriented cell as well as a corresponding fluorescence image. To turn this data into a ``Cell`` object we need to first create a ``Data`` class and use the ``add_data`` method to add the images as ``np.ndarray``, as well as indicate the data class (binary, brightfield, fluorescence or storm). This data class is used to initialize a ``Cell`` object. 
+Lets start out with a simple example where we start out with a binary image of a horizontally oriented cell as well as a corresponding fluorescence image. To turn this data into a ``Cell`` object we need to first create a ``Data`` class and use the ``add_data`` method to add the images as a ``np.ndarray``, as well as indicate the data class (binary, brightfield, fluorescence or storm). This data class is used to initialize a ``Cell`` object. 
 
-|pic1| |pic2|
+.. raw:: html
+   <h1>This is heading 1</h1>
 
-.. |pic1| image::  /examples/example1/fluorescence_1.png 
+.. image:: /examples/example1/fluorescence_1.png 
   :alt: Fluorescence with outline
 
-.. |pic2| image::  /examples/example1/binary_1.png 
-  :alt: Fluorescence with outlinea
+
+
+
+.. raw:: html
+  <embed>
+    <img src="/examples/example1/binary_1.png" width="200px" height="200px" />
+  </embed>
 
 .. code-block:: python
 
