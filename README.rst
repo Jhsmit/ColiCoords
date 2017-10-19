@@ -14,20 +14,10 @@ Using ColiCoords
 
 Lets start out with a simple example where we start out with a binary image of a horizontally oriented cell as well as a corresponding fluorescence image. To turn this data into a ``Cell`` object we need to first create a ``Data`` class and use the ``add_data`` method to add the images as a ``np.ndarray``, as well as indicate the data class (binary, brightfield, fluorescence or storm). This data class is used to initialize a ``Cell`` object. 
 
-.. raw:: html
-   <h1>This is heading 1</h1>
+.. figure:: /examples/example1/bin_flu_combined.png     
 
-.. image:: /examples/example1/fluorescence_1.png 
-  :alt: Fluorescence with outline
-
-
-
-
-.. raw:: html
-  <embed>
-    <img src="/examples/example1/binary_1.png" width="200px" height="200px" />
-  </embed>
-
+Binary (left) and fluorescence (right) input images.
+ 
 .. code-block:: python
 
   import tifffile
