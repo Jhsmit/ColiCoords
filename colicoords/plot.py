@@ -26,7 +26,7 @@ class CellListPlot(object):
     def __init__(self, cell_list):
         self.cell_list = cell_list
 
-    def hist_property(self, tgt='length'):
+    def hist_property(self, ax=None, tgt='length'):
         if tgt == 'length':
             values = np.array([c.length for c in self.cell_list]) * (cfg.IMG_PIXELSIZE / 1000)
             title = 'Cell length'
@@ -46,12 +46,14 @@ class CellListPlot(object):
             xlabel = r'Volume ($\mu m^{3}$ / fL)'
         else:
             raise ValueError('Invalid target')
-        ax = sns.distplot(values, kde=False)
-        ax.set_title(title)
-        ax.set_xlabel(xlabel)
-        ax.set_ylabel('Cell count')
+        ax_d = sns.distplot(values, kde=False, ax=ax)
+        ax_d.set_title(title)
+        ax_d.set_xlabel(xlabel)
+        ax_d.set_ylabel('Cell count')
 
-    def plot_dist(self, mode='r', src='', std='std_band', norm_y=False, norm_x=False, storm_weights='points', **kwargs):
+        return ax_d
+
+    def plot_dist(self, ax=None, mode='r', src='', std='std_band', norm_y=False, norm_x=False, storm_weights='points', **kwargs):
         """
 
         :param mode: r, l, or a for radial, longitudinal or angular
@@ -85,54 +87,72 @@ class CellListPlot(object):
 
         t = x if norm_x else x * (cfg.IMG_PIXELSIZE / 1000)
         t_units = 'norm' if norm_x else '$\mu m$'
-        sns.tsplot(data=out_arr, time=t, estimator=np.mean, err_style=std, **kwargs)
-        plt.xlabel('Distance ({})'.format(t_units))
-        plt.ylabel('Signal intensity')
-        plt.title(title)
+        ax_out = sns.tsplot(data=out_arr, time=t, estimator=np.mean, err_style=std, ax=ax, **kwargs)
+        ax_out.set_xlabel('Distance ({})'.format(t_units))
+        ax_out.set_ylabel('Signal intensity')
+        ax_out.set_title(title)
 
         if norm_y:
-            plt.ylim(0, 1.1)
-        plt.tight_layout()
+            ax_out.ylim(0, 1.1)
+        ax_out.tight_layout()
 
 
 class CellPlot(object):
     def __init__(self, cell_obj):
         self.c = cell_obj
 
-    def plot_final_func(self, coords='mpl', **kwargs):
+    def plot_midline(self, ax=None, coords='mpl', **kwargs):
         """
         Plot the final found function and xl, xr
         :param coords:
         :param kwargs:
         :return:
         """
-        x = np.linspace(self.c.xl, self.c.xr, 100)
+
+        x = np.linspace(self.c.coords.xl, self.c.coords.xr, 100)
         y = self.c.coords.p(x)
         if 'color' not in kwargs:
             kwargs['color'] = 'r'
         if coords == 'mpl':
             x, y = self.c.coords.transform(x, y, src='cart', tgt='mpl')
-        plt.plot(x, y, **kwargs)
 
-    def plot_binary_img(self, **kwargs):
+        ax = plt.gca() if ax is None else ax
+        ax.plot(x, y, **kwargs)
+
+        return ax
+
+    def plot_binary_img(self, ax=None, **kwargs):
         if 'interpolation' not in kwargs:
             kwargs['interpolation'] = 'nearest'
-        plt.imshow(self.c.data.binary_img, **kwargs)
 
-    def plot_simulated_shape(self, **kwargs):
+        ax = plt.gca() if ax is None else ax
+        ax.imshow(self.c.data.binary_img, **kwargs)
+
+        return ax
+
+    def plot_simulated_shape(self, ax=None, **kwargs):
         if 'interpolation' not in kwargs:
             kwargs['interpolation'] = 'nearest'
         img = self.c.coords.rc < self.c.coords.r
-        plt.imshow(img, **kwargs)
 
-    def plot_bin_fit_comparison(self, **kwargs):
+        ax = plt.gca() if ax is None else ax
+        ax.imshow(img, **kwargs)
+
+        return ax
+
+    def plot_bin_fit_comparison(self, ax=None, **kwargs):
         if 'interpolation' not in kwargs:
             kwargs['interpolation'] = 'nearest'
         img = self.c.coords.rc < self.c.coords.r
-        plt.imshow(3 - (2*img + self.c.data.binary_img), **kwargs)
+
+        ax = plt.gca() if ax is None else ax
+        ax.imshow(3 - (2*img + self.c.data.binary_img), **kwargs)
+
+        return ax
+
         #todo sequential colormap
 
-    def plot_outline(self, coords='cart', **kwargs):
+    def plot_outline(self, ax=None, coords='mpl', **kwargs):
         #todo: works but: semicircles are not exactly from 0 to 180 but instead depend on local slope (xr, xl)
         #todo: dx sign depends on slope sign (f_d > 0, dx < 0), vice versa?
 
@@ -172,9 +192,12 @@ class CellPlot(object):
 
         x_all, y_all = self.c.coords.transform(x_all, y_all, src='cart', tgt=coords)
 
-        plt.plot(x_all, y_all, color='r', **kwargs)
+        ax = plt.gca() if ax is None else ax
+        ax.plot(x_all, y_all, color='r', **kwargs)
 
-    def plot_dist(self, mode='r', src='', norm_y=False, norm_x=False, storm_weights='points'):
+        return ax
+
+    def plot_dist(self, ax=None, mode='r', src='', norm_y=False, norm_x=False, storm_weights='points'):
 
         if mode == 'r':
             if norm_x:
@@ -200,11 +223,14 @@ class CellPlot(object):
 
         yunits = 'norm' if norm_y else 'a.u.'
 
-        plt.plot(x, y)
-        plt.xlabel('Distance ({})'.format(xunits))
-        plt.ylabel('Intensity ({})'.format(yunits))
+        ax = plt.gca() if ax is None else ax
+        ax.plot(x, y)
+        ax.set_xlabel('Distance ({})'.format(xunits))
+        ax.set_ylabel('Intensity ({})'.format(yunits))
         if norm_y:
-            plt.ylim(0, 1.1)
+            ax.set_ylim(0, 1.1)
+
+        return ax
 
     def _plot_intercept_line(self, x_pos, coords='cart', **kwargs):
         x = np.linspace(x_pos - 10, x_pos + 10, num=200)
@@ -214,6 +240,9 @@ class CellPlot(object):
         x, y = self.c.coords.transform(x, y, src='cart', tgt=coords)
 
         plt.plot(x, y)
+
+    def figure(self):
+        plt.figure()
 
     def show(self):
         plt.show()
