@@ -42,6 +42,7 @@ The ``Cell`` object has two main attributes: ``data`` and ``coords``. The ``data
   
 We can now use the cell's coordinate system together with any fluorescence data (image-based or storm) to plot fuorescence distrubtion along any axis, or calculate properties related to the cells shape, such as radius and lenght as well as area and volume. The units used in the inner workings or ``ColiCoords`` are pixels, in colicoords/config.py the pixel size can be defined which is used for output graphs. 
 
+
 .. code-block:: python
   
   from colicoords.plot import CellPlot
@@ -52,20 +53,27 @@ We can now use the cell's coordinate system together with any fluorescence data 
   plt.figure()
   plt.imshow(cell_obj.data.data_dict['flu_514'], cmap='viridis', interpolation='nearest')
   cp.plot_outline(coords='mpl')
+  cp.plot_midline(coords='mpl')
   plt.show()
   
-This show the fluorescence data together with the cell outline optimized from the binary image which was obtained from the brightfield image. For an explanation on ColiCoords different coordinate systems please see somesectionthatdoesntexistyet. This makes the cell outline appear larger than the cell in the fluorescence image. Since its only the shape and position of the cell that is important for the coordinate system this will not influence the final results. Furthermore, if the fluorescence signal stains the whole cell this can be used as well for coordinate system optimization - see advanced usage for more details. 
+.. figure:: /examples/example1/fluorescence_outline.png
+    
+  Fluorescence image with cell midline and outline
+  
+This shows the fluorescence data together with the cell outline and midline optimized from the binary image, which was obtained from the brightfield image. For an explanation on ColiCoords different coordinate systems please see somesectionthatdoesntexistyet. This makes the cell outline appear larger than the cell in the fluorescence image. Since its only the shape and position of the cell that is important for the coordinate system this will not influence the final results. Furthermore, if the fluorescence signal stains the whole cell this can be used as well for coordinate system optimization - see advanced usage for more details. 
 
 To plot the radial distribution of the ``flu_514`` fluorescence channel:
 
+
 .. code-block:: python
-  plt.figure()
-  cp.plot_dist(mode='r', src='flu_514')
-  plt.show()
+  f, (ax1, ax2) = plt.subplots(1, 2)
+  cp.plot_dist(ax=ax1)
+  cp.plot_dist(ax=ax2, norm_x=True, norm_y=True)
+  plt.tight_layout()
   
-  plt.figure()
-  cp.plot_dist(mode='r', src='flu_514', norm_x=True, norm_y=True)
-  plt.show()
+.. figure:: /examples/example1/r_dist.png
+
+Radial distribution curve of fluorescence as measured (left) and normalized (right).
   
 The displayed curve is basically a histogram of mean intensity of all fluorescence pixels binned by their distance from the cell midline. When using the ``plot_dist`` method on ``CellPlot`` the bin size is chosen automatically as defined in the config. It is also possible to directly access the data from the ``Cell`` object by calling ``r_dist()``. The radial distribution curves can be normalized in both ``x`` and ``y`` directions. When normalized in the ``x`` direction the radius obtained from the brightfield image is set to one, thereby eliminating cell-to-cell variations in width. 
 
