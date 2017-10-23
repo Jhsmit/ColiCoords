@@ -5,14 +5,34 @@ import seaborn.timeseries
 from colicoords.config import cfg
 import seaborn as sns
 sns.set_style('white')
-#todo add src, python 2
-def _plot_std_bars(*args, central_data=None, ci=None, data=None, **kwargs):
+
+
+
+# #todo add src, python 2
+# def _plot_std_bars(*args, central_data=None, ci=None, data=None, **kwargs):
+#     std = data.std(axis=0)
+#     ci = np.asarray((central_data - std, central_data + std))
+#     kwargs.update({"central_data": central_data, "ci": ci, "data": data})
+#     seaborn.timeseries._plot_ci_bars(*args, **kwargs)
+
+
+# https://stackoverflow.com/questions/34293687/standard-deviation-and-errors-bars-in-seaborn-tsplot-function-in-python
+def _plot_std_bars(*args, **kwargs):
+    data = kwargs.pop('data')
+    central_data = kwargs.pop('central_data')
+    kwargs.pop('ci')
+
     std = data.std(axis=0)
     ci = np.asarray((central_data - std, central_data + std))
     kwargs.update({"central_data": central_data, "ci": ci, "data": data})
     seaborn.timeseries._plot_ci_bars(*args, **kwargs)
 
-def _plot_std_band(*args, central_data=None, ci=None, data=None, **kwargs):
+
+def _plot_std_band(*args, **kwargs):
+    data = kwargs.pop('data')
+    central_data = kwargs.pop('central_data')
+    kwargs.pop('ci')
+
     std = data.std(axis=0)
     ci = np.asarray((central_data - std, central_data + std))
     kwargs.update({"central_data": central_data, "ci": ci, "data": data})
