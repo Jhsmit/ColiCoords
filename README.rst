@@ -115,6 +115,7 @@ The data class can also hold a stack of images provided all image shapes match. 
 This particular slicing operation selects images 5 through 10 and takes the upper left 100x100 square. STORM data is automatically sliced accordingly if its present in the data class. This slicing functionality is used by the ``data_to_cells`` method to obtain single-cell objects.
 
 .. code-block:: python
+
   cell_list = data_to_cells(data)
   cell_list.optimize(verbose=False)
   
@@ -122,10 +123,32 @@ This particular slicing operation selects images 5 through 10 and takes the uppe
 The returned object is a ``CellList`` object which is basically a list of ``Cell`` objects. Many of the single-cell properties can be accessed in the form of a list or array for the whole set of cells. ``CellListPlot`` can be used to easily plot fluorescence distribution of the set of cells or histogram certain properties. 
 
 .. code-block:: python
+
+  clp = CellListPlot(cell_list)
   fig, axes = plt.subplots(2, 2)
   clp.hist_property(ax=axes[0,0], tgt='radius')
   clp.hist_property(ax=axes[0,1], tgt='length')
   clp.hist_property(ax=axes[1,0], tgt='area')
   clp.hist_property(ax=axes[1,1], tgt='volume')
   plt.tight_layout()
+  
+  
+.. figure:: /examples/example2/hist_property.png     
+
+  
+The radial distributions of the whole dataset can be accessed via ``CellList.r_dist()`` and plotted using ``CellListPlot``.
+
+.. code-block:: python
+
+  f, axes = plt.subplots(1, 2)
+  clp.plot_dist(ax=axes[0], mode='r')
+  axes[0].set_ylim(0, 35000)
+  clp.plot_dist(ax=axes[1], mode='r', norm_y=True, norm_x=True)
+  plt.tight_layout()
+  
+
+.. figure:: /examples/example2/r_dist_list.png     
+
+  
+The band around the line shows the sample's standard deviation. By normalizing each curve on the y-axis variation in absolute intensity is eliminated and the curve shows only the shape and its standard deviation. 
 
