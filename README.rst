@@ -80,9 +80,13 @@ The displayed curve is basically a histogram of mean intensity of all fluorescen
 ColiCoords for many Cell objects
 --------------------------------
 
-Of course, you will want to analyze not just one but tens of thousands single cells. And they don't come out of the microscope neatly horizontally aligned and on a one cell per image basis. This is what the ``data_to_cells`` method is for. You will need segmented images - labelled binary - in order for this method to work. This you will have to do yourself by either classical methods (thresholding, watershedding) or using machine learning software such as [Ilastik](http://ilastik.org/) or [MicronML](http://MicronML.org/).
+Of course, you will want to analyze not just one but tens of thousands single cells. And they don't come out of the microscope neatly horizontally aligned and on a one cell per image basis. This is what the ``data_to_cells`` method is for. You will need segmented images - labelled binary - in order for this method to work. This you will have to do yourself by either classical methods (thresholding, watershed) or using machine learning software such as Ilastik_ or MicronML_
+
+.. _Ilastik: http://ilastik.org/
+.. _MicronML: http://MicronML.org/
 
 .. code-block:: python
+
   import tifffile
   from colicoords import Cell, Data
   from colicoords.preprocess import data_to_cells
@@ -98,16 +102,17 @@ Of course, you will want to analyze not just one but tens of thousands single ce
   data.add_data(flu_stack, 'fluorescence')
   data.add_data(brightfield_stack, 'brightfield')
   
-The data class can also hold a stack of images provided all image shapes match. The data class can be iterated over returning an new instance of ``Data`` with a single slice of each data element. The ``Data`` class also supports indexing analogues to ``np.ndarrays``.
+The data class can also hold a stack of images provided all image shapes match. The data class can then be iterated over returning an new instance of ``Data`` with a single slice of each data element. The ``Data`` class also supports indexing analogues to ``np.ndarrays``.
 
 .. code-block:: python
+
   data_slice = data[5:10, 0:100, 0:100]
   print(data.shape)
   print(data_slice.shape)
   >>> (20, 512, 512)
   >>> (20, 100, 100)
   
-This particular slicing operation selects images 5 through 10 and takes the upper left 100x100 square. STORM data is automatically sliced accordingly if its present in the data class. This is used by the ``data_to_cells`` method to obtain single-cell objects.
+This particular slicing operation selects images 5 through 10 and takes the upper left 100x100 square. STORM data is automatically sliced accordingly if its present in the data class. This slicing functionality is used by the ``data_to_cells`` method to obtain single-cell objects.
 
 .. code-block:: python
   cell_list = data_to_cells(data)
@@ -116,4 +121,11 @@ This particular slicing operation selects images 5 through 10 and takes the uppe
 
 The returned object is a ``CellList`` object which is basically a list of ``Cell`` objects. Many of the single-cell properties can be accessed in the form of a list or array for the whole set of cells. ``CellListPlot`` can be used to easily plot fluorescence distribution of the set of cells or histogram certain properties. 
 
+.. code-block:: python
+  fig, axes = plt.subplots(2, 2)
+  clp.hist_property(ax=axes[0,0], tgt='radius')
+  clp.hist_property(ax=axes[0,1], tgt='length')
+  clp.hist_property(ax=axes[1,0], tgt='area')
+  clp.hist_property(ax=axes[1,1], tgt='volume')
+  plt.tight_layout()
 
