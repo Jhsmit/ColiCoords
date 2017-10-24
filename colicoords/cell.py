@@ -416,6 +416,12 @@ class CellList(object):
 
         return x, out_arr
 
+    def l_dist(self, stop, step, src='', norm_x=False, storm_weight='points'):
+        raise NotImplementedError()
+
+    def a_dist(self):
+        raise NotImplementedError()
+
     @property
     def radius(self):
         return np.array([c.radius for c in self])

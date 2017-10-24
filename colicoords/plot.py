@@ -63,9 +63,10 @@ class CellListPlot(object):
         elif tgt == 'volume':
             values = np.array([c.volume for c in self.cell_list]) * (cfg.IMG_PIXELSIZE / 1000) ** 3
             title = 'Cell volume'
-            xlabel = r'Volume ($\mu m^{3}$ / fL)'
+            xlabel = r'Volume ($\mu m^{3}$'
         else:
             raise ValueError('Invalid target')
+
         ax_d = sns.distplot(values, kde=False, ax=ax)
         ax_d.set_title(title)
         ax_d.set_xlabel(xlabel)
@@ -106,15 +107,24 @@ class CellListPlot(object):
             out_arr = out_arr / a_max[:, np.newaxis]
 
         t = x if norm_x else x * (cfg.IMG_PIXELSIZE / 1000)
-        t_units = 'norm' if norm_x else '$\mu m$'
+
+        xunits = 'norm' if norm_x else '$\mu m$'
+        yunits = 'norm' if norm_y else 'a.u.'
+
+        ax = plt.gca() if ax is None else ax
+        ax.set_xlabel('Distance ({})'.format(xunits))
+        ax.set_ylabel('Intensity ({})'.format(yunits))
+
+        if norm_y:
+            ax.set_ylim(0, 1.1)
+        
         ax_out = sns.tsplot(data=out_arr, time=t, estimator=np.mean, err_style=std, ax=ax, **kwargs)
-        ax_out.set_xlabel('Distance ({})'.format(t_units))
-        ax_out.set_ylabel('Signal intensity')
+        ax_out.set_xlabel('Distance ({})'.format(xunits))
+        ax_out.set_ylabel('Signal intensity ({})'.format(yunits))
         ax_out.set_title(title)
 
         if norm_y:
-            ax_out.ylim(0, 1.1)
-        ax_out.tight_layout()
+            ax_out.set_ylim(0, 1.1)
 
 
 class CellPlot(object):
@@ -240,7 +250,6 @@ class CellPlot(object):
 
         x = x if norm_x else x * (cfg.IMG_PIXELSIZE / 1000)
         xunits = 'norm' if norm_x else '$\mu m$'
-
         yunits = 'norm' if norm_y else 'a.u.'
 
         ax = plt.gca() if ax is None else ax
