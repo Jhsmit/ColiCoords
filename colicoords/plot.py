@@ -117,7 +117,7 @@ class CellListPlot(object):
 
         if norm_y:
             ax.set_ylim(0, 1.1)
-        
+
         ax_out = sns.tsplot(data=out_arr, time=t, estimator=np.mean, err_style=std, ax=ax, **kwargs)
         ax_out.set_xlabel('Distance ({})'.format(xunits))
         ax_out.set_ylabel('Signal intensity ({})'.format(yunits))

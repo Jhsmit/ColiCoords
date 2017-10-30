@@ -15,6 +15,14 @@ cell.optimize(verbose=True)
 print(len(cell_list))
 print(cell_list.length)
 
+x, y = cell.r_dist(30, 1)
+y /= np.sum(y)
+
+with open('r_dist.txt', 'w') as f:
+    for val in y:
+        f.write(str(val))
+        f.write('\n')
+
 
 #tifffile.imsave('binary_1.tif', cell.data.binary_img)
 #tifffile.imsave('fluorescence_1.tif', cell.data.flu_fluorescence)
