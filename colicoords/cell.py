@@ -7,45 +7,35 @@ from colicoords.optimizers import STORMOptimizer, BinaryOptimizer
 
 # todo obj or class? in docstring
 class Cell(object):
-    """Main cell object
-    
-    Attributes
-    ----------
-    data : obj:`Data`
-        Class containing all data
-    coords: obj:`Coordinates` 
-        Class describing cell's coordinate system and associated functions
-    #todo perhaps move this shizzle to a dedicated metadataclass
-    img_name : str:
-        Name of the image from which the cell originated
-    label : int:
-        cell number in the original labeled binary
-        
-    
-    Parameters
-    ----------
-    bf_img : :obj:`np.ndarray`, optional
-        Numpy array of shape MxN with the cell's binary image
-    binary_img : :obj:`np.ndarray`, optional 
-        Numpy array of shape MxN with the cell's binary image
-    fl_data : dict, optional
-        Fluorescence data either dict, np.npdarray (or directly the corresponding objects)
-    storm_data : :obj:`np.ndarray`
-        Storm coordinates (x, y) in ImageJ coordinates
-    label : str,
-        Label identifying the cell object
-
-
-    --> name: name referring original image
-    --> idx: index of the cell in the labelled binary
-    --> label: property returning {}{}.format(name, idx) or sth
     """
 
-    def __init__(self, data_object):
+
+    Attributes:
+        data (:class:`Data`): Holds all data describing this single cell.
+        coords (:class:`Coordinates): Calculates and describes the cell's coordinate system.
+
+    """
+
+    def __init__(self, data_object, name=None):
+        """ Main object governing the single-cell associated data and its coordinate system
+
+        Args:
+            data_object: The :class:`Data` Instance holding all data describing this single cell
+        """
+
         self.data = data_object
         self.coords = Coordinates(self.data)
+        self.name = name
 
     def optimize(self, dclass=None, method='photons', verbose=False):
+
+        """ Docstring will be added when all optimization types are supported
+
+        Args:
+            dclass:
+            method:
+            verbose:
+        """
         if not dclass:
             if self.data.binary_img is not None and self.data.storm_table is None:
                 optimizer = BinaryOptimizer(self)
@@ -71,6 +61,7 @@ class Cell(object):
 
     @property
     def radius(self):
+        """float: Radius of the cell"""
         return self.coords.r
 
     @property
@@ -95,18 +86,27 @@ class Cell(object):
         """float: Volume of the cell in cubic pixels"""
         return np.pi*self.coords.r**2*self.length + (4/3)*np.pi*self.coords.r**3
 
-    @property
-    def label(self):
-        try:
-            return '{}{}'.format(self.name, str(self.idx).zfill(2))
-        except AttributeError:
-            return None
+    def a_list(self):
+        raise NotImplementedError()
 
     def l_dist(self):
         raise NotImplementedError()
 
     #todo choose fluorescence channel or storm
     def r_dist(self, stop, step, src='', norm_x=False, storm_weight='points'):
+        """ Calculates the radial distribution of a given data source
+
+        Args:
+            stop: Until how far from the cell spine the radial distribution should be calculated
+            step: The binsize of the returned radial distribution
+            src: The name of the data element on which to calculate the radial distribution
+            norm_x: If `True` the returned distribution will be normalized with the cell's radius set to 1.
+            storm_weight: When calculating the radial distribution of  # todo change to True/False
+
+        Returns:
+
+        """
+
         def bin_func(r, y_weight, bins):
             i_sort = r.argsort()
             r_sorted = r[i_sort]
@@ -161,31 +161,41 @@ class Cell(object):
 class Coordinates(object):
     """Cell's coordinate system described by the polynomial f(x) and associated functions
 
-    Attributes
-    ----------
-    xl : float
-        cartesian x-coordinate of cell left pole 
-    xr : float
-        cartesian x-coordinate of cell right pole
-    r : float
-        radius of the cell (half the short axis width)
-    coeff : obj:`np.ndarray`
-        polynomial f(x) = a0 + a1*x + a2*x**2 coefficients a0, a1 and a2 
-    
+
+
+
+    Attributes:
+        xl (float): Left cell pole x-coordinate
+        xr (float): Right cell pole x-coordinate
+        r (float): Cell radius
+        coeff (:class: ~numpy.ndarray): Coefficients [a0, a1, a2] of the polynomial a0 + a1*x + a2*x**2 which describe
+        the cell's shape
+
     """
     def __init__(self, data):
+        """
+
+        Args:
+            data:
+        """
         self.coeff = np.array([1., 1., 1.])
         self.xl, self.xr, self.r, self.coeff = self._initial_guesses(data) #todo implement
         self.shape = data.shape
 
     def calc_xc(self, xp, yp):
-        """ Calculates the coordinate xc on f(x) closest to x, y 
+        """ Calculates the coordinate xc on p(x) closest to xp, yp
         
         All coordinates are cartesian. Solutions are found by solving the cubic equation.
-        https://en.wikipedia.org/wiki/Cubic_function#Algebraic_solution
-        """
-        #todo check if this function allows 2d arrays (it should)
 
+        Args:
+            xp: Input scalar or vector/matrix x-coordinate. Must be the same shape as yp 
+            yp: Input scalar or vector/matrix x-coordinate. Must be the same shape as xp
+
+        Returns:
+            Scalar or vector/matrix depending on input
+        """
+
+        #https://en.wikipedia.org/wiki/Cubic_function#Algebraic_solution
         a0, a1, a2 = self.coeff
         # Converting of cell spine polynomial coefficients to coefficients of polynomial giving distance r
         a, b, c, d = 4*a2**2, 6*a1*a2, 4*a0*a2 + 2*a1**2 - 4*a2*yp + 2, 2*a0*a1 - 2*a1*yp - 2*xp

@@ -39,6 +39,8 @@ def data_to_cells(input_data, pad_width=3, cell_frac=0.5, rotate='binary'):
             #Make cell object and add all the data
             #todo change cell initation and data adding interface
             c = Cell(rotated_data)
+
+            c.name = 'img{}c{}'.format(str(i).zfill(3), str(l).zfill(3))
             cell_list.append(c)
 
     return cell_list
