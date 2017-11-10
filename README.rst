@@ -67,8 +67,8 @@ This shows the fluorescence data together with the cell outline and midline opti
 
 To plot the radial distribution of the ``flu_514`` fluorescence channel:
 
-
 .. code-block:: python
+
   f, (ax1, ax2) = plt.subplots(1, 2)
   cp.plot_dist(ax=ax1)
   cp.plot_dist(ax=ax2, norm_x=True, norm_y=True)
