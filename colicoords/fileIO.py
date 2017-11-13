@@ -5,6 +5,7 @@ import os
 from xml.etree import cElementTree as etree
 import warnings
 from colicoords.cell import Cell, CellList
+from colicoords.config import cfg
 from colicoords.data_models import Data
 
 
@@ -132,7 +133,7 @@ def load(file_path):
                 root = etree.fromstring(omexml)
 
 
-def load_thunderstorm(file_path):
+def load_thunderstorm(file_path, pixelsize=None):
     """
     Load a .csv file from THUNDERSTORM output
     :param file_path: Target file to open
@@ -146,5 +147,12 @@ def load_thunderstorm(file_path):
         'formats': (int, int, float, float, float, float, float, float, float, float)
     }
 
+    pixelsize = cfg.IMG_PIXELSIZE if not pixelsize else pixelsize
+
+
     storm_table = np.genfromtxt(file_path, skip_header=1, dtype=dtype, delimiter=',')
+    storm_table['x'] /= pixelsize
+    storm_table['y'] /= pixelsize
+    storm_table['uncertainty_xy'] /= pixelsize
+
     return storm_table

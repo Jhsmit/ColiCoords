@@ -1,5 +1,6 @@
 from colicoords.data_models import Data
 from colicoords.config import cfg
+from colicoords.fileIO import load_thunderstorm
 import tifffile
 import numpy as np
 import os
@@ -46,11 +47,26 @@ def generate_stormdata():
     return data
 
 
+def generate_escvdata():
+    binary = tifffile.imread(r'test_data/ds5/binary.tif')
+    flu = tifffile.imread(r'test_data/ds5/flu.tif')
+    storm = load_thunderstorm(r'test_data/ds5/storm_table.csv')
+
+    data = Data()
+    data.add_data(binary, 'binary')
+    data.add_data(flu, 'fluorescence')
+    data.add_data(storm, 'storm')
+
+    return data
+
+#todo refactor to load
 def generate_testdata(dataset):
     if dataset == 'ds2':
         return generate_stormdata()
     elif dataset in ['ds1', 'ds3', 'ds4']:
         return generate_data(dataset)
+    elif dataset is 'ds5':
+        return generate_escvdata()
 
 
 if __name__ == '__main__':

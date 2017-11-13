@@ -76,6 +76,17 @@ class STORMTable(np.ndarray):
         obj.dclass = 'storm'
         return obj
 
+    @property
+    def image(self):
+        raise NotImplementedError()
+        #
+        # assert 'storm_img' not in self.data_dict
+        # img = self._get_storm_img(data)
+        # name = 'storm_img' if name is 'storm' else name + '_img'
+        # self.storm_img = STORMImage(img, name=name, metadata=metadata)
+        # self.data_dict['storm_img'] = self.storm_img
+        # self.name_dict[name] = self.storm_img
+
 
 class STORMImage(np.ndarray):
     def __new__(cls, input_array, name=None, metadata=None):
@@ -111,7 +122,7 @@ class Data(object):
     def __init__(self, *args, **kwargs):
         self.data_dict = {}
         self.flu_dict = {}  #needed or new initialized class doesnt have empty dicts!!!oneone
-        self.name_dict = {}
+        self.storm_dict = {}
 
         self.binary_img = None
         self.brightfield_img = None
@@ -123,6 +134,7 @@ class Data(object):
 
     #todo depracate the hell out of this one
     def add_datasets(self, binary_img=None, bf_img=None, flu_data=None, storm_table=None, *args, **kwargs):
+        raise DeprecationWarning('NOOOOOOOOOOO')
         flu_data = {} if flu_data == None else flu_data
         img_data = [binary_img, bf_img] + [v for v in flu_data.values()]
         shapes = [img.shape[:2] for img in img_data if img is not None]
@@ -155,7 +167,6 @@ class Data(object):
 
             self.storm_img = STORMImage(h.T)
 
-        #todoo old names
         self.data_dict = {'Binary': self.binary_img,
                           'Brightfield': self.brightfield_img,
                           'STORMTable': self.storm_table}
@@ -186,23 +197,41 @@ class Data(object):
             setattr(self, 'flu_' + name, f)
             self.flu_dict[name] = f
         elif dclass == 'storm':
-            #todo some checks to make sure there is a frame entry in the table when ndim == 3 and vice versa
-            assert 'storm' not in self.data_dict
-            self.storm_table = STORMTable(data, name=name, metadata=metadata)
-            self.data_dict['storm'] = self.storm_table
-            self.name_dict[name] = self.storm_table
+            assert name
+            assert name not in self.storm_dict
+            for field in ['x', 'y', 'frame']:
+                assert field in data.dtype.names
 
-            assert 'storm_img' not in self.data_dict
-            img = self._get_storm_img(data)
-            name = 'storm_img' if name is 'storm' else name + '_img'
-            self.storm_img = STORMImage(img, name=name, metadata=metadata)
-            self.data_dict['storm_img'] = self.storm_img
-            self.name_dict[name] = self.storm_img
+        #todo apparently negatie and outside shape values happen and its fine, add prune function.
+#             if data['x'].min() < 0:
+#                 print(data['x'].min())
+# #                raise ValueError('No negative x coordinates allowed')
+#             if data['y'].min() < 0:
+#                 raise ValueError('No negative y coordinates allowed')
+#             if self.shape and self.ndim == 2:
+#                 ymax, xmax = self.shape
+#                 if data['x'].max() > xmax:
+#                     raise ValueError('Storm x coordinate outside of image shape')
+#                 if data['y'].max() > ymax:
+#                     raise ValueError('Storm y coordinate outside of image shape')
+#             elif self.shape and self.ndim == 3:
+#                 zmax, ymax, xmax = self.shape
+#                 if data['frame'].max() > zmax:
+#                     raise ValueError('STORM frame outside of image shape')
+#                 if data['x'].max() > xmax:
+#                     raise ValueError('Storm x coordinate outside of image shape')
+#                 if data['y'].max() > ymax:
+#                     raise ValueError('Storm y coordinate outside of image shape')
+
+            s = STORMTable(data, name=name, metadata=metadata)
+            self.storm_dict[name] = s
+            setattr(self, 'storm_' + name, s)
+
         else:
-            raise ValueError('Invalid data class')
+            raise ValueError('Invalid data class {}'.format(dclass))
 
         self.data_dict.update(self.flu_dict)
-        self.name_dict.update(self.flu_dict)
+        self.data_dict.update(self.storm_dict)
 
     def copy(self):
         data = Data()
@@ -305,13 +334,16 @@ class Data(object):
                 self.idx = 0
                 raise StopIteration
 
-        data = Data()
+        #data = Data()
         if self.idx >= len(self):
             self.idx = 0
             raise StopIteration
         else:
-            for v in self.data_dict.values():
-                data.add_data(v[self.idx], v.dclass, name=v.name, metadata=v.metadata)
+            data = self[self.idx]
+            # for v in self.data_dict.values():
+            #     print(v)
+            #     data.add_data(v[self.idx], v.dclass, name=v.name, metadata=v.metadata)
+            #
             self.idx += 1
             return data
 
@@ -319,23 +351,66 @@ class Data(object):
         data = Data()
         for v in self.data_dict.values():
             if v.dclass == 'storm':
-                b_z = np.ones(len(v)).astype(bool)
-                if len(key) == 3:
-                    #3d slicing, slices the frames? #todo 3d slicing by frame!
-                    raise NotImplementedError()
+                print('key', key)
+                # Slicing the STORM data in z-direction
+                if type(key) == slice or type(key) == int or len(key) == 3:
 
-                elif len(key) == 2:
-                    ymin, ymax, ystep = key[0].indices(len(v))
-                    xmin, xmax, ystep = key[1].indices(len(v))
+                    if type(key) == slice:
+                        start, stop, step = key.indices(len(v))
+                        selected = np.arange(start, stop, step) + 1
+                    elif type(key) == int:
+                        selected = np.array([key + 1])
+                    else:
+                        start, stop, step = key[0].indices(len(v))
+                        selected = np.arange(start, stop, step) + 1
+
+                    bools = np.in1d(v['frame'], selected)
+                    print(bools)
+
+                    table_z = v[bools].copy()
+
+                    w = np.where(np.diff(table_z['frame']) != 0)[0]
+                    w = np.insert(w, [0, w.size], [-1, len(table_z['frame']) - 1])
+                    reps = np.diff(w)
+                    new_frames = np.repeat(np.arange(len(reps)) + 1, reps)
+
+                    table_z['frame'] = new_frames
+
+                else:
+                    table_z = v
+
+                #XY slicing
+                if type(key) == slice or type(key) == int:
+                    table_out = table_z
+                elif len(key) == 2 or len(key) == 3:
+                    if len(key) == 2:
+                        print('hit')
+                        print(key)
+                        print(v)
+                        print(type(v))
+                        ymin, ymax, ystep = key[0].indices(len(v))
+                        xmin, xmax, ystep = key[1].indices(len(v))
+                    elif len(key) == 3:
+                        ymin, ymax, ystep = key[1].indices(len(v))
+                        xmin, xmax, ystep = key[2].indices(len(v))
+
 
                     #Create boolean array to mask entries withing the chosen range
-                    b_xy = (v['x'] > xmin) * (v['x'] < xmax) * (v['y'] > ymin) * (v['y'] < ymax)
+                    b_xy = (table_z['x'] > xmin) * (table_z['x'] < xmax) * (table_z['y'] > ymin) * (table_z['y'] < ymax)
 
                 # Choose selected data and copy, rezero x and y
-                b_overall = b_z * b_xy
-                table_out = v[b_overall].copy()
-                table_out['x'] -= xmin
-                table_out['y'] -= ymin
+              #  b_overall = b_z * b_xy
+                    table_out = table_z[b_xy].copy()
+                    table_out['x'] -= xmin
+                    table_out['y'] -= ymin
+
+                    # print('minmin xy')
+                    # print(table_out['x'].min())
+                    # print(table_out['y'].min())
+
+                else:
+                    print('does this ever occur?')
+                    table_out = table_z
 
                 data.add_data(table_out, v.dclass, name=v.name, metadata=v.metadata)
 
