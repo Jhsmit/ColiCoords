@@ -255,6 +255,7 @@ class Data(object):
             elif v.dclass == 'storm_img':
                 continue
             else:
+                #scipy rotate rotates ccw
                 rotated = scipy_rotate(v, -theta)
 
             data.add_data(rotated, v.dclass, name=v.name, metadata=v.metadata)
@@ -340,18 +341,14 @@ class Data(object):
             raise StopIteration
         else:
             data = self[self.idx]
-            # for v in self.data_dict.values():
-            #     print(v)
-            #     data.add_data(v[self.idx], v.dclass, name=v.name, metadata=v.metadata)
-            #
             self.idx += 1
             return data
 
     def __getitem__(self, key):
         data = Data()
+        print('getitem', key, type(key))
         for v in self.data_dict.values():
             if v.dclass == 'storm':
-                print('key', key)
                 # Slicing the STORM data in z-direction
                 if type(key) == slice or type(key) == int or len(key) == 3:
 
@@ -365,7 +362,6 @@ class Data(object):
                         selected = np.arange(start, stop, step) + 1
 
                     bools = np.in1d(v['frame'], selected)
-                    print(bools)
 
                     table_z = v[bools].copy()
 
@@ -383,21 +379,28 @@ class Data(object):
                 if type(key) == slice or type(key) == int:
                     table_out = table_z
                 elif len(key) == 2 or len(key) == 3:
+                    print('2d slicing', key, len(key))
                     if len(key) == 2:
-                        print('hit')
-                        print(key)
-                        print(v)
-                        print(type(v))
-                        ymin, ymax, ystep = key[0].indices(len(v))
-                        xmin, xmax, ystep = key[1].indices(len(v))
+                        print('len', len(v))
+
+
+                        ymin, ymax, ystep = key[0].start, key[0].stop, key[0].step
+                        xmin, xmax, xstep = key[1].start, key[1].stop, key[1].step
+
+                        # this doesnt work when len < values
+                        # ymin, ymax, ystep = key[0].indices(len(v))
+                        # xmin, xmax, xstep = key[1].indices(len(v))
+                        print('after', xmin, xmax, ymin, ymax)
                     elif len(key) == 3:
-                        ymin, ymax, ystep = key[1].indices(len(v))
-                        xmin, xmax, ystep = key[2].indices(len(v))
+                        ymin, ymax, ystep = key[1].start, key[1].stop, key[1].step
+                        xmin, xmax, xstep = key[2].start, key[2].stop, key[2].step
 
-
+                    print('later', xmin, xmax, ymin, ymax)
                     #Create boolean array to mask entries withing the chosen range
                     b_xy = (table_z['x'] > xmin) * (table_z['x'] < xmax) * (table_z['y'] > ymin) * (table_z['y'] < ymax)
-
+                    print(table_z['x'])
+                    print(b_xy)
+                    print(np.unique(b_xy))
                 # Choose selected data and copy, rezero x and y
               #  b_overall = b_z * b_xy
                     table_out = table_z[b_xy].copy()
@@ -424,6 +427,7 @@ class Data(object):
 
 
 def _rotate_storm(storm_data, theta, shape=None):
+    th_deg = theta
     theta *= np.pi / 180  # to radians
     x = storm_data['x'].copy()
     y = storm_data['y'].copy()
@@ -432,6 +436,20 @@ def _rotate_storm(storm_data, theta, shape=None):
         xmax = shape[0]
         ymax = shape[1]
         offset = 0.5 * shape[0] * ((shape[0]/shape[1]) * np.sin(-theta) + np.cos(-theta) - 1)
+        print('OFFSET', offset)
+
+        os2 = - np.cos(np.pi/2 - theta) * shape[1]
+        os1 = np.sin(theta) * shape[0] + shape[0] / 2
+        print(os2)
+        print(os1)
+        print(theta, th_deg)
+        out_shape = scipy_rotate(np.ones(shape), -th_deg).shape
+        os2t = (out_shape[0] - shape[0]) / 2
+        os1t = (out_shape[1] - shape[1]) / 2
+        print(os2t, os1t)
+
+
+       # os1 =
     else:
         xmax = int(storm_data['x'].max()) + 2
         ymax = int(storm_data['y'].max()) + 2
@@ -444,8 +462,9 @@ def _rotate_storm(storm_data, theta, shape=None):
     yr = y * np.cos(theta) - x * np.sin(theta)
 
     xr += xmax / 2
+    xr += os1t
     yr += ymax / 2
-    yr += offset
+    yr -= os2t
 
     storm_out = np.copy(storm_data)
     storm_out['x'] = xr
