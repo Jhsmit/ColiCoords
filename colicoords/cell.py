@@ -27,7 +27,7 @@ class Cell(object):
         self.coords = Coordinates(self.data)
         self.name = name
 
-    def optimize(self, dclass=None, method='photons', verbose=False):
+    def optimize(self, src='binary', method='photons', verbose=False):
 
         """ Docstring will be added when all optimization types are supported
 
@@ -36,21 +36,14 @@ class Cell(object):
             method:
             verbose:
         """
-        if not dclass:
-            if self.data.binary_img is not None and self.data.storm_table is None:
-                optimizer = BinaryOptimizer(self)
-            elif not self.data.binary_img and self.data.storm_table:
-                optimizer = STORMOptimizer(self, method=method)
-            elif self.data.binary_img and self.data.storm_table:
-                raise ValueError("Please specify optimize method")
-            elif not self.data.binary_img and not self.data.storm_table:
-                raise ValueError("Please specify optimize method")
 
-        elif dclass == 'binary':
+        data = self.data.data_dict[src]
+
+        if data.dclass == 'binary':
             optimizer = BinaryOptimizer(self)
-        elif dclass == 'fluorescence':
-            raise NotImplementedError
-        elif dclass == 'storm':
+        elif data.dclass == 'fluorescence':
+            raise NotImplementedError()
+        elif data.dclass == 'storm':
             optimizer = STORMOptimizer(self, method=method)
         else:
             raise ValueError("Invalid value for optimize_method")
@@ -134,7 +127,9 @@ class Cell(object):
             x = data_elem['x']
             y = data_elem['y']
 
-            r = self.coords.calc_rc(x, y)
+            #todo check this but it seems to be fine
+            xt, yt = self.coords.transform(x, y, src='mpl', tgt='cart')
+            r = self.coords.calc_rc(xt, yt)
             r = r / self.coords.r if norm_x else r
 
             if storm_weight == 'points':
