@@ -251,6 +251,7 @@ class Data(object):
         data = Data()
         for v in self.data_dict.values():
             if v.dclass == 'storm':
+                print('thetha rotation', theta)
                 rotated = _rotate_storm(v, -theta, shape=self.shape)
             elif v.dclass == 'storm_img':
                 continue
@@ -433,38 +434,34 @@ def _rotate_storm(storm_data, theta, shape=None):
     y = storm_data['y'].copy()
 
     if shape:
-        xmax = shape[0]
-        ymax = shape[1]
-        offset = 0.5 * shape[0] * ((shape[0]/shape[1]) * np.sin(-theta) + np.cos(-theta) - 1)
-        print('OFFSET', offset)
-
-        os2 = - np.cos(np.pi/2 - theta) * shape[1]
-        os1 = np.sin(theta) * shape[0] + shape[0] / 2
-        print(os2)
-        print(os1)
-        print(theta, th_deg)
+        xmax = shape[1]
+        ymax = shape[0]
+        #offset = 0.5 * shape[0] * ((shape[0]/shape[1]) * np.sin(-theta) + np.cos(-theta) - 1)
         out_shape = scipy_rotate(np.ones(shape), -th_deg).shape
-        os2t = (out_shape[0] - shape[0]) / 2
-        os1t = (out_shape[1] - shape[1]) / 2
-        print(os2t, os1t)
 
-
-       # os1 =
     else:
         xmax = int(storm_data['x'].max()) + 2
         ymax = int(storm_data['y'].max()) + 2
-        offset = 0
+        out_shape = shape
+        #offset = 0
 
+    #xr = np.sqrt(x**2 + y**2) * ((x/y)*np.sin(theta) + np.sqrt(1 - (x**2 / y**2))*np.cos(theta))
+    #yr = xmax*np.cos(theta) + np.sqrt(x**2 + y**2) * (np.sqrt(1 - (x**2 / y**2))*np.sin(theta) - (x/y)*np.cos(theta))
+
+    #Transltate to centre, then rotate, then centre in output image
     x -= xmax / 2
     y -= ymax / 2
 
     xr = x * np.cos(theta) + y * np.sin(theta)
     yr = y * np.cos(theta) - x * np.sin(theta)
 
-    xr += xmax / 2
-    xr += os1t
-    yr += ymax / 2
-    yr -= os2t
+    #TODO CHECK ALL COORD systems again!!
+    #-> 0.5 in scipy rotate?
+    #-> r calculation from storm, is it transformed properly?
+    #WRITE THE DOCS ON THE COORD SYSEM SO IT SETTLED
+
+    xr += (out_shape[1] / 2)
+    yr += (out_shape[0] / 2)
 
     storm_out = np.copy(storm_data)
     storm_out['x'] = xr
