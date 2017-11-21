@@ -30,14 +30,11 @@ def data_to_cells(input_data, pad_width=3, cell_frac=0.5, rotate='binary'):
                 print('Cell {} on image {} {}: multiple cells per selection'.format(l, data.binary_img.name, i))
                 continue
 
-            print('input', min1p, max1p, min2p, max2p)
             output_data = data[min1p:max1p, min2p:max2p].copy()
             output_data.binary_img //= output_data.binary_img.max()
 
             # Calculate rotation angle and rotate selections
             theta = output_data.data_dict[rotate].orientation if rotate else 0
-            print('theta', theta)
-            #theta -= 180
             rotated_data = output_data.rotate(theta)
 
             #Make cell object and add all the data

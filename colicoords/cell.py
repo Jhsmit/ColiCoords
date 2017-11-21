@@ -7,37 +7,36 @@ from colicoords.optimizers import STORMOptimizer, BinaryOptimizer
 
 # todo obj or class? in docstring
 class Cell(object):
-    """
+    """ ColiCoords' main single-cell object
+
 
 
     Attributes:
         data (:class:`Data`): Holds all data describing this single cell.
-        coords (:class:`Coordinates): Calculates and describes the cell's coordinate system.
-
+        coords (:class:`Coordinates`): Calculates and optimizes the cell's coordinate system.
     """
 
     def __init__(self, data_object, name=None):
-        """ Main object governing the single-cell associated data and its coordinate system
-
+        """
         Args:
-            data_object: The :class:`Data` Instance holding all data describing this single cell
+            data_object (:class:`Data`): Data class holding all data which describes this single cell
+            name (:obj:`str`): Name to identify this single cell.
         """
 
         self.data = data_object
         self.coords = Coordinates(self.data)
         self.name = name
 
-    def optimize(self, src='binary', method='photons', verbose=False):
-
+    def optimize(self, data_name='binary', method='photons', verbose=False):
         """ Docstring will be added when all optimization types are supported
 
         Args:
-            dclass:
+            data_name (:obj:`str`):
             method:
             verbose:
         """
 
-        data = self.data.data_dict[src]
+        data = self.data.data_dict[data_name]
 
         if data.dclass == 'binary':
             optimizer = BinaryOptimizer(self)
@@ -46,7 +45,7 @@ class Cell(object):
         elif data.dclass == 'storm':
             optimizer = STORMOptimizer(self, method=method)
         else:
-            raise ValueError("Invalid value for optimize_method")
+            raise ValueError("Invalid data class for coordinate optimization")
 
         #todo optimizer as property
         #optimizer.execute()
@@ -86,18 +85,21 @@ class Cell(object):
         raise NotImplementedError()
 
     #todo choose fluorescence channel or storm
-    def r_dist(self, stop, step, src='', norm_x=False, storm_weight='points'):
-        """ Calculates the radial distribution of a given data source
+    def r_dist(self, stop, step, data_name='', norm_x=False, storm_weight='points'):
+        """ Calculates the radial distribution of a given data element
 
         Args:
             stop: Until how far from the cell spine the radial distribution should be calculated
             step: The binsize of the returned radial distribution
-            src: The name of the data element on which to calculate the radial distribution
+            data_name: The name of the data element on which to calculate the radial distribution
             norm_x: If `True` the returned distribution will be normalized with the cell's radius set to 1.
             storm_weight: When calculating the radial distribution of  # todo change to True/False
 
         Returns:
+            (tuple): tuple containing:
 
+                xvals (:class:`np.ndarray`) Array of distances from the cell midline, values are the middle of the bins
+                yvals (:class:`np.ndarray`) Array of in heights
         """
 
         def bin_func(r, y_weight, bins):
@@ -114,11 +116,11 @@ class Cell(object):
         bins = np.arange(0, stop+step, step)
         xvals = bins + 0.5 * step  # xval is the middle of the bin
 
-        if not src:
+        if not data_name:
             data_elem = list(self.data.flu_dict.values())[0] #yuck
         else:
             try:
-                data_elem = self.data.data_dict[src]
+                data_elem = self.data.data_dict[data_name]
             except KeyError:
                 raise ValueError('Chosen data not found')
 
@@ -154,8 +156,7 @@ class Cell(object):
 
 
 class Coordinates(object):
-    """Cell's coordinate system described by the polynomial f(x) and associated functions
-
+    """Cell's coordinate system described by the polynomial p(x) and associated functions
 
 
 
@@ -163,7 +164,7 @@ class Coordinates(object):
         xl (float): Left cell pole x-coordinate
         xr (float): Right cell pole x-coordinate
         r (float): Cell radius
-        coeff (:class: ~numpy.ndarray): Coefficients [a0, a1, a2] of the polynomial a0 + a1*x + a2*x**2 which describe
+        coeff (:class: ~numpy.ndarray): Coefficients [a0, a1, a2] of the polynomial a0 + a1*x + a2*x**2 which describes
         the cell's shape
 
     """
@@ -379,10 +380,10 @@ class Coordinates(object):
 
 
 class CellList(object):
-    def optimize(self, dclass=None, method='photons', verbose=False):  #todo refactor dclass to data_src or data_name
+    def optimize(self, data_name='binary', method='photons', verbose=False):  #todo refactor dclass to data_src or data_name
         #todo threaded and stuff
         for c in self:
-            c.optimize(dclass=dclass, method=method, verbose=verbose)
+            c.optimize(data_name=data_name, method=method, verbose=verbose)
 
     def append(self, cell_obj):
         assert isinstance(cell_obj, Cell)
@@ -412,16 +413,16 @@ class CellList(object):
     def __contains__(self, item):
         return self.cell_list.__contains__(item)
 
-    def r_dist(self, stop, step, src='', norm_x=False, storm_weight='points'):
+    def r_dist(self, stop, step, data_name='', norm_x=False, storm_weight='points'):
         numpoints = len(np.arange(0, stop+step, step))
         out_arr = np.zeros((len(self), numpoints))
         for i, c in enumerate(self):
-            x, y = c.r_dist(stop, step, src=src, norm_x=norm_x, storm_weight=storm_weight)
+            x, y = c.r_dist(stop, step, data_name=data_name, norm_x=norm_x, storm_weight=storm_weight)
             out_arr[i] = y
 
         return x, out_arr
 
-    def l_dist(self, stop, step, src='', norm_x=False, storm_weight='points'):
+    def l_dist(self, stop, step, data_name='', norm_x=False, storm_weight='points'):
         raise NotImplementedError()
 
     def a_dist(self):

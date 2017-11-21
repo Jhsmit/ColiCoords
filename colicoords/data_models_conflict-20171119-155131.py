@@ -6,18 +6,17 @@ from colicoords.config import cfg
 
 
 class BinaryImage(np.ndarray):
-    """ Binary image data class
-
-    This class is a subclass of np.ndarray and has therefore all its normal functionality.
-
-     Attributes:
-         name (:obj:`str`): Name string to identify the data element
-         metadata (:obj:`dict`): Optional dict for metadata, load/save not implemented
-     """
-
     def __new__(cls, input_array, name=None, metadata=None):
         if input_array is None:
             return None
+
+        #bool_arr = input_array.astype(bool)
+        #assert np.array_equal(input_array, bool_arr)
+        #either boolean or labeled binary
+        assert input_array.dtype in ['int', 'uint', 'uint16', 'uint32', 'bool']
+        #todo test connectedness l, n = mh.label(bool_arr)
+
+        #todo binary is now saved as int
 
         obj = np.asarray(input_array).view(cls)
         obj.name = name
@@ -27,20 +26,10 @@ class BinaryImage(np.ndarray):
 
     @property
     def orientation(self):
-        """float: The main image axis orientation in degrees"""
         return _calc_orientation(self)
 
 
 class BrightFieldImage(np.ndarray):
-    """ Brightfield image data class
-
-    This class is a subclass of np.ndarray and has therefore all its normal functionality.
-
-     Attributes:
-         name (:obj:`str`): Name string to identify the data element
-         metadata (:obj:`dict`): Optional dict for metadata, load/save not implemented
-     """
-
     def __new__(cls, input_array, name=None, metadata=None):
         if input_array is None:
             return None
@@ -52,20 +41,10 @@ class BrightFieldImage(np.ndarray):
 
     @property
     def orientation(self):
-        """float: The main image axis orientation in degrees"""
         return _calc_orientation(self)
 
 
 class FluorescenceImage(np.ndarray):
-    """ Fluorescence image data class
-
-    This class is a subclass of np.ndarray and has therefore all its normal functionality. The array can be 2D or 3D.
-
-     Attributes:
-         name (:obj:`str`): Name string to identify the data element
-         metadata (:obj:`dict`): Optional dict for metadata, load/save not implemented
-     """
-
     def __new__(cls, input_array, name=None, metadata=None):
         if input_array is None:
             return None
@@ -77,19 +56,15 @@ class FluorescenceImage(np.ndarray):
 
     @property
     def orientation(self):
-        """float: The main image axis orientation in degrees"""
         return _calc_orientation(self)
 
 
 class STORMTable(np.ndarray):
-    """ STORM table data class
-
-    This class is a subclass of np.ndarray and has therefore all its normal functionality.
-
-     Attributes:
-         name (:obj:`str`): Name string to identify the data element
-         metadata (:obj:`dict`): Optional dict for metadata, load/save not implemented
-     """
+    """STORM data array
+    
+    Args:
+        input_array: 
+    """
 
     def __new__(cls, input_array, name=None, metadata=None):
 
@@ -140,42 +115,64 @@ class MetaData(dict):
 
 
 class Data(object):
-    """ Main class to hold all data and perform transformations
-
-    The data class is designed to combine and organize all different channels (brightfield, binary, fluorescence, storm)
-    into one object. The class also provides basic functionality to manipulate the data, such as rotation and slicing.
-
-
-    Attributes:
-        data_dict (:obj:`dict`): Dictionary with all data elements by their name
-        flu_dict (:obj:`dict`): Subset of `data_dict` with all Fluorescence data elements
-        storm_dict (:obj:`dict`): Subset of `data_dict` with all STORM data elements
-
-        binary_img (:class:`BinaryImage`): Convenience attribute which refers to the unique BinaryImage data element
-        brightfield_img (:class:`BrightFieldImage`): Convenience attribute which refers tot he unique BrightFieldImage
-            data element
+    """
+    Parent object for all data classes
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self.data_dict = {}
         self.flu_dict = {}  #needed or new initialized class doesnt have empty dicts!!!oneone
         self.storm_dict = {}
 
         self.binary_img = None
         self.brightfield_img = None
+        self.storm_table = None
+        self.storm_img = None
 
         self.idx = 0
         self.shape = None
 
-    def add_data(self, data, dclass, name=None, metadata=None):
-        """ Add data to the :class:`Data` to form a new data element
+    #todo depracate the hell out of this one
+    def add_datasets(self, binary_img=None, bf_img=None, flu_data=None, storm_table=None, *args, **kwargs):
+        raise DeprecationWarning('NOOOOOOOOOOO')
+        flu_data = {} if flu_data == None else flu_data
+        img_data = [binary_img, bf_img] + [v for v in flu_data.values()]
+        shapes = [img.shape[:2] for img in img_data if img is not None]
+        assert (shapes[1:] == shapes[:-1])
+        self.shape = shapes[0] if len(shapes) > 0 else None
 
-        Args:
-            data: Input data, either np.ndarray with ndim 2 or 3 (images / movies) or numpy structured array for STORM data
-            dclass: hmmm #todo change to enum or not?
-            name (:obj:`str`): The data element's name
-            metadata: (:obj:`dict`): Optional associated metadata (load/save metadata currently not supported)
-        """
+        self.binary_img = BinaryImage(binary_img)
+        self.brightfield_img = BrightFieldImage(bf_img)
+
+        self.flu_dict = {}
+        for k, v in flu_data.items():
+                d = FluorescenceImage(v)
+                self.flu_dict[k] = d
+                setattr(self, 'flu_' + k, d)
+
+        self.storm_table = STORMTable(storm_table)
+
+        if storm_table is not None:
+            if self.shape:
+                xmax = self.shape[0] * cfg.IMG_PIXELSIZE
+                ymax = self.shape[1] * cfg.IMG_PIXELSIZE
+            else:
+                xmax = int(storm_table['x'].max()) + 2 * cfg.STORM_PIXELSIZE
+                ymax = int(storm_table['y'].max()) + 2 * cfg.STORM_PIXELSIZE
+
+            x_bins = np.arange(0, xmax, cfg.STORM_PIXELSIZE)
+            y_bins = np.arange(0, ymax, cfg.STORM_PIXELSIZE)
+
+            h, xedges, yedges = np.histogram2d(storm_table['x'], storm_table['y'], bins=[x_bins, y_bins])
+
+            self.storm_img = STORMImage(h.T)
+
+        self.data_dict = {'Binary': self.binary_img,
+                          'Brightfield': self.brightfield_img,
+                          'STORMTable': self.storm_table}
+        self.data_dict.update(self.flu_dict)
+
+    def add_data(self, data, dclass, name=None, metadata=None):
         if name in ['', u'', r'', None]:
             name = dclass
         else:
@@ -184,8 +181,6 @@ class Data(object):
         assert name not in [d.name for d in self.data_dict.values()]
         if dclass == 'binary':
             assert self.binary_img is None
-            assert data.dtype in ['int', 'uint', 'uint16', 'uint32', 'bool']
-
             self._check_shape(data.shape, data.ndim)
             self.binary_img = BinaryImage(data, name=name, metadata=metadata)
             self.data_dict[name] = self.binary_img
@@ -207,6 +202,27 @@ class Data(object):
             for field in ['x', 'y', 'frame']:
                 assert field in data.dtype.names
 
+        #todo apparently negatie and outside shape values happen and its fine, add prune function.
+#             if data['x'].min() < 0:
+#                 print(data['x'].min())
+# #                raise ValueError('No negative x coordinates allowed')
+#             if data['y'].min() < 0:
+#                 raise ValueError('No negative y coordinates allowed')
+#             if self.shape and self.ndim == 2:
+#                 ymax, xmax = self.shape
+#                 if data['x'].max() > xmax:
+#                     raise ValueError('Storm x coordinate outside of image shape')
+#                 if data['y'].max() > ymax:
+#                     raise ValueError('Storm y coordinate outside of image shape')
+#             elif self.shape and self.ndim == 3:
+#                 zmax, ymax, xmax = self.shape
+#                 if data['frame'].max() > zmax:
+#                     raise ValueError('STORM frame outside of image shape')
+#                 if data['x'].max() > xmax:
+#                     raise ValueError('Storm x coordinate outside of image shape')
+#                 if data['y'].max() > ymax:
+#                     raise ValueError('Storm y coordinate outside of image shape')
+
             s = STORMTable(data, name=name, metadata=metadata)
             self.storm_dict[name] = s
             setattr(self, 'storm_' + name, s)
@@ -216,18 +232,6 @@ class Data(object):
 
         self.data_dict.update(self.flu_dict)
         self.data_dict.update(self.storm_dict)
-
-    def prune(self, data_elem):
-        #todo test and docstring
-        storm = self.data_dict.pop(data_elem)
-        self.storm_dict.pop(data_elem)
-        assert isinstance(storm, STORMTable)
-
-        xmax, ymax = self.shape[1], self.shape[0]
-        bools = (storm['x'] < 0) + (storm['x'] > xmax) + (storm['y'] < 0) + (storm['y'] > ymax)
-        storm_out = storm[bools].copy()
-
-        self.add_data(storm_out, storm.dclass, name=data_elem)
 
     def copy(self):
         data = Data()
@@ -247,15 +251,18 @@ class Data(object):
         data = Data()
         for v in self.data_dict.values():
             if v.dclass == 'storm':
+                print('thetha rotation', theta)
                 rotated = _rotate_storm(v, -theta, shape=self.shape)
+            elif v.dclass == 'storm_img':
+                continue
             else:
+                #scipy rotate rotates ccw
                 rotated = scipy_rotate(v, -theta)
 
             data.add_data(rotated, v.dclass, name=v.name, metadata=v.metadata)
         return data
 
     def transform(self, x, y, src='cart', tgt='mpl'):
-        #todo docstring and unify with function on coords
         if src == 'cart':
             xt1 = x
             yt1 = y
@@ -329,43 +336,85 @@ class Data(object):
                 self.idx = 0
                 raise StopIteration
 
-        data = Data()
+        #data = Data()
         if self.idx >= len(self):
             self.idx = 0
             raise StopIteration
         else:
-            for v in self.data_dict.values():
-                data.add_data(v[self.idx], v.dclass, name=v.name, metadata=v.metadata)
+            data = self[self.idx]
             self.idx += 1
             return data
 
     def __getitem__(self, key):
         data = Data()
+        print('getitem', key, type(key))
         for v in self.data_dict.values():
             if v.dclass == 'storm':
-                b_z = np.ones(len(v)).astype(bool)
-                if len(key) == 3:
-                    #3d slicing, slices the frames? #todo 3d slicing by frame!
-                    raise NotImplementedError()
+                # Slicing the STORM data in z-direction
+                if type(key) == slice or type(key) == int or len(key) == 3:
 
-                elif len(key) == 2:
-                    print('hit')
-                    print(key)
-                    ymin, ymax, ystep = key[0].indices(len(v))
-                    xmin, xmax, ystep = key[1].indices(len(v))
+                    if type(key) == slice:
+                        start, stop, step = key.indices(len(v))
+                        selected = np.arange(start, stop, step) + 1
+                    elif type(key) == int:
+                        selected = np.array([key + 1])
+                    else:
+                        start, stop, step = key[0].indices(len(v))
+                        selected = np.arange(start, stop, step) + 1
 
+                    bools = np.in1d(v['frame'], selected)
+
+                    table_z = v[bools].copy()
+
+                    w = np.where(np.diff(table_z['frame']) != 0)[0]
+                    w = np.insert(w, [0, w.size], [-1, len(table_z['frame']) - 1])
+                    reps = np.diff(w)
+                    new_frames = np.repeat(np.arange(len(reps)) + 1, reps)
+
+                    table_z['frame'] = new_frames
+
+                else:
+                    table_z = v
+
+                #XY slicing
+                if type(key) == slice or type(key) == int:
+                    table_out = table_z
+                elif len(key) == 2 or len(key) == 3:
+                    print('2d slicing', key, len(key))
+                    if len(key) == 2:
+                        print('len', len(v))
+
+
+                        ymin, ymax, ystep = key[0].start, key[0].stop, key[0].step
+                        xmin, xmax, xstep = key[1].start, key[1].stop, key[1].step
+
+                        # this doesnt work when len < values
+                        # ymin, ymax, ystep = key[0].indices(len(v))
+                        # xmin, xmax, xstep = key[1].indices(len(v))
+                        print('after', xmin, xmax, ymin, ymax)
+                    elif len(key) == 3:
+                        ymin, ymax, ystep = key[1].start, key[1].stop, key[1].step
+                        xmin, xmax, xstep = key[2].start, key[2].stop, key[2].step
+
+                    print('later', xmin, xmax, ymin, ymax)
                     #Create boolean array to mask entries withing the chosen range
-                    b_xy = (v['x'] > xmin) * (v['x'] < xmax) * (v['y'] > ymin) * (v['y'] < ymax)
-
+                    b_xy = (table_z['x'] > xmin) * (table_z['x'] < xmax) * (table_z['y'] > ymin) * (table_z['y'] < ymax)
+                    print(table_z['x'])
+                    print(b_xy)
+                    print(np.unique(b_xy))
                 # Choose selected data and copy, rezero x and y
-                b_overall = b_z * b_xy
-                table_out = v[b_overall].copy()
-                table_out['x'] -= xmin
-                table_out['y'] -= ymin
+              #  b_overall = b_z * b_xy
+                    table_out = table_z[b_xy].copy()
+                    table_out['x'] -= xmin
+                    table_out['y'] -= ymin
 
-                print('minmin xy')
-                print(table_out['x'].min())
-                print(table_out['y'].min())
+                    # print('minmin xy')
+                    # print(table_out['x'].min())
+                    # print(table_out['y'].min())
+
+                else:
+                    print('does this ever occur?')
+                    table_out = table_z
 
                 data.add_data(table_out, v.dclass, name=v.name, metadata=v.metadata)
 
@@ -379,28 +428,40 @@ class Data(object):
 
 
 def _rotate_storm(storm_data, theta, shape=None):
+    th_deg = theta
     theta *= np.pi / 180  # to radians
     x = storm_data['x'].copy()
     y = storm_data['y'].copy()
 
     if shape:
-        xmax = shape[0]
-        ymax = shape[1]
-        offset = 0.5 * shape[0] * ((shape[0]/shape[1]) * np.sin(-theta) + np.cos(-theta) - 1)
+        xmax = shape[1]
+        ymax = shape[0]
+        #offset = 0.5 * shape[0] * ((shape[0]/shape[1]) * np.sin(-theta) + np.cos(-theta) - 1)
+        out_shape = scipy_rotate(np.ones(shape), -th_deg).shape
+
     else:
         xmax = int(storm_data['x'].max()) + 2
         ymax = int(storm_data['y'].max()) + 2
-        offset = 0
+        out_shape = shape
+        #offset = 0
 
+    #xr = np.sqrt(x**2 + y**2) * ((x/y)*np.sin(theta) + np.sqrt(1 - (x**2 / y**2))*np.cos(theta))
+    #yr = xmax*np.cos(theta) + np.sqrt(x**2 + y**2) * (np.sqrt(1 - (x**2 / y**2))*np.sin(theta) - (x/y)*np.cos(theta))
+
+    #Transltate to centre, then rotate, then centre in output image
     x -= xmax / 2
     y -= ymax / 2
 
     xr = x * np.cos(theta) + y * np.sin(theta)
     yr = y * np.cos(theta) - x * np.sin(theta)
 
-    xr += xmax / 2
-    yr += ymax / 2
-    yr += offset
+    #TODO CHECK ALL COORD systems again!!
+    #-> 0.5 in scipy rotate?
+    #-> r calculation from storm, is it transformed properly?
+    #WRITE THE DOCS ON THE COORD SYSEM SO IT SETTLED
+
+    xr += (out_shape[1] / 2)
+    yr += (out_shape[0] / 2)
 
     storm_out = np.copy(storm_data)
     storm_out['x'] = xr

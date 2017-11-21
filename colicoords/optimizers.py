@@ -49,7 +49,9 @@ class STORMOptimizer(OptimizerBase):
     def optimize_r(self, src='storm'):
         def minimize_func(r, cell_obj, maximize):
             storm_data = cell_obj.data.data_dict[src]
-            r_vals = cell_obj.coords.calc_rc(storm_data['x'], storm_data['y'])
+
+            x, y = cell_obj.coords.transform(storm_data['x'], storm_data['y'], src='mpl', tgt='cart')
+            r_vals = cell_obj.coords.calc_rc(x, y)
             bools = r_vals < np.abs(r)
 
             if maximize == 'photons':
@@ -65,14 +67,16 @@ class STORMOptimizer(OptimizerBase):
         r_guess = self.cell_obj.coords.r
         min = minimize(minimize_func, r_guess, args=(self.cell_obj, self.method), method='Powell')
         self.cell_obj.coords.r = min.x
-        print('r', min.fun)
         return min.x, min.fun
 
     def optimize_endcaps(self, src='storm'):
         def minimize_func(x_lr, cell_obj, maximize):
             cell_obj.coords.xl, cell_obj.coords.xr = x_lr
             storm_data = cell_obj.data.data_dict[src]
-            r_vals = cell_obj.coords.calc_rc(storm_data['x'], storm_data['y'])
+            x, y = cell_obj.coords.transform(storm_data['x'], storm_data['y'], src='mpl', tgt='cart')
+            r_vals = cell_obj.coords.calc_rc(x, y)
+
+            #r_vals = cell_obj.coords.calc_rc(storm_data['x'], storm_data['y'])
             bools = r_vals < cell_obj.coords.r
 
             if maximize == 'photons':
@@ -85,15 +89,14 @@ class STORMOptimizer(OptimizerBase):
         x_lr = [self.cell_obj.coords.xl, self.cell_obj.coords.xr]
         min = minimize(minimize_func, x_lr, args=(self.cell_obj, self.method), method='Powell')
         self.cell_obj.coords.xl, self.cell_obj.coords.xr = x_lr
-        print('endcaps', min.fun)
         return min.x, min.fun
 
     def optimize_fit(self, src='storm'):
         def minimize_func(coeff, cell_obj, maximize):
             cell_obj.coords.coeff = coeff
             storm_data = cell_obj.data.data_dict[src]
-
-            r_vals = cell_obj.coords.calc_rc(storm_data['x'], storm_data['y'])
+            x, y = cell_obj.coords.transform(storm_data['x'], storm_data['y'], src='mpl', tgt='cart')
+            r_vals = cell_obj.coords.calc_rc(x, y)
             bools = r_vals < cell_obj.coords.r
 
             if maximize == 'photons':
@@ -106,16 +109,18 @@ class STORMOptimizer(OptimizerBase):
         coeff = self.cell_obj.coords.coeff
         min = minimize(minimize_func, coeff, args=(self.cell_obj, self.method), method='Powell')
         self.cell_obj.coords.coeff = coeff
-        print('fit', min.fun)
         return min.x, min.fun
 
+    #todo refactor method, implement bounds properly through parameters
+    #and pass **kwargs to scipy minimize from cell.optimize
     def optimize_overall(self, src='storm', verbose=False):
         def minimize_func(par, cell_obj, src, maximize):
             r, cell_obj.xl, cell_obj.xr = par[:3]
             cell_obj.coords.coeff = par[3:]
             storm_data = cell_obj.data.data_dict[src]
-
-            r_vals = cell_obj.coords.calc_rc(storm_data['x'], storm_data['y'])
+            x, y = cell_obj.coords.transform(storm_data['x'], storm_data['y'], src='mpl', tgt='cart')
+            r_vals = cell_obj.coords.calc_rc(x, y)
+            #r_vals = cell_obj.coords.calc_rc(storm_data['x'], storm_data['y'])
             bools = r_vals < r
 
             if maximize == 'photons':
@@ -123,8 +128,6 @@ class STORMOptimizer(OptimizerBase):
             elif maximize == 'points':
                 p = np.sum(bools)
 
-            # print(p)
-            # print(len(bools))
             return -p/cell_obj.area
         bounds = [(5, 10), (0, 20), (30, 40), (5, 25), (1e-3, None), (1e-10, 10)]
         par = np.array([self.cell_obj.coords.r, self.cell_obj.coords.xl, self.cell_obj.coords.xr] + list(self.cell_obj.coords.coeff))
@@ -137,7 +140,6 @@ class STORMOptimizer(OptimizerBase):
         #                )
         self.cell_obj.coords.r, self.cell_obj.coords.xl, self.cell_obj.coords.xr = min.x[:3]
         self.cell_obj.coords.coeff = np.array(min.x[3:])
-        print('overall', min.fun)
         return min.x, min.fun
 
     def optimize_stepwise(self):
@@ -159,14 +161,13 @@ class STORMOptimizer(OptimizerBase):
 class BinaryOptimizer(OptimizerBase):
 
     def __init__(self, cell_obj):
+        super(BinaryOptimizer, self).__init__(cell_obj)
         self.cell_obj = cell_obj
 
     def optimize_r(self):
         def minimize_func(r, cell_obj):
-            print(r)
             binary = cell_obj.coords.rc < r
             diff = np.sum(np.logical_xor(cell_obj.data.binary_img, binary))
-            print(diff)
             return diff
 
         r_guess = self.cell_obj.coords.r
