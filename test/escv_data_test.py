@@ -36,7 +36,7 @@ for d in ss:
     print('size', d.storm_storm.size)
 
 # #
-cell_list = data_to_cells(ss)
+cell_list = data_to_cells(ss, rotate = 'binary')
 
 for c in cell_list:
     c.optimize()
@@ -46,9 +46,10 @@ c = cell_list[1]
 
 plt.figure()
 cp.plot_dist(src='storm')
+plt.xlim(0, 2)
 plt.show()
 
-xd, rd, = c.r_dist(2, 0.005, src='storm')
+xd, rd, = c.r_dist(10, 1, data_name='storm')
 plt.plot(xd, rd)
 plt.show()
 
