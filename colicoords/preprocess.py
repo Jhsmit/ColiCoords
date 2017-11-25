@@ -7,7 +7,6 @@ def data_to_cells(input_data, pad_width=3, cell_frac=0.5, rotate='binary'):
     assert 'binary' in input_data.dclasses
     cell_list = CellList()
     for i, data in enumerate(input_data):
-        print('storm data size before 2d slicing', data.storm_storm.size)
         binary = data.binary_img
         if (binary > 0).mean() > cell_frac or binary.mean() == 0.:
             print('Image {} {}: Too many or no cells'.format(binary.name, i))

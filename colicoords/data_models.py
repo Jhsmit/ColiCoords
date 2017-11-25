@@ -349,8 +349,6 @@ class Data(object):
                     raise NotImplementedError()
 
                 elif len(key) == 2:
-                    print('hit')
-                    print(key)
                     ymin, ymax, ystep = key[0].indices(len(v))
                     xmin, xmax, ystep = key[1].indices(len(v))
 
@@ -362,10 +360,6 @@ class Data(object):
                 table_out = v[b_overall].copy()
                 table_out['x'] -= xmin
                 table_out['y'] -= ymin
-
-                print('minmin xy')
-                print(table_out['x'].min())
-                print(table_out['y'].min())
 
                 data.add_data(table_out, v.dclass, name=v.name, metadata=v.metadata)
 
