@@ -14,7 +14,7 @@ bf_files = listdir_fullpath(r'test_data/ds1/brightfield')
 flu_files = listdir_fullpath(r'test_data/ds1/fluorescence')
 
 
-def generate_data(dataset):
+def load_data(dataset):
     dclasses = ['binary', 'brightfield', 'fluorescence']
 
     data = Data()
@@ -28,7 +28,7 @@ def generate_data(dataset):
     return data
 
 
-def generate_stormdata():
+def load_stormdata():
     binary = tifffile.imread(r'test_data/ds2/binary_resized.tif').astype('int')
 
     dtype = {
@@ -47,7 +47,7 @@ def generate_stormdata():
     return data
 
 
-def generate_escvdata():
+def load_escvdata():
     binary = tifffile.imread(r'test_data/ds5/binary.tif')
     flu = tifffile.imread(r'test_data/ds5/flu.tif')
     storm = load_thunderstorm(r'test_data/ds5/storm_table.csv')
@@ -59,14 +59,36 @@ def generate_escvdata():
 
     return data
 
+
+def generate_stormdata():
+    x = np.array([10, 30, 30, 40, 40.25, 30, 25, 20, 15, 10])
+    y = np.array([25, 25, 10, 30, 30, 30, 30, 30, 30, 30])
+    frame = np.ones(10)
+
+    storm_data = np.zeros((10, ), dtype=[('frame', int), ('x', float), ('y', float)])
+    storm_data['x'] = x
+    storm_data['y'] = y
+    storm_data['frame'] = frame
+
+    binary_img = tifffile.imread('test_data/ds6/binary_1.tif')
+
+    data = Data()
+    data.add_data(binary_img, 'binary')
+    data.add_data(storm_data, 'storm')
+
+    return data
+
+
 #todo refactor to load
 def generate_testdata(dataset):
     if dataset == 'ds2':
-        return generate_stormdata()
+        return load_stormdata()
     elif dataset in ['ds1', 'ds3', 'ds4']:
-        return generate_data(dataset)
+        return load_data(dataset)
     elif dataset is 'ds5':
-        return generate_escvdata()
+        return load_escvdata()
+    elif dataset == 'ds6':
+        return generate_stormdata()
 
 
 if __name__ == '__main__':

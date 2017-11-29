@@ -1,10 +1,13 @@
-from test.test_functions import generate_stormdata
+from test.test_functions import load_stormdata
 import matplotlib.pyplot as plt
 from colicoords.preprocess import data_to_cells
 from colicoords.plot import CellPlot
 from colicoords.optimizers import STORMOptimizer
 
-data = generate_stormdata()
+#tempshizzle
+import numpy as np
+
+data = load_stormdata()
 cell_list = data_to_cells(data, rotate='binary')
 cell_list.optimize()
 
