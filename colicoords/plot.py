@@ -146,7 +146,8 @@ class CellPlot(object):
         if 'color' not in kwargs:
             kwargs['color'] = 'r'
         if coords == 'mpl':
-            x, y = self.cell_obj.coords.transform(x, y, src='cart', tgt='mpl')
+            pass
+            #x, y = self.cell_obj.coords.transform(x, y, src='cart', tgt='mpl')
 
         ax = plt.gca() if ax is None else ax
         ax.plot(x, y, **kwargs)
@@ -158,7 +159,8 @@ class CellPlot(object):
             kwargs['interpolation'] = 'nearest'
 
         ax = plt.gca() if ax is None else ax
-        ax.imshow(self.cell_obj.data.binary_img, **kwargs)
+        ymax, xmax = self.cell_obj.data.shape
+        ax.imshow(self.cell_obj.data.binary_img, extent=[0, xmax, ymax, 0], **kwargs)
 
         return ax
 
@@ -168,7 +170,8 @@ class CellPlot(object):
         img = self.cell_obj.coords.rc < self.cell_obj.coords.r
 
         ax = plt.gca() if ax is None else ax
-        ax.imshow(img, **kwargs)
+        ymax, xmax = self.cell_obj.data.shape
+        ax.imshow(img, extent=[0, xmax, ymax, 0], **kwargs)
 
         return ax
 
@@ -178,10 +181,10 @@ class CellPlot(object):
         img = self.cell_obj.coords.rc < self.cell_obj.coords.r
 
         ax = plt.gca() if ax is None else ax
-        ax.imshow(3 - (2 * img + self.cell_obj.data.binary_img), **kwargs)
+        ymax, xmax = self.cell_obj.data.shape
+        ax.imshow(3 - (2 * img + self.cell_obj.data.binary_img), extent=[0, xmax, ymax, 0], **kwargs)
 
         return ax
-
         #todo sequential colormap
 
     def plot_outline(self, ax=None, coords='mpl', **kwargs):
@@ -222,10 +225,11 @@ class CellPlot(object):
         x_all = np.concatenate((cl_x, x_t, cr_x, x_b))
         y_all = np.concatenate((cl_y, y_t, cr_y, y_b))
 
-        x_all, y_all = self.cell_obj.coords.transform(x_all, y_all, src='cart', tgt=coords)
+#        x_all, y_all = self.cell_obj.coords.transform(x_all, y_all, src='cart', tgt=coords)
 
         ax = plt.gca() if ax is None else ax
-        ax.plot(x_all, y_all, color='r', **kwargs)
+        color = 'r' if not 'color' in kwargs else kwargs.pop('color')
+        ax.plot(x_all, y_all, color=color, **kwargs)
 
         return ax
 
@@ -263,7 +267,7 @@ class CellPlot(object):
 
         return ax
 
-    def plot_storm(self, data_name, ax=None, kernel=None, shape=(100, 100), alpha_cutoff=None, **kwargs):
+    def plot_storm(self, data_name, ax=None, kernel=None, upscale=2, alpha_cutoff=None, **kwargs):
         storm_table = self.cell_obj.data.data_dict[data_name]
         x, y = storm_table['x'], storm_table['y']
 
@@ -274,8 +278,8 @@ class CellPlot(object):
             xmax = int(storm_table['x'].max())
             ymax = int(storm_table['y'].max())
 
-        x_bins = np.arange(0, xmax) - 0.5
-        y_bins = np.arange(0, ymax) - 0.5
+        x_bins = np.linspace(0, xmax, num=xmax*upscale, endpoint=True)
+        y_bins = np.linspace(0, ymax, num=ymax*upscale, endpoint=True)
 
         h, xedges, yedges = np.histogram2d(x, y, bins=[x_bins, y_bins])
 
@@ -286,10 +290,10 @@ class CellPlot(object):
 
             img = h.T
             ax.imshow(img, interpolation='nearest', cmap=cmap, extent=[0, xmax, ymax, 0], **kwargs)
-
         else:
             # https://jakevdp.github.io/PythonDataScienceHandbook/05.13-kernel-density-estimation.html
-            X, Y = np.mgrid[0:xmax:shape[1]*1j, ymax:0:shape[0]*1j]
+            #todo check the mgrid describes the coords correctly
+            X, Y = np.mgrid[0:xmax:xmax*upscale*1j, ymax:0:ymax*upscale*1j]
             positions = np.vstack([X.ravel(), Y.ravel()])
             values = np.vstack([x, y])
             k = stats.gaussian_kde(values, bw_method=0.05)
@@ -307,7 +311,6 @@ class CellPlot(object):
             colors[..., -1] = alphas
 
             ax.imshow(colors, cmap=cmap, extent=[0, xmax, ymax, 0], interpolation='nearest', **kwargs)
-
 
     def _plot_intercept_line(self, x_pos, coords='cart', **kwargs):
         x = np.linspace(x_pos - 10, x_pos + 10, num=200)

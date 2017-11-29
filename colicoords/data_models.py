@@ -256,6 +256,7 @@ class Data(object):
 
     def transform(self, x, y, src='cart', tgt='mpl'):
         #todo docstring and unify with function on coords
+        raise DeprecationWarning()
         if src == 'cart':
             xt1 = x
             yt1 = y

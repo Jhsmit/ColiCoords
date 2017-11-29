@@ -128,9 +128,7 @@ class Cell(object):
             x = data_elem['x']
             y = data_elem['y']
 
-            #todo check this but it seems to be fine
-            xt, yt = self.coords.transform(x, y, src='mpl', tgt='cart')
-            r = self.coords.calc_rc(xt, yt)
+            r = self.coords.calc_rc(x, y)
             r = r / self.coords.r if norm_x else r
 
             if storm_weight == 'points':
@@ -143,6 +141,8 @@ class Cell(object):
 
         elif data_elem.ndim == 2:
             assert data_elem.dclass == 'fluorescence'
+            import matplotlib.pyplot as plt
+
             r = self.coords.rc / self.coords.r if norm_x else self.coords.rc
 
             yvals = bin_func(r.flatten(), data_elem.flatten(), bins)
@@ -275,7 +275,9 @@ class Coordinates(object):
         """ obj:`np.ndarray`: Matrix of shape m x n equal to cell image with cartesian y-coordinates."""
         ymax = self.shape[0]
         xmax = self.shape[1]
-        return np.repeat(np.arange(ymax), xmax).reshape(ymax, xmax)[::-1, :] + 0.5
+        #return np.repeat(np.arange(ymax), xmax).reshape(ymax, xmax) + 0.5
+
+        return np.repeat(np.arange(ymax), xmax).reshape(ymax, xmax)[::-1] + 0.5
 
     @property
     def xc(self):
@@ -337,6 +339,8 @@ class Coordinates(object):
         return a1 + a2 * x_arr
 
     def transform(self, x, y, src='cart', tgt='mpl'):
+        raise DeprecationWarning('uhohhhh')
+
         if src == 'cart':
             xt1 = x
             yt1 = y
