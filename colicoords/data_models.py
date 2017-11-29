@@ -282,6 +282,7 @@ class Data(object):
         return xt2, yt2
 
     def _get_storm_img(self, storm_table):
+        raise DeprecationWarning('Probably this guy will be (re)moved')
         if self.shape:
             xmax = self.shape[0] * cfg.IMG_PIXELSIZE
             ymax = self.shape[1] * cfg.IMG_PIXELSIZE

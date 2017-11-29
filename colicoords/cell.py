@@ -10,7 +10,6 @@ class Cell(object):
     """ ColiCoords' main single-cell object
 
 
-
     Attributes:
         data (:class:`Data`): Holds all data describing this single cell.
         coords (:class:`Coordinates`): Calculates and optimizes the cell's coordinate system.
