@@ -1,9 +1,11 @@
 import matplotlib.pyplot as plt
+from matplotlib.colors import Normalize
 import numpy as np
 import matplotlib.patches as mpatches
 import seaborn.timeseries
 from colicoords.config import cfg
 import seaborn as sns
+from scipy import stats
 sns.set_style('white')
 
 
@@ -129,7 +131,7 @@ class CellListPlot(object):
 
 class CellPlot(object):
     def __init__(self, cell_obj):
-        self.c = cell_obj
+        self.cell_obj = cell_obj
 
     def plot_midline(self, ax=None, coords='mpl', **kwargs):
         """
@@ -139,12 +141,12 @@ class CellPlot(object):
         :return:
         """
 
-        x = np.linspace(self.c.coords.xl, self.c.coords.xr, 100)
-        y = self.c.coords.p(x)
+        x = np.linspace(self.cell_obj.coords.xl, self.cell_obj.coords.xr, 100)
+        y = self.cell_obj.coords.p(x)
         if 'color' not in kwargs:
             kwargs['color'] = 'r'
         if coords == 'mpl':
-            x, y = self.c.coords.transform(x, y, src='cart', tgt='mpl')
+            x, y = self.cell_obj.coords.transform(x, y, src='cart', tgt='mpl')
 
         ax = plt.gca() if ax is None else ax
         ax.plot(x, y, **kwargs)
@@ -156,14 +158,14 @@ class CellPlot(object):
             kwargs['interpolation'] = 'nearest'
 
         ax = plt.gca() if ax is None else ax
-        ax.imshow(self.c.data.binary_img, **kwargs)
+        ax.imshow(self.cell_obj.data.binary_img, **kwargs)
 
         return ax
 
     def plot_simulated_shape(self, ax=None, **kwargs):
         if 'interpolation' not in kwargs:
             kwargs['interpolation'] = 'nearest'
-        img = self.c.coords.rc < self.c.coords.r
+        img = self.cell_obj.coords.rc < self.cell_obj.coords.r
 
         ax = plt.gca() if ax is None else ax
         ax.imshow(img, **kwargs)
@@ -173,10 +175,10 @@ class CellPlot(object):
     def plot_bin_fit_comparison(self, ax=None, **kwargs):
         if 'interpolation' not in kwargs:
             kwargs['interpolation'] = 'nearest'
-        img = self.c.coords.rc < self.c.coords.r
+        img = self.cell_obj.coords.rc < self.cell_obj.coords.r
 
         ax = plt.gca() if ax is None else ax
-        ax.imshow(3 - (2*img + self.c.data.binary_img), **kwargs)
+        ax.imshow(3 - (2 * img + self.cell_obj.data.binary_img), **kwargs)
 
         return ax
 
@@ -186,41 +188,41 @@ class CellPlot(object):
         #todo: works but: semicircles are not exactly from 0 to 180 but instead depend on local slope (xr, xl)
         #todo: dx sign depends on slope sign (f_d > 0, dx < 0), vice versa?
 
-        x = np.linspace(self.c.coords.xl, self.c.coords.xr, 500)
-        p_dx = self.c.coords.p_dx(x)
+        x = np.linspace(self.cell_obj.coords.xl, self.cell_obj.coords.xr, 500)
+        p_dx = self.cell_obj.coords.p_dx(x)
 
-        dy_t = np.sqrt(self.c.coords.r**2 * (1 + 1 / (1 + (1 / p_dx**2))))
-        dx_t = np.sqrt(self.c.coords.r**2 / (1 + (1 / p_dx**2)))
+        dy_t = np.sqrt(self.cell_obj.coords.r ** 2 * (1 + 1 / (1 + (1 / p_dx ** 2))))
+        dx_t = np.sqrt(self.cell_obj.coords.r ** 2 / (1 + (1 / p_dx ** 2)))
         x_t = x - ((p_dx/np.abs(p_dx)) * dx_t)
-        y_t = self.c.coords.p(x) + dy_t
+        y_t = self.cell_obj.coords.p(x) + dy_t
 
         x_b = (x + ((p_dx/np.abs(p_dx)) * dx_t))[::-1]
-        y_b = (self.c.coords.p(x) - dy_t)[::-1]
+        y_b = (self.cell_obj.coords.p(x) - dy_t)[::-1]
 
         #Left semicirlce
-        psi = np.arctan(-self.c.coords.p_dx(self.c.coords.xl))
+        psi = np.arctan(-self.cell_obj.coords.p_dx(self.cell_obj.coords.xl))
 
         th_l = np.linspace(-0.5*np.pi+psi, 0.5*np.pi + psi, num=200)
-        cl_dx = self.c.coords.r*np.cos(th_l)
-        cl_dy = self.c.coords.r*np.sin(th_l)
+        cl_dx = self.cell_obj.coords.r * np.cos(th_l)
+        cl_dy = self.cell_obj.coords.r * np.sin(th_l)
 
-        cl_x = self.c.coords.xl - cl_dx
-        cl_y = self.c.coords.p(self.c.coords.xl) + cl_dy
+        cl_x = self.cell_obj.coords.xl - cl_dx
+        cl_y = self.cell_obj.coords.p(self.cell_obj.coords.xl) + cl_dy
 
         #Right semicircle
-        psi = np.arctan(-self.c.coords.p_dx(self.c.coords.xr))
+        psi = np.arctan(-self.cell_obj.coords.p_dx(self.cell_obj.coords.xr))
 
         th_r = np.linspace(0.5*np.pi-psi, -0.5*np.pi-psi, num=200)
-        cr_dx = self.c.coords.r*np.cos(th_r)
-        cr_dy = self.c.coords.r*np.sin(th_r)
+        cr_dx = self.cell_obj.coords.r * np.cos(th_r)
+        cr_dy = self.cell_obj.coords.r * np.sin(th_r)
 
-        cr_x = cr_dx + self.c.coords.xr
-        cr_y = cr_dy + self.c.coords.p(self.c.coords.xr)
+        cr_x = cr_dx + self.cell_obj.coords.xr
+        cr_y = cr_dy + self.cell_obj.coords.p(self.cell_obj.coords.xr)
 
         x_all = np.concatenate((cl_x, x_t, cr_x, x_b))
         y_all = np.concatenate((cl_y, y_t, cr_y, y_b))
 
-        x_all, y_all = self.c.coords.transform(x_all, y_all, src='cart', tgt=coords)
+        x_all, y_all = self.cell_obj.coords.transform(x_all, y_all, src='cart', tgt=coords)
 
         ax = plt.gca() if ax is None else ax
         ax.plot(x_all, y_all, color='r', **kwargs)
@@ -236,7 +238,7 @@ class CellPlot(object):
             else:
                 stop = cfg.R_DIST_STOP
                 step = cfg.R_DIST_STEP
-            x, y = self.c.r_dist(stop, step, data_name=src, norm_x=norm_x, storm_weight=storm_weights)
+            x, y = self.cell_obj.r_dist(stop, step, data_name=src, norm_x=norm_x, storm_weight=storm_weights)
 
             if norm_y:
                 y /= y.max()
@@ -261,12 +263,58 @@ class CellPlot(object):
 
         return ax
 
+    def plot_storm(self, data_name, ax=None, kernel=None, shape=(100, 100), alpha_cutoff=None, **kwargs):
+        storm_table = self.cell_obj.data.data_dict[data_name]
+        x, y = storm_table['x'], storm_table['y']
+
+        if self.cell_obj.data.shape:
+            xmax = self.cell_obj.data.shape[1]
+            ymax = self.cell_obj.data.shape[0]
+        else:
+            xmax = int(storm_table['x'].max())
+            ymax = int(storm_table['y'].max())
+
+        x_bins = np.arange(0, xmax) - 0.5
+        y_bins = np.arange(0, ymax) - 0.5
+
+        h, xedges, yedges = np.histogram2d(x, y, bins=[x_bins, y_bins])
+
+        ax = plt.gca() if ax is None else ax
+        if not kernel:
+            cm = plt.cm.get_cmap('Blues')
+            cmap = cm if not 'cmap' in kwargs else kwargs.pop('cmap')
+
+            img = h.T
+            ax.imshow(img, interpolation='nearest', cmap=cmap, extent=[0, xmax, ymax, 0], **kwargs)
+
+        else:
+            # https://jakevdp.github.io/PythonDataScienceHandbook/05.13-kernel-density-estimation.html
+            X, Y = np.mgrid[0:xmax:shape[1]*1j, ymax:0:shape[0]*1j]
+            positions = np.vstack([X.ravel(), Y.ravel()])
+            values = np.vstack([x, y])
+            k = stats.gaussian_kde(values, bw_method=0.05)
+            Z = np.reshape(k(positions).T, X.shape)
+            img = np.rot90(Z)
+
+            img_norm = img / img.max()
+            alphas = np.ones(img.shape)
+            if alpha_cutoff:
+                alphas[img_norm < 0.3] = img_norm[img_norm < 0.3] / 0.3
+
+            cmap = sns.light_palette("green", as_cmap=True) if not 'cmap' in kwargs else kwargs.pop('cmap')
+            normed = Normalize()(img)
+            colors = cmap(normed)
+            colors[..., -1] = alphas
+
+            ax.imshow(colors, cmap=cmap, extent=[0, xmax, ymax, 0], interpolation='nearest', **kwargs)
+
+
     def _plot_intercept_line(self, x_pos, coords='cart', **kwargs):
         x = np.linspace(x_pos - 10, x_pos + 10, num=200)
-        f_d = self.c.coords.p_dx(x_pos)
-        y = (-x / f_d) + self.c.coords.p(x_pos) + (x_pos / f_d)
+        f_d = self.cell_obj.coords.p_dx(x_pos)
+        y = (-x / f_d) + self.cell_obj.coords.p(x_pos) + (x_pos / f_d)
 
-        x, y = self.c.coords.transform(x, y, src='cart', tgt=coords)
+        x, y = self.cell_obj.coords.transform(x, y, src='cart', tgt=coords)
 
         plt.plot(x, y)
 
