@@ -145,13 +145,12 @@ class CellPlot(object):
         y = self.cell_obj.coords.p(x)
         if 'color' not in kwargs:
             kwargs['color'] = 'r'
-        if coords == 'mpl':
-            pass
-            #x, y = self.cell_obj.coords.transform(x, y, src='cart', tgt='mpl')
 
         ax = plt.gca() if ax is None else ax
         ax.plot(x, y, **kwargs)
-
+        ymax, xmax = self.cell_obj.data.shape
+        ax.set_ylim(ymax, 0)
+        ax.set_xlim(0, xmax)
         return ax
 
     def plot_binary_img(self, ax=None, **kwargs):
@@ -187,7 +186,7 @@ class CellPlot(object):
         return ax
         #todo sequential colormap
 
-    def plot_outline(self, ax=None, coords='mpl', **kwargs):
+    def plot_outline(self, ax=None, **kwargs):
         #todo: works but: semicircles are not exactly from 0 to 180 but instead depend on local slope (xr, xl)
         #todo: dx sign depends on slope sign (f_d > 0, dx < 0), vice versa?
 
@@ -225,10 +224,8 @@ class CellPlot(object):
         x_all = np.concatenate((cl_x, x_t, cr_x, x_b))
         y_all = np.concatenate((cl_y, y_t, cr_y, y_b))
 
-#        x_all, y_all = self.cell_obj.coords.transform(x_all, y_all, src='cart', tgt=coords)
-
         ax = plt.gca() if ax is None else ax
-        color = 'r' if not 'color' in kwargs else kwargs.pop('color')
+        color = 'r' if 'color' not in kwargs else kwargs.pop('color')
         ax.plot(x_all, y_all, color=color, **kwargs)
 
         return ax
@@ -267,7 +264,7 @@ class CellPlot(object):
 
         return ax
 
-    def plot_storm(self, data_name, ax=None, kernel=None, upscale=2, alpha_cutoff=None, **kwargs):
+    def plot_storm(self, data_name, ax=None, kernel=None, bw_method=0.05, upscale=2, alpha_cutoff=None, **kwargs):
         storm_table = self.cell_obj.data.data_dict[data_name]
         x, y = storm_table['x'], storm_table['y']
 
@@ -296,7 +293,7 @@ class CellPlot(object):
             X, Y = np.mgrid[0:xmax:xmax*upscale*1j, ymax:0:ymax*upscale*1j]
             positions = np.vstack([X.ravel(), Y.ravel()])
             values = np.vstack([x, y])
-            k = stats.gaussian_kde(values, bw_method=0.05)
+            k = stats.gaussian_kde(values, bw_method=bw_method)
             Z = np.reshape(k(positions).T, X.shape)
             img = np.rot90(Z)
 

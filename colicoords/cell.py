@@ -275,9 +275,7 @@ class Coordinates(object):
         """ obj:`np.ndarray`: Matrix of shape m x n equal to cell image with cartesian y-coordinates."""
         ymax = self.shape[0]
         xmax = self.shape[1]
-        #return np.repeat(np.arange(ymax), xmax).reshape(ymax, xmax) + 0.5
-
-        return np.repeat(np.arange(ymax), xmax).reshape(ymax, xmax)[::-1] + 0.5
+        return np.repeat(np.arange(ymax), xmax).reshape(ymax, xmax) + 0.5
 
     @property
     def xc(self):

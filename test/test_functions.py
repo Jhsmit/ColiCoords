@@ -61,8 +61,8 @@ def load_escvdata():
 
 
 def generate_stormdata():
-    x = np.array([10, 30, 30, 40, 40.25, 30, 25, 20, 15, 10])
-    y = np.array([25, 25, 10, 30, 30, 30, 30, 30, 30, 30])
+    x = np.array([10, 30, 30, 40, 40.25, 30, 25, 20, 15, 10]) + 0.5
+    y = np.array([25, 25, 10, 30, 30, 30, 30, 30, 30, 30]) + 0.5
     frame = np.ones(10)
 
     storm_data = np.zeros((10, ), dtype=[('frame', int), ('x', float), ('y', float)])

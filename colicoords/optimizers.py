@@ -49,9 +49,7 @@ class STORMOptimizer(OptimizerBase):
     def optimize_r(self, src='storm'):
         def minimize_func(r, cell_obj, maximize):
             storm_data = cell_obj.data.data_dict[src]
-
-            x, y = cell_obj.coords.transform(storm_data['x'], storm_data['y'], src='mpl', tgt='cart')
-            r_vals = cell_obj.coords.calc_rc(x, y)
+            r_vals = cell_obj.coords.calc_rc(storm_data['x'], storm_data['y'])
             bools = r_vals < np.abs(r)
 
             if maximize == 'photons':
@@ -73,10 +71,7 @@ class STORMOptimizer(OptimizerBase):
         def minimize_func(x_lr, cell_obj, maximize):
             cell_obj.coords.xl, cell_obj.coords.xr = x_lr
             storm_data = cell_obj.data.data_dict[src]
-            x, y = cell_obj.coords.transform(storm_data['x'], storm_data['y'], src='mpl', tgt='cart')
-            r_vals = cell_obj.coords.calc_rc(x, y)
-
-            #r_vals = cell_obj.coords.calc_rc(storm_data['x'], storm_data['y'])
+            r_vals = cell_obj.coords.calc_rc(storm_data['x'], storm_data['y'])
             bools = r_vals < cell_obj.coords.r
 
             if maximize == 'photons':
@@ -95,8 +90,7 @@ class STORMOptimizer(OptimizerBase):
         def minimize_func(coeff, cell_obj, maximize):
             cell_obj.coords.coeff = coeff
             storm_data = cell_obj.data.data_dict[src]
-            x, y = cell_obj.coords.transform(storm_data['x'], storm_data['y'], src='mpl', tgt='cart')
-            r_vals = cell_obj.coords.calc_rc(x, y)
+            r_vals = cell_obj.coords.calc_rc(storm_data['x'], storm_data['y'])
             bools = r_vals < cell_obj.coords.r
 
             if maximize == 'photons':
@@ -118,9 +112,7 @@ class STORMOptimizer(OptimizerBase):
             r, cell_obj.xl, cell_obj.xr = par[:3]
             cell_obj.coords.coeff = par[3:]
             storm_data = cell_obj.data.data_dict[src]
-            x, y = cell_obj.coords.transform(storm_data['x'], storm_data['y'], src='mpl', tgt='cart')
-            r_vals = cell_obj.coords.calc_rc(x, y)
-            #r_vals = cell_obj.coords.calc_rc(storm_data['x'], storm_data['y'])
+            r_vals = cell_obj.coords.calc_rc(storm_data['x'], storm_data['y'])
             bools = r_vals < r
 
             if maximize == 'photons':
@@ -129,6 +121,7 @@ class STORMOptimizer(OptimizerBase):
                 p = np.sum(bools)
 
             return -p/cell_obj.area
+
         bounds = [(5, 10), (0, 20), (30, 40), (5, 25), (1e-3, None), (1e-10, 10)]
         par = np.array([self.cell_obj.coords.r, self.cell_obj.coords.xl, self.cell_obj.coords.xr] + list(self.cell_obj.coords.coeff))
 

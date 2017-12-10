@@ -24,10 +24,10 @@ cp.plot_binary_img(ax=ax0)
 cp.plot_outline(ax=ax0)
 
 ax1.imshow(cell_obj.data.data_dict['flu_514'], cmap='viridis', interpolation='nearest')
-cp.plot_outline(ax=ax1, coords='mpl')
-cp.plot_midline(ax=ax1, coords='mpl')
+cp.plot_outline(ax=ax1)
+cp.plot_midline(ax=ax1)
 ax1.set_xlim(0, 55)
-ax1.set_ylim(0,55)
+ax1.set_ylim(0, 55)
 
 cp.plot_dist(ax=ax2)
 cp.plot_dist(ax=ax3, norm_x=True, norm_y=True)

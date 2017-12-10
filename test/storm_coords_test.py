@@ -10,12 +10,11 @@ c.optimize()
 x = c.data.data_dict['storm']['x']
 y = c.data.data_dict['storm']['y']
 
-xt, yt = c.coords.transform(x, y, src='cart', tgt='mpl')
 
 cp = CellPlot(c)
 plt.figure()
 cp.plot_binary_img()
-cp.plot_storm('storm', alpha=0.9)
+cp.plot_storm('storm', kernel='gaus', alpha=0.9)
 plt.plot(x, y, linestyle='None', marker='.', color='r', alpha=0.9)
 # cp.plot_outline()
 

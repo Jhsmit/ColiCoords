@@ -40,7 +40,6 @@ class CellTest(ArrayTestCase):
         d = self.data.copy()
         print(d == self.data)
 
-
         cl = CellList(cell_list)
         self.assertEqual(len(cl), 48)
         c5 = cl[5]

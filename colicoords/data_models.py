@@ -282,22 +282,6 @@ class Data(object):
             raise ValueError("Invalid target coordinates")
         return xt2, yt2
 
-    def _get_storm_img(self, storm_table):
-        raise DeprecationWarning('Probably this guy will be (re)moved')
-        if self.shape:
-            xmax = self.shape[0] * cfg.IMG_PIXELSIZE
-            ymax = self.shape[1] * cfg.IMG_PIXELSIZE
-        else:
-            xmax = int(storm_table['x'].max()) + 2 * cfg.STORM_PIXELSIZE
-            ymax = int(storm_table['y'].max()) + 2 * cfg.STORM_PIXELSIZE
-
-        x_bins = np.arange(0, xmax, cfg.STORM_PIXELSIZE)
-        y_bins = np.arange(0, ymax, cfg.STORM_PIXELSIZE)
-
-        h, xedges, yedges = np.histogram2d(storm_table['x'], storm_table['y'], bins=[x_bins, y_bins])
-
-        return h.T
-
     def _check_shape(self, shape, ndim):
         if self.shape:
             assert shape == self.shape
