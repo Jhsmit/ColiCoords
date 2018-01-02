@@ -252,6 +252,8 @@ class Coordinates(object):
         :return: 1D array of distances r from (x, y) to (xc, p(xc))
         """
         xc = self.calc_xc(xp, yp)
+
+        #todo this is not strictly correct! also requires y coordinates
         xc[xc < self.xl] = self.xl
         xc[xc > self.xr] = self.xr
 
@@ -334,7 +336,7 @@ class Coordinates(object):
         """
 
         a0, a1, a2 = self.coeff
-        return a1 + a2 * x_arr
+        return a1 + 2 * a2 * x_arr
 
     def transform(self, x, y, src='cart', tgt='mpl'):
         raise DeprecationWarning('uhohhhh')

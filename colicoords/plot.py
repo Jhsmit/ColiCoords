@@ -190,17 +190,29 @@ class CellPlot(object):
         #todo: works but: semicircles are not exactly from 0 to 180 but instead depend on local slope (xr, xl)
         #todo: dx sign depends on slope sign (f_d > 0, dx < 0), vice versa?
 
-        x = np.linspace(self.cell_obj.coords.xl, self.cell_obj.coords.xr, 500)
-        p_dx = self.cell_obj.coords.p_dx(x)
 
-        dy_t = np.sqrt(self.cell_obj.coords.r ** 2 * (1 + 1 / (1 + (1 / p_dx ** 2))))
-        dx_t = np.sqrt(self.cell_obj.coords.r ** 2 / (1 + (1 / p_dx ** 2)))
-        x_t = x - ((p_dx/np.abs(p_dx)) * dx_t)
-        y_t = self.cell_obj.coords.p(x) + dy_t
+        numpoints = 500
+        t = np.linspace(self.cell_obj.coords.xl, self.cell_obj.coords.xr, num=numpoints)
+        a0, a1, a2 = self.cell_obj.coords.coeff
+        x_top = t + self.cell_obj.coords.r * ((a1 + 2 * a2 * t) / np.sqrt(1 + (a1 + 2 * a2 * t) ** 2))
+        y_top = a0 + a1*t + a2*(t**2) - self.cell_obj.coords.r * (1 / np.sqrt(1 + (a1 + 2*a2*t)**2))
 
-        x_b = (x + ((p_dx/np.abs(p_dx)) * dx_t))[::-1]
-        y_b = (self.cell_obj.coords.p(x) - dy_t)[::-1]
+        x_bot = t + - self.cell_obj.coords.r * ((a1 + 2 * a2 * t) / np.sqrt(1 + (a1 + 2 * a2 * t) ** 2))
+        y_bot = a0 + a1*t + a2*(t**2) + self.cell_obj.coords.r * (1 / np.sqrt(1 + (a1 + 2*a2*t)**2))
 
+
+
+        # x = np.linspace(self.cell_obj.coords.xl, self.cell_obj.coords.xr, 500)
+        # p_dx = self.cell_obj.coords.p_dx(x)
+        #
+        # dy_t = np.sqrt(self.cell_obj.coords.r ** 2 * (1 + 1 / (1 + (1 / p_dx ** 2))))
+        # dx_t = np.sqrt(self.cell_obj.coords.r ** 2 / (1 + (1 / p_dx ** 2)))
+        # x_t = x - ((p_dx/np.abs(p_dx)) * dx_t)
+        # y_t = self.cell_obj.coords.p(x) + dy_t
+        #
+        # x_b = (x + ((p_dx/np.abs(p_dx)) * dx_t))[::-1]
+        # y_b = (self.cell_obj.coords.p(x) - dy_t)[::-1]
+        #
         #Left semicirlce
         psi = np.arctan(-self.cell_obj.coords.p_dx(self.cell_obj.coords.xl))
 
@@ -221,8 +233,8 @@ class CellPlot(object):
         cr_x = cr_dx + self.cell_obj.coords.xr
         cr_y = cr_dy + self.cell_obj.coords.p(self.cell_obj.coords.xr)
 
-        x_all = np.concatenate((cl_x, x_t, cr_x, x_b))
-        y_all = np.concatenate((cl_y, y_t, cr_y, y_b))
+        x_all = np.concatenate((cl_x[::-1], x_top, cr_x[::-1], x_bot[::-1]))
+        y_all = np.concatenate((cl_y[::-1], y_top, cr_y[::-1]   , y_bot[::-1]))
 
         ax = plt.gca() if ax is None else ax
         color = 'r' if 'color' not in kwargs else kwargs.pop('color')
@@ -309,14 +321,15 @@ class CellPlot(object):
 
             ax.imshow(colors, cmap=cmap, extent=[0, xmax, ymax, 0], interpolation='nearest', **kwargs)
 
-    def _plot_intercept_line(self, x_pos, coords='cart', **kwargs):
+    def _plot_intercept_line(self, x_pos, ax=None, coords='cart', **kwargs):
         x = np.linspace(x_pos - 10, x_pos + 10, num=200)
         f_d = self.cell_obj.coords.p_dx(x_pos)
         y = (-x / f_d) + self.cell_obj.coords.p(x_pos) + (x_pos / f_d)
 
-        x, y = self.cell_obj.coords.transform(x, y, src='cart', tgt=coords)
+        #x, y = self.cell_obj.coords.transform(x, y, src='cart', tgt=coords)
 
-        plt.plot(x, y)
+        ax = plt.gca() if ax is None else ax
+        ax.plot(x, y)
 
     def figure(self):
         plt.figure()
