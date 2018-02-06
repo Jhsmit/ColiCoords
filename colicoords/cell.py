@@ -2,6 +2,7 @@
 
 import mahotas as mh
 import numpy as np
+import operator
 from colicoords.optimizers import STORMOptimizer, BinaryOptimizer
 
 
@@ -141,7 +142,6 @@ class Cell(object):
 
         elif data_elem.ndim == 2:
             assert data_elem.dclass == 'fluorescence'
-            import matplotlib.pyplot as plt
 
             r = self.coords.rc / self.coords.r if norm_x else self.coords.rc
 
@@ -152,6 +152,35 @@ class Cell(object):
         else:
             raise ValueError('Invalid fluorescence image dimensions')
         return xvals, yvals
+
+    def get_intensity(self, mask='binary', data_name='') -> float:
+        """ Returns the mean fluorescence intensity in the region masked by either the binary image or synthetic
+            binary image derived from the cell's coordinate system
+
+        Args:
+            mask (:obj:`str`): Either 'binary' or 'coords' to specify the source of the mask used
+            data_name (:obj:`str`): The name of the fluorescence image data element to get the intensity values from.
+
+        Returns:
+            Mean fluorescence pixel value
+
+        """
+        if mask == 'binary':
+            m = self.data.binary_img.astype(bool)
+        elif mask == 'coords':
+            m = self.coords.rc < self.coords.r
+        else:
+            raise ValueError("mask keyword should be either 'binary' or 'coords'")
+
+        if not data_name:
+            data_elem = list(self.data.flu_dict.values())[0] #yuck
+        else:
+            try:
+                data_elem = self.data.data_dict[data_name]
+            except KeyError:
+                raise ValueError('Chosen data not found')
+
+        return data_elem[m].mean()
 
 
 class Coordinates(object):
@@ -253,12 +282,19 @@ class Coordinates(object):
         """
         xc = self.calc_xc(xp, yp)
 
-        #todo this is not strictly correct! also requires y coordinates
-        xc[xc < self.xl] = self.xl
-        xc[xc > self.xr] = self.xr
+        # # this is not strictly correct! also requires y coordinates
+        # xc[xc < self.xl] = self.xl
+        # xc[xc > self.xr] = self.xr
+
+        # Area left of perpendicular line at xl:
+        op = operator.lt if self.p_dx(self.xl) > 0 else operator.gt
+        xc[op(yp, self.q(xc, self.xl))] = self.xl
+
+        # Area right of perpendicular line at xr:
+        op = operator.gt if self.p_dx(self.xr) > 0 else operator.lt
+        xc[op(yp, self.q(xc, self.xr))] = self.xr
 
         a0, a1, a2 = self.coeff
-
         return np.sqrt((xc - xp)**2 + (a0 + xc*(a1 + a2*xc) - yp)**2)
 
     def calc_psi(self, xp, yp):
@@ -366,6 +402,11 @@ class Coordinates(object):
             raise ValueError("Invalid target coordinates")
         return xt2, yt2
 
+    def q(self, x, xp):
+        """returns q(x) where q(x) is the line perpendicular to p(x) at xp"""
+      #  f_d =
+        return (-x / self.p_dx(xp)) + self.p(xp) + (xp / self.p_dx(xp))
+
     @staticmethod
     def _initial_guesses(data):
         if data.binary_img is not None:
@@ -454,3 +495,6 @@ class CellList(object):
     @property
     def name(self):
         return np.array([c.name for c in self])
+
+    def get_intensity(self, mask='binary', data_name='') -> np.ndarray:
+        return np.array([c.get_intensity(mask=mask, data_name=data_name) for c in self])

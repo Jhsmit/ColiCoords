@@ -128,6 +128,8 @@ class CellListPlot(object):
         if norm_y:
             ax_out.set_ylim(0, 1.1)
 
+    #def hist_intensity(self, ax=None, ):
+
 
 class CellPlot(object):
     def __init__(self, cell_obj):
