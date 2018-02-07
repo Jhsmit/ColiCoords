@@ -404,7 +404,6 @@ class Coordinates(object):
 
     def q(self, x, xp):
         """returns q(x) where q(x) is the line perpendicular to p(x) at xp"""
-      #  f_d =
         return (-x / self.p_dx(xp)) + self.p(xp) + (xp / self.p_dx(xp))
 
     @staticmethod

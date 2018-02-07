@@ -49,6 +49,7 @@ class CellListPlot(object):
         self.cell_list = cell_list
 
     def hist_property(self, ax=None, tgt='length'):
+        #todo update the values getting (implemented on clp)
         if tgt == 'length':
             values = np.array([c.length for c in self.cell_list]) * (cfg.IMG_PIXELSIZE / 1000)
             title = 'Cell length'
@@ -75,6 +76,18 @@ class CellListPlot(object):
         ax_d.set_ylabel('Cell count')
 
         return ax_d
+
+    def hist_intensity(self, ax=None, mask='binary', data_name='', **kwargs):
+        # todo option to convert to photons?
+        values = self.cell_list.get_intensity(mask=mask, data_name=data_name)
+
+        ax_d = sns.distplot(values, kde=False, ax=ax, **kwargs)
+        ax_d.set_title('Cell mean fluorescence intensity')
+        ax_d.set_xlabel('Mean fluorescence (a.u.)')
+        ax_d.set_ylabel('Cell count')
+
+        return ax_d
+
 
     def plot_dist(self, ax=None, mode='r', src='', std='std_band', norm_y=False, norm_x=False, storm_weights='points', **kwargs):
         """
