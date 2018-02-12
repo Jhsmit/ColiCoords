@@ -8,7 +8,7 @@ from colicoords.cell import Cell, CellList
 from colicoords.config import cfg
 from colicoords.data_models import Data
 
-
+#todo add colicoords' version to the files
 def save(file_path, cell_obj, imagej=False):
     ext = os.path.splitext(file_path)[1]
 
@@ -156,3 +156,27 @@ def load_thunderstorm(file_path, pixelsize=None):
     storm_table['uncertainty_xy'] /= pixelsize
 
     return storm_table
+
+
+def _load_deprecated(file_path):
+    ext = os.path.splitext(file_path)[1]
+    if ext == '.cc':
+        with h5py.File(file_path, 'r') as f:
+
+            data_obj = Data()
+            data_grp = f['data']
+            for key in list(data_grp.keys()):
+                grp = data_grp[key]
+                data_arr = grp[key]
+                dclass = grp.attrs.get('dclass').decode('UTF-8')
+                data_obj.add_data(data_arr, dclass=dclass, name=key)
+
+            c = Cell(data_obj)
+
+            attr_grp = f['attributes']
+            attr_dict = dict(attr_grp.attrs.items())
+            for a in ['r', 'xl', 'xr', 'coeff']:
+                setattr(c.coords, a, attr_dict.get(a))
+            c.name = attr_dict.get('label')
+
+    return c
