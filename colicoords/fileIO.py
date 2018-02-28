@@ -46,6 +46,9 @@ def save(file_path, cell_obj, imagej=False):
                 cell_grp = f.create_group(name)
                 _write_cell(cell_grp, c)
 
+    else:
+        raise ValueError('Invalid type, expected CellList or CellObject, got {}'.format(type(cell_obj)))
+
 
 def _write_cell(cell_grp, cell_obj):
     attr_grp = cell_grp.create_group('attributes')
