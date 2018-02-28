@@ -94,8 +94,6 @@ def _load_cell(cell_grp):
 def load(file_path):
     ext = os.path.splitext(file_path)[1]
 
-
-
     if ext == '.cc':
         with h5py.File(file_path, 'r') as f:
             cell_list = [_load_cell(f[key]) for key in f.keys()]
@@ -122,18 +120,19 @@ def load(file_path):
             #     setattr(c.coords, a, attr_dict.get(a))
             # c.name = attr_dict.get('label')
 
-        return c
+    else:
+        raise ValueError('Invalid file type')
 
-    elif ext == '.tif' or '.tiff':
-        with tifffile.TiffFile(file_path, is_ome=True) as tif:
-            omexml = tif.pages[0].tags['image_description'].value
-            try:
-                root = etree.fromstring(omexml)
-            except etree.ParseError as e:
-                # TODO: test this
-                warnings.warn("ome-xml: %s" % e)
-                omexml = omexml.decode('utf-8', 'ignore').encode('utf-8')
-                root = etree.fromstring(omexml)
+    # elif ext == '.tif' or '.tiff':
+    #     with tifffile.TiffFile(file_path, is_ome=True) as tif:
+    #         omexml = tif.pages[0].tags['image_description'].value
+    #         try:
+    #             root = etree.fromstring(omexml)
+    #         except etree.ParseError as e:
+    #             # TODO: test this
+    #             warnings.warn("ome-xml: %s" % e)
+    #             omexml = omexml.decode('utf-8', 'ignore').encode('utf-8')
+    #             root = etree.fromstring(omexml)
 
 
 def load_thunderstorm(file_path, pixelsize=None):
@@ -151,7 +150,6 @@ def load_thunderstorm(file_path, pixelsize=None):
     }
 
     pixelsize = cfg.IMG_PIXELSIZE if not pixelsize else pixelsize
-
 
     storm_table = np.genfromtxt(file_path, skip_header=1, dtype=dtype, delimiter=',')
     storm_table['x'] /= pixelsize
@@ -182,4 +180,6 @@ def _load_deprecated(file_path):
                 setattr(c.coords, a, attr_dict.get(a))
             c.name = attr_dict.get('label')
 
-    return c
+        return c
+    else:
+        raise ValueError('Invalid file type')
