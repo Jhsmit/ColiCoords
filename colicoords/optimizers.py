@@ -21,9 +21,11 @@ class OptimizerBase(object):
                             min=cell_obj.coords.xl - cfg.ENDCAP_RANGE / 2, max=cell_obj.coords.xl + cfg.ENDCAP_RANGE / 2)
         self.xr = Parameter('xr', value=cell_obj.coords.xr,
                             min=cell_obj.coords)
-        self.a0 = Parameter('a0', value=cell_obj.coords.coeff[0])
+        self.a0 = Parameter('a0', value=cell_obj.coords.coeff[0], min=0)
         self.a1 = Parameter('a1', value=cell_obj.coords.coeff[1])
         self.a2 = Parameter('a2', value=cell_obj.coords.coeff[2])
+
+
 
 
 class STORMOptimizer(OptimizerBase):
@@ -125,12 +127,12 @@ class STORMOptimizer(OptimizerBase):
         bounds = [(5, 10), (0, 20), (30, 40), (5, 25), (1e-3, None), (1e-10, 10)]
         par = np.array([self.cell_obj.coords.r, self.cell_obj.coords.xl, self.cell_obj.coords.xr] + list(self.cell_obj.coords.coeff))
 
-        min = minimize(minimize_func, par, args=(self.cell_obj, src, self.method), bounds=bounds,
-                       options={'disp': verbose}
-                        )
-        # min = minimize(minimize_func, par, args=(self.cell_obj, src, self.method), method='Powell',
-        #                options={'disp': verbose}
+        #min = minimize(minimize_func, par, args=(self.cell_obj, src, self.method), bounds=bounds,
+        #               options={'disp': verbose}
         #                )
+        min = minimize(minimize_func, par, args=(self.cell_obj, src, self.method), method='Powell',
+                        options={'disp': verbose}
+                        )
         self.cell_obj.coords.r, self.cell_obj.coords.xl, self.cell_obj.coords.xr = min.x[:3]
         self.cell_obj.coords.coeff = np.array(min.x[3:])
         return min.x, min.fun

@@ -88,7 +88,6 @@ class CellListPlot(object):
 
         return ax_d
 
-
     def plot_dist(self, ax=None, mode='r', src='', std='std_band', norm_y=False, norm_x=False, storm_weights='points', **kwargs):
         """
 

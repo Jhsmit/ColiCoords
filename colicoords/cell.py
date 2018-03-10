@@ -4,7 +4,7 @@ import mahotas as mh
 import numpy as np
 import operator
 from colicoords.optimizers import STORMOptimizer, BinaryOptimizer
-
+from colicoords.multiproc import optimimize_multiprocess, optimimize_multiprocess_mk2
 
 # todo obj or class? in docstring
 class Cell(object):
@@ -36,7 +36,12 @@ class Cell(object):
             verbose:
         """
 
+        print(data_name, method, self.name)
+
         data = self.data.data_dict[data_name]
+        print(data)
+        print(type(data))
+        print(data.ndim)
 
         if data.dclass == 'binary':
             optimizer = BinaryOptimizer(self)
@@ -46,6 +51,24 @@ class Cell(object):
             optimizer = STORMOptimizer(self, method=method)
         else:
             raise ValueError("Invalid data class for coordinate optimization")
+
+        #todo optimizer as property
+        #optimizer.execute()
+        optimizer.optimize_overall(verbose=verbose)
+
+    def optimize_mp(self, data_name='binary', method='photons', verbose=False):
+        """ Docstring will be added when all optimization types are supported
+
+        Args:
+            data_name (:obj:`str`):
+            method:
+            verbose:
+        """
+
+        print(data_name, method, self.name)
+
+        optimizer = BinaryOptimizer(self)
+
 
         #todo optimizer as property
         #optimizer.execute()
@@ -221,11 +244,31 @@ class Coordinates(object):
 
         #https://en.wikipedia.org/wiki/Cubic_function#Algebraic_solution
         a0, a1, a2 = self.coeff
+        #xp, yp = xp.astype('float32'), yp.astype('float32')
         # Converting of cell spine polynomial coefficients to coefficients of polynomial giving distance r
         a, b, c, d = 4*a2**2, 6*a1*a2, 4*a0*a2 + 2*a1**2 - 4*a2*yp + 2, 2*a0*a1 - 2*a1*yp - 2*xp
         #a: float, b: float, c: array, d: array
         discr = 18*a*b*c*d - 4*b**3*d + b**2*c**2 - 4*a*c**3 - 27*a**2*d**2
 
+        #@jit(cache=True, nopython=True)
+        #@profile
+        def solve_general_bak(a, b, c, d):
+            """
+            Solve cubic polynomial in the form a*x^3 + b*x^2 + c*x + d
+            Only works if polynomial discriminant < 0, then there is only one real root which is the one that is returned.
+            https://en.wikipedia.org/wiki/Cubic_function#General_formula
+            :return (float): Only real root
+            """
+
+            d0 = (b ** 2 - 3 * a * c)
+            d1 = (2 * b ** 3 - 9 * a * b * c + 27 * a ** 2 * d)
+
+            dc = ((d1 + (d1 ** 2 - 4 * d0 ** 3)**(1/2)) / 2)**(1/3)
+
+            return -(1 / (3 * a)) * (b + dc + (d0 / dc))
+
+
+        #@profile
         def solve_general(a, b, c, d):
             """
             Solve cubic polynomial in the form a*x^3 + b*x^2 + c*x + d
@@ -233,9 +276,25 @@ class Coordinates(object):
             https://en.wikipedia.org/wiki/Cubic_function#General_formula
             :return (float): Only real root
             """
-            d0 = b ** 2. - 3. * a * c
-            d1 = 2. * b ** 3. - 9. * a * b * c + 27. * a ** 2. * d
-            dc = np.cbrt((d1 + np.sqrt(d1 ** 2. - 4. * d0 ** 3.)) / 2.)
+
+            #todo check type for performance gain?
+            # 16 16: 5.03 s
+            # 32 32: 3.969 s
+            # 64 64: 5.804 s
+            # 8 8:
+            d0 = (b ** 2. - 3. * a * c)#.astype('float32')
+            d1 = (2. * b ** 3. - 9. * a * b * c + 27. * a ** 2. * d)#.astype('float32')
+
+            #r0 = (d1 ** 2. - 4. * d0 ** 3.)
+            r0 = (np.square(d1) - 4. * d0 ** 3.)
+            #r1 = (d1 + np.sqrt(d1 ** 2. - 4. * d0 ** 3.)) / 2
+            r1 = (d1 + np.sqrt(r0)) / 2
+            #r1 = (d1 + np.sqrt(np.square(d1, 2.) - 4. * np.power(d0, 3.))) / 2
+
+            #dc = np.cbrt(r1)
+            dc = r1**(1/3)
+            #dc = np.power(r1, 1/3)
+            #dc = np.cbrt((d1 + np.sqrt(d1 ** 2. - 4. * d0 ** 3.)) / 2.)
             return -(1. / (3. * a)) * (b + dc + (d0 / dc))
             #todo hit a runtimewaring divide by zero on line above once
 
@@ -271,6 +330,8 @@ class Coordinates(object):
             x_c[mask] = general_part
             x_c[~mask] = trig_part
 
+
+       # print(solve_general.inspect_types())
         return x_c
 
     def calc_rc(self, xp, yp):
@@ -421,6 +482,12 @@ class Coordinates(object):
 
         return xl, xr, r, coeff
 
+def worker(obj, kwargs):
+    print(obj)
+    print(kwargs.items())
+    obj.optimize(**kwargs)
+
+from colicoords.multiproc import worker
 
 class CellList(object):
     def optimize(self, data_name='binary', method='photons', verbose=False):  #todo refactor dclass to data_src or data_name
@@ -428,12 +495,16 @@ class CellList(object):
         for c in self:
             c.optimize(data_name=data_name, method=method, verbose=verbose)
 
+    def optimize_mp(self, data_name='binary', method='photons', verbose=False):
+        optimimize_multiprocess_mk2(self, data_name=data_name, method=method, verbose=verbose)
+
+
     def append(self, cell_obj):
         assert isinstance(cell_obj, Cell)
         self.cell_list.append(cell_obj)
 
     def __init__(self, cell_list=None):
-        self.cell_list = cell_list if cell_list else []
+        self.cell_list = list(cell_list) if cell_list else []
 
     def __len__(self):
         return self.cell_list.__len__()
@@ -442,6 +513,7 @@ class CellList(object):
         return self.cell_list.__iter__()
 
     def __getitem__(self, key):
+        #todo might want to return a CellList object when slicing
         return self.cell_list.__getitem__(key)
 
     def __setitem__(self, key, value):
