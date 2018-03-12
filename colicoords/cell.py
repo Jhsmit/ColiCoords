@@ -36,12 +36,7 @@ class Cell(object):
             verbose:
         """
 
-        print(data_name, method, self.name)
-
         data = self.data.data_dict[data_name]
-        print(data)
-        print(type(data))
-        print(data.ndim)
 
         if data.dclass == 'binary':
             optimizer = BinaryOptimizer(self)
@@ -226,8 +221,38 @@ class Coordinates(object):
             data:
         """
         self.coeff = np.array([1., 1., 1.])
-        self.xl, self.xr, self.r, self.coeff = self._initial_guesses(data) #todo implement
+        self.xl, self.xr, self.r, self.coeff = self._initial_guesses(data)
         self.shape = data.shape
+
+    #todo maybe remove this and instead store parameters as individual attributes
+
+    @property
+    def a0(self):
+        return self.coeff[0]
+
+    @a0.setter
+    def a0(self, value):
+        self.coeff[0] = value
+
+    @property
+    def a1(self):
+        return self.coeff[1]
+
+    @a1.setter
+    def a1(self, value):
+        self.coeff[1] = value
+
+    @property
+    def a2(self):
+        return self.coeff[2]
+
+    @a2.setter
+    def a2(self, value):
+        self.coeff[2] = value
+
+    def sub_par(self, par_dict):
+        for k, v in par_dict.items():
+            setattr(self, k, v)
 
     def calc_xc(self, xp, yp):
         """ Calculates the coordinate xc on p(x) closest to xp, yp
@@ -497,7 +522,6 @@ class CellList(object):
 
     def optimize_mp(self, data_name='binary', method='photons', verbose=False):
         optimimize_multiprocess_mk2(self, data_name=data_name, method=method, verbose=verbose)
-
 
     def append(self, cell_obj):
         assert isinstance(cell_obj, Cell)
