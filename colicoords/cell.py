@@ -200,6 +200,14 @@ class Cell(object):
 
         return data_elem[m].mean()
 
+    def copy(self):
+
+        new_cell = Cell(data_object=self.data.copy(), name=self.name)
+        for par in self.coords.parameters:
+            setattr(new_cell, par, getattr(self.coords, par))
+
+
+
 
 class Coordinates(object):
     """Cell's coordinate system described by the polynomial p(x) and associated functions
@@ -214,6 +222,9 @@ class Coordinates(object):
         the cell's shape
 
     """
+
+    parameters = ['r', 'xl', 'xr', 'a0', 'a1', 'a2']
+
     def __init__(self, data):
         """
 
