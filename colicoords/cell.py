@@ -3,8 +3,12 @@
 import mahotas as mh
 import numpy as np
 import operator
+from functools import partial
 from colicoords.optimizers import Optimizer
-from colicoords.multiproc import optimimize_multiprocess, optimimize_multiprocess_mk2
+#from colicoords.multiproc import optimimize_multiprocess, optimimize_multiprocess_mk3
+
+import multiprocess as mp
+
 
 # todo obj or class? in docstring
 class Cell(object):
@@ -36,26 +40,32 @@ class Cell(object):
             verbose:
         """
         optimizer = Optimizer(self, data_name=data_name, objective=objective)
-        optimizer.optimize(**kwargs)
+        #todo meh this return
+        return optimizer.optimize(**kwargs)
 
-    def optimize_mp(self, data_name='binary', method='photons', verbose=False):
-        """ Docstring will be added when all optimization types are supported
-
-        Args:
-            data_name (:obj:`str`):
-            method:
-            verbose:
-        """
-        pass
-
-        print(data_name, method, self.name)
-
-        #optimizer = Optimizer(self)
+    def optimize_mp(self, data_name='binary', objective=None, **kwargs):
+        optimizer = Optimizer(self, data_name=data_name, objective=objective)
+        return optimizer.optimize_mp(**kwargs)
 
 
-        #todo optimizer as property
-        #optimizer.execute()
-        optimizer.optimize_overall(verbose=verbose)
+    # def optimize_mp(self, data_name='binary', method='photons', verbose=False):
+    #     """ Docstring will be added when all optimization types are supported
+    #
+    #     Args:
+    #         data_name (:obj:`str`):
+    #         method:
+    #         verbose:
+    #     """
+    #     pass
+    #
+    #     print(data_name, method, self.name)
+    #
+    #     #optimizer = Optimizer(self)
+    #
+    #
+    #     #todo optimizer as property
+    #     #optimizer.execute()
+    #     optimizer.optimize_overall(verbose=verbose)
 
     @property
     def radius(self):
@@ -506,21 +516,27 @@ class Coordinates(object):
 
         return xl, xr, r, coeff
 
-def worker(obj, kwargs):
-    print(obj)
-    print(kwargs.items())
-    obj.optimize(**kwargs)
+def worker(obj, **kwargs):
+    return obj.optimize(**kwargs)
 
-from colicoords.multiproc import worker
 
 class CellList(object):
-    def optimize(self, data_name='binary', method='photons', verbose=False):  #todo refactor dclass to data_src or data_name
+
+    def optimize(self, data_name='binary', objective=None, **kwargs):  #todo refactor dclass to data_src or data_name
         #todo threaded and stuff
         for c in self:
-            c.optimize(data_name=data_name, method=method, verbose=verbose)
+            c.optimize(data_name=data_name, objective=objective, **kwargs)
 
-    def optimize_mp(self, data_name='binary', method='photons', verbose=False):
-        optimimize_multiprocess_mk2(self, data_name=data_name, method=method, verbose=verbose)
+    def optimize_mp(self, data_name='binary', objective=None, **kwargs):
+        kwargs = {'data_name': data_name, 'objective': objective, **kwargs}
+        pool = mp.Pool()
+
+        f = partial(worker, **kwargs)
+        res = pool.map(f, self)
+
+        for (r, v), cell in zip(res, self):
+            cell.coords.sub_par(r)
+
 
     def append(self, cell_obj):
         assert isinstance(cell_obj, Cell)

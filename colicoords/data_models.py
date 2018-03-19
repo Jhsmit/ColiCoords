@@ -5,6 +5,8 @@ from scipy.ndimage.interpolation import rotate as scipy_rotate
 from colicoords.config import cfg
 
 
+# https://stackoverflow.com/questions/26598109/preserve-custom-attributes-when-pickling-subclass-of-numpy-array
+
 class BinaryImage(np.ndarray):
     """ Binary image data class
 
@@ -24,6 +26,26 @@ class BinaryImage(np.ndarray):
         obj.metadata = metadata
         obj.dclass = 'binary'
         return obj
+
+    def __array_finalize__(self, obj):
+        if obj is None:
+            return
+        self.name = getattr(obj, 'name', None)
+        self.metadata = getattr(obj, 'metadata', None)
+        self.dclass = getattr(obj, 'dclass', 'binary')
+
+    def __reduce__(self):
+        # Get the parent's __reduce__ tuple
+        pickled_state = super(BinaryImage, self).__reduce__()
+        # Create our own tuple to pass to __setstate__
+        new_state = pickled_state[2] + (self.name, self.metadata, self.dclass)
+        # Return a tuple that replaces the parent's __setstate__ tuple with our own
+        return (pickled_state[0], pickled_state[1], new_state)
+
+    def __setstate__(self, state):
+        self.name, self.metadata, self.dclass = state[-3:]
+        super(BinaryImage, self).__setstate__(state[0:-3])
+
 
     @property
     def orientation(self):
@@ -50,6 +72,18 @@ class BrightFieldImage(np.ndarray):
         obj.dclass = 'brightfield'
         return obj
 
+    def __reduce__(self):
+        # Get the parent's __reduce__ tuple
+        pickled_state = super(BrightFieldImage, self).__reduce__()
+        # Create our own tuple to pass to __setstate__
+        new_state = pickled_state[2] + (self.name, self.metadata, self.dclass)
+        # Return a tuple that replaces the parent's __setstate__ tuple with our own
+        return (pickled_state[0], pickled_state[1], new_state)
+
+    def __setstate__(self, state):
+        self.name, self.metadata, self.dclass = state[-3:]
+        super(BrightFieldImage, self).__setstate__(state[0:-3])
+
     @property
     def orientation(self):
         """float: The main image axis orientation in degrees"""
@@ -74,6 +108,18 @@ class FluorescenceImage(np.ndarray):
         obj.metadata = metadata
         obj.dclass = 'fluorescence'
         return obj
+
+    def __reduce__(self):
+        # Get the parent's __reduce__ tuple
+        pickled_state = super(FluorescenceImage, self).__reduce__()
+        # Create our own tuple to pass to __setstate__
+        new_state = pickled_state[2] + (self.name, self.metadata, self.dclass)
+        # Return a tuple that replaces the parent's __setstate__ tuple with our own
+        return (pickled_state[0], pickled_state[1], new_state)
+
+    def __setstate__(self, state):
+        self.name, self.metadata, self.dclass = state[-3:]
+        super(FluorescenceImage, self).__setstate__(state[0:-3])
 
     @property
     def orientation(self):
@@ -101,6 +147,18 @@ class STORMTable(np.ndarray):
         obj.dclass = 'storm'
         return obj
 
+    def __reduce__(self):
+        # Get the parent's __reduce__ tuple
+        pickled_state = super(STORMTable, self).__reduce__()
+        # Create our own tuple to pass to __setstate__
+        new_state = pickled_state[2] + (self.name, self.metadata, self.dclass)
+        # Return a tuple that replaces the parent's __setstate__ tuple with our own
+        return (pickled_state[0], pickled_state[1], new_state)
+
+    def __setstate__(self, state):
+        self.name, self.metadata, self.dclass = state[-3:]
+        super(STORMTable, self).__setstate__(state[0:-3])
+
     @property
     def image(self):
         raise NotImplementedError()
@@ -113,6 +171,7 @@ class STORMTable(np.ndarray):
         # self.name_dict[name] = self.storm_img
 
 
+#todo is this even used?
 class STORMImage(np.ndarray):
     def __new__(cls, input_array, name=None, metadata=None):
         """STORM recontructed image

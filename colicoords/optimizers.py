@@ -21,12 +21,11 @@ class Optimizer(object):
         'storm': 'leastsq'
     }
 
-    def __init__(self, cell_obj, data_name='binary', objective=None, multiprocess=False):
+    def __init__(self, cell_obj, data_name='binary', objective=None):
         self.cell_obj = cell_obj
         self.data_name = data_name
 
         dclass = self.data_elem.dclass
-
         objective = self.defaults[dclass] if not objective else objective
 
         if callable(objective):
