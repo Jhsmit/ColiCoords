@@ -324,6 +324,50 @@ class CellPlot(object):
 
             ax.imshow(colors, cmap=cmap, extent=[0, xmax, ymax, 0], interpolation='nearest', **kwargs)
 
+    def _plot_storm(self, storm_table, ax=None, kernel=None, bw_method=0.05, upscale=2, alpha_cutoff=None, **kwargs):
+        x, y = storm_table['x'], storm_table['y']
+
+        if self.cell_obj.data.shape:
+            xmax = self.cell_obj.data.shape[1]
+            ymax = self.cell_obj.data.shape[0]
+        else:
+            xmax = int(storm_table['x'].max())
+            ymax = int(storm_table['y'].max())
+
+        x_bins = np.linspace(0, xmax, num=xmax * upscale, endpoint=True)
+        y_bins = np.linspace(0, ymax, num=ymax * upscale, endpoint=True)
+
+        h, xedges, yedges = np.histogram2d(x, y, bins=[x_bins, y_bins])
+
+        ax = plt.gca() if ax is None else ax
+        if not kernel:
+            cm = plt.cm.get_cmap('Blues')
+            cmap = cm if not 'cmap' in kwargs else kwargs.pop('cmap')
+
+            img = h.T
+            ax.imshow(img, interpolation='nearest', cmap=cmap, extent=[0, xmax, ymax, 0], **kwargs)
+        else:
+            # https://jakevdp.github.io/PythonDataScienceHandbook/05.13-kernel-density-estimation.html
+            # todo check the mgrid describes the coords correctly
+            X, Y = np.mgrid[0:xmax:xmax * upscale * 1j, ymax:0:ymax * upscale * 1j]
+            positions = np.vstack([X.ravel(), Y.ravel()])
+            values = np.vstack([x, y])
+            k = stats.gaussian_kde(values, bw_method=bw_method)
+            Z = np.reshape(k(positions).T, X.shape)
+            img = np.rot90(Z)
+
+            img_norm = img / img.max()
+            alphas = np.ones(img.shape)
+            if alpha_cutoff:
+                alphas[img_norm < 0.3] = img_norm[img_norm < 0.3] / 0.3
+
+            cmap = sns.light_palette("green", as_cmap=True) if not 'cmap' in kwargs else kwargs.pop('cmap')
+            normed = Normalize()(img)
+            colors = cmap(normed)
+            colors[..., -1] = alphas
+
+            ax.imshow(colors, cmap=cmap, extent=[0, xmax, ymax, 0], interpolation='nearest', **kwargs)
+
     def _plot_intercept_line(self, x_pos, ax=None, coords='cart', **kwargs):
         x = np.linspace(x_pos - 10, x_pos + 10, num=200)
         f_d = self.cell_obj.coords.p_dx(x_pos)

@@ -3,7 +3,7 @@
 import mahotas as mh
 import numpy as np
 import operator
-from colicoords.optimizers import STORMOptimizer, BinaryOptimizer
+from colicoords.optimizers import Optimizer
 from colicoords.multiproc import optimimize_multiprocess, optimimize_multiprocess_mk2
 
 # todo obj or class? in docstring
@@ -27,7 +27,7 @@ class Cell(object):
         self.coords = Coordinates(self.data)
         self.name = name
 
-    def optimize(self, data_name='binary', method='photons', verbose=False):
+    def optimize(self, data_name='binary', objective=None, **kwargs):
         """ Docstring will be added when all optimization types are supported
 
         Args:
@@ -35,21 +35,8 @@ class Cell(object):
             method:
             verbose:
         """
-
-        data = self.data.data_dict[data_name]
-
-        if data.dclass == 'binary':
-            optimizer = BinaryOptimizer(self)
-        elif data.dclass == 'fluorescence':
-            raise NotImplementedError()
-        elif data.dclass == 'storm':
-            optimizer = STORMOptimizer(self, method=method)
-        else:
-            raise ValueError("Invalid data class for coordinate optimization")
-
-        #todo optimizer as property
-        #optimizer.execute()
-        optimizer.optimize_overall(verbose=verbose)
+        optimizer = Optimizer(self, data_name=data_name, objective=objective)
+        optimizer.optimize(**kwargs)
 
     def optimize_mp(self, data_name='binary', method='photons', verbose=False):
         """ Docstring will be added when all optimization types are supported
@@ -59,10 +46,11 @@ class Cell(object):
             method:
             verbose:
         """
+        pass
 
         print(data_name, method, self.name)
 
-        optimizer = BinaryOptimizer(self)
+        #optimizer = Optimizer(self)
 
 
         #todo optimizer as property
