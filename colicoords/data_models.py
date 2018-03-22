@@ -40,7 +40,7 @@ class BinaryImage(np.ndarray):
         # Create our own tuple to pass to __setstate__
         new_state = pickled_state[2] + (self.name, self.metadata, self.dclass)
         # Return a tuple that replaces the parent's __setstate__ tuple with our own
-        return (pickled_state[0], pickled_state[1], new_state)
+        return pickled_state[0], pickled_state[1], new_state
 
     def __setstate__(self, state):
         self.name, self.metadata, self.dclass = state[-3:]
@@ -71,6 +71,13 @@ class BrightFieldImage(np.ndarray):
         obj.metadata = metadata
         obj.dclass = 'brightfield'
         return obj
+
+    def __array_finalize__(self, obj):
+        if obj is None:
+            return
+        self.name = getattr(obj, 'name', None)
+        self.metadata = getattr(obj, 'metadata', None)
+        self.dclass = getattr(obj, 'dclass', 'brightfield')
 
     def __reduce__(self):
         # Get the parent's __reduce__ tuple
@@ -109,6 +116,13 @@ class FluorescenceImage(np.ndarray):
         obj.dclass = 'fluorescence'
         return obj
 
+    def __array_finalize__(self, obj):
+        if obj is None:
+            return
+        self.name = getattr(obj, 'name', None)
+        self.metadata = getattr(obj, 'metadata', None)
+        self.dclass = getattr(obj, 'dclass', 'fluorescence')
+
     def __reduce__(self):
         # Get the parent's __reduce__ tuple
         pickled_state = super(FluorescenceImage, self).__reduce__()
@@ -146,6 +160,13 @@ class STORMTable(np.ndarray):
         obj.metadata = metadata
         obj.dclass = 'storm'
         return obj
+
+    def __array_finalize__(self, obj):
+        if obj is None:
+            return
+        self.name = getattr(obj, 'name', None)
+        self.metadata = getattr(obj, 'metadata', None)
+        self.dclass = getattr(obj, 'dclass', 'storm')
 
     def __reduce__(self):
         # Get the parent's __reduce__ tuple

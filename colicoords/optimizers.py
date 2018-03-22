@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.optimize import minimize, minimize_scalar
+from scipy.optimize import minimize
 from colicoords.config import cfg
 from functools import partial
 

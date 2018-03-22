@@ -34,6 +34,8 @@ axes[0, 1].set_xlim(0, 1.5)
 axes[0, 1].axvline(c.coords.r * (cfg.IMG_PIXELSIZE / 1000), color='r')
 
 so = Optimizer(c, data_name='storm', objective='leastsq')
+
+
 res, val = so.optimize_stepwise(bounds=True, obj_kwargs={'r_lower': lambda x: 0.5*np.std(x)})
 
 print('hoidoei')
@@ -71,7 +73,9 @@ axes[1, 1].set_xlim(0, 1.5)
 axes[1, 1].axvline(c.coords.r * (cfg.IMG_PIXELSIZE / 1000), color='r')
 
 plt.tight_layout()
-plt.show()
 
-#plt.savefig('test_out/storm_example/storm_{}.png'.format(str(datetime.datetime.now())).replace(' ', '_').replace(':', '-'))
-#shutil.copy('storm_test_plot.py', 'test_out/storm_example/py_script_{}.py'.format(str(datetime.datetime.now())).replace(' ', '_').replace(':', '-'))
+#plt.show()
+plt.savefig('test_out/storm_example/storm_{}.png'.format(str(datetime.datetime.now())).replace(' ', '_').replace(':', '-'))
+
+
+shutil.copy('storm_test_plot.py', 'test_out/storm_example/py_script_{}.py'.format(str(datetime.datetime.now())).replace(' ', '_').replace(':', '-'))

@@ -2,6 +2,10 @@ import numpy as np
 from colicoords.fileIO import load, save
 from colicoords import Cell, CellList
 from colicoords.optimizers import Optimizer
+import time
+
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 #cell_list = load(r'../test_data/ds7/preoptimized_10.cc')
 #c = cell_list[0]
@@ -16,111 +20,116 @@ def worker(obj_list, **kwargs):
         obj.optimize_mp(**kwargs)
 
 
-
-
 if __name__ == '__main__':
-    cl = load(r'../test_data/ds7/preoptimized_200.cc')
+    cl = load(r'../test_data/ds7/Neomycin.cc')
 
-#    res = cl[0].optimize_mp()
-#    print(res)
-#    print(type(res[0]))
+    cell_list = cl[:100].copy()
 
+    before = np.mean([np.sum(np.logical_xor(c.data.binary_img, c.coords.rc < c.coords.r)) for c in cell_list])
+
+    t0 = time.time()
+    cell_list.optimize_mp()
+    t1 = time.time()
+
+    after = np.mean([np.sum(np.logical_xor(c.data.binary_img, c.coords.rc < c.coords.r)) for c in cell_list])
+
+    print(before, after)
+    print(t1 - t0)
+
+
+
+    # s_result = []
+    # s_time = []
     #
-    print(len(cl))
-    CellList(cl[:50]).optimize_mp()
-
-
-
-"""
-
-if __name__ == '__main__':
-    __spec__ = "ModuleSpec(name='builtins', loader=<class '_frozen_importlib.BuiltinImporter'>)"
-    cl = load(r'../test_data/ds7/preoptimized_200.cc')
-    print('loaded')
-    c = cl[0]
-    print(len(cl))
-    cl[0].optimize()
-    before = np.mean([np.sum(np.logical_xor(c.data.binary_img, c.coords.rc < c.coords.r)) for c in cl])
-
-    kwargs = {'data_name': 'binary', 'method': 'photons', 'verbose': False}
-    iterable = list([(obj, kwargs) for obj in cl])
-
-    #todo this works but doenst do shit
-    #check the functionc can now be moved to a separate module avoiding name = main
-    #rewrite optimization so that it returns stuff
-
-    i1 = cl[:50]
-    i2 = cl[50:100]
-    i3 = cl[100:150]
-    i4 = cl[150:]
-
-
-    start_time = datetime.datetime.now()
-    p1 = mp.Process(target=worker, args=(i1,), kwargs=kwargs)
-    p2 = mp.Process(target=worker, args=(i2, ), kwargs=kwargs)
-    p3 = mp.Process(target=worker, args=(i3, ), kwargs=kwargs)
-    p4 = mp.Process(target=worker, args=(i4, ), kwargs=kwargs)
-
-    p1.start()
-    p2.start()
-    p3.start()
-    p4.start()
-
-    p1.join()
-    p2.join()
-    p3.join()
-    p4.join()
-
-
-    # print(len(iterable))
-    # pool = mp.Pool(processes=4)
+    # m_result = []
+    # m_time = []
+    # for n in n_cells:
+    #     print(n)
+    #     #serial
+    #     cell_list = cl[:n].copy()
     #
-    # res = pool.imap(worker, iterable)
-    # pool.close()
-    # pool.join()
-    # print(res)
-    # print('hoidoei')
-
-    time_diff = datetime.datetime.now() - start_time
-    after = np.mean([np.sum(np.logical_xor(c.data.binary_img, c.coords.rc < c.coords.r)) for c in cl])
-    print(before, after, time_diff)
-
-    print('single process')
-    cl = load(r'../test_data/ds7/preoptimized_200.cc')
-    start_time = datetime.datetime.now()
-    cl.optimize()
-    time_diff = datetime.datetime.now() - start_time
-    after = np.mean([np.sum(np.logical_xor(c.data.binary_img, c.coords.rc < c.coords.r)) for c in cl])
-
-    print(before, after, time_diff)
-
-
-
-    # cl.optimize()
-    # after1 = np.mean([np.sum(np.logical_xor(c.data.binary_img, c.coords.rc < c.coords.r)) for c in cl])
-    # print(before, after1)
-
-    #
-    # #start = datetime.datetime.now()
-    # for method in ['Powell']: #methods[:1]:
-    #     cell_list = CellList(load(r'../test_data/ds7/preoptimized_200.cc')[:25])
     #     before = np.mean([np.sum(np.logical_xor(c.data.binary_img, c.coords.rc < c.coords.r)) for c in cell_list])
     #
-    #     print(method)
-    #     start = datetime.datetime.now()
-    #
+    #     t0 = time.time()
     #     cell_list.optimize()
-    #     #
-    #     # for c in cell_list:
-    #     #     bo = BinaryOptimizer(c)
-    #     #     bo.optimize_overall(method=method, verbose=False)
-    #     print('time:', datetime.datetime.now() - start)
+    #     t1 = time.time()
     #
     #     after = np.mean([np.sum(np.logical_xor(c.data.binary_img, c.coords.rc < c.coords.r)) for c in cell_list])
-    #     print(before, after)
-    #     print('----')
+    #
+    #     s_result.append((before, after))
+    #     s_time.append(t1 - t0)
+    #     print('serial', n, (before, after), t1 - t0)
+    #
+    #     time.sleep(10) # time for electron relaxation
+    #
+    #     #parallel
+    #     cell_list = cl[:n].copy()
+    #
+    #     before = np.mean([np.sum(np.logical_xor(c.data.binary_img, c.coords.rc < c.coords.r)) for c in cell_list])
+    #
+    #     t0 = time.time()
+    #     cell_list.optimize_mp()
+    #     t1 = time.time()
+    #
+    #     after = np.mean([np.sum(np.logical_xor(c.data.binary_img, c.coords.rc < c.coords.r)) for c in cell_list])
+    #
+    #     m_result.append((before, after))
+    #     m_time.append(t1 - t0)
+    #     print('parallel', n, (before, after), t1 - t0)
+    #
+    #     time.sleep(10)
+    #
+    # final_arr = np.column_stack((n_cells, s_result, s_time, m_result, m_time))
+    # print(final_arr)
 
+    #np.savetxt('optimization_comparison.txt', final_arr)
+    #np.save('optimization_comparison.npy', final_arr)
 
-#print('time:', datetime.datetime.now() - start)
+   #  final_arr = np.load('optimization_comparison.npy')
+   #
+   #  s_time = final_arr.T[3]
+   #  m_time = final_arr.T[6]
+   #
+   #  sns.set(font_scale=2)
+   #
+   #  plt.figure()
+   #  plt.plot(n_cells, s_time, label='serial')
+   #  plt.plot(n_cells, m_time, label='parallel')
+   #  plt.xlabel('Number of cells')
+   #  plt.ylabel('Time (s)')
+   #  plt.legend()
+   #  plt.tight_layout()
+   # # plt.show()
+   #  plt.savefig('cells vs time.png')
 
-"""
+    # 3.520260000228881836e+01
+
+    #
+    # processes = [3, 4, 5, 6]
+    #
+    # p_result = []
+    # p_time = []
+    # for p in processes:
+    #     print(p)
+    #     #serial
+    #     cell_list = cl[:100].copy()
+    #
+    #     before = np.mean([np.sum(np.logical_xor(c.data.binary_img, c.coords.rc < c.coords.r)) for c in cell_list])
+    #
+    #     t0 = time.time()
+    #     cell_list.optimize_mp(processes=p)
+    #     t1 = time.time()
+    #
+    #     after = np.mean([np.sum(np.logical_xor(c.data.binary_img, c.coords.rc < c.coords.r)) for c in cell_list])
+    #
+    #     p_result.append((before, after))
+    #     p_time.append(t1 - t0)
+    #     print('processes', p, (before, after), t1 - t0)
+    #
+    #     time.sleep(10) # time for electron relaxation
+    #
+    # final_arr = np.column_stack((processes, p_result, p_time))
+    # print(final_arr)
+
+    # np.savetxt('optimization_comparison_proc.txt', final_arr)
+    # np.save('optimization_comparison_proc.npy', final_arr)

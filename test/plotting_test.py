@@ -15,27 +15,38 @@ cell_list = data_to_cells(data, pad_width=2, cell_frac=0.5, rotate='binary')
 #cell_list.optimize(verbose=True)
 cell = cell_list[0]
 cell.optimize(verbose=False)
-
+#
 p = CellPlot(cell)
 clp = CellListPlot(cell_list)
+#
+# plt.figure()
+# p.plot_dist(mode='r', norm_x=True)
+# plt.show()
+#
 
 plt.figure()
-p.plot_dist(mode='r', norm_x=True)
-plt.show()
-
 plt.imshow(cell.data.data_dict['fluorescence'])
 p.plot_midline()
-
-plt.show()
-
-plt.figure()
-p.plot_dist(mode='r',)
-plt.show()
-
-plt.figure()
-clp.plot_dist(mode='r', norm_y=True, norm_x=True)
 plt.show()
 #
+# plt.figure()
+# p.plot_dist(mode='r',)
+# plt.show()
+#
+# plt.figure()
+# clp.plot_dist(mode='r', norm_y=True, norm_x=True)
+# plt.show()
+# #
+# plt.figure()
+# clp.plot_dist(mode='r', norm_y=True, norm_x=False)
+# plt.show()
+
+
+m = cell.data.data_dict['fluorescence']
+
 plt.figure()
-clp.plot_dist(mode='r', norm_y=True, norm_x=False)
+plt.hist(cell_list.get_intensity(mask='coords'), bins='fd')
+plt.show()
+
+clp.hist_intensity()
 plt.show()

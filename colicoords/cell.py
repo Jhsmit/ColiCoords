@@ -5,8 +5,7 @@ import numpy as np
 import operator
 from functools import partial
 from colicoords.optimizers import Optimizer
-#from colicoords.multiproc import optimimize_multiprocess, optimimize_multiprocess_mk3
-
+#import multiprocessing as mp
 import multiprocess as mp
 
 
@@ -40,32 +39,12 @@ class Cell(object):
             verbose:
         """
         optimizer = Optimizer(self, data_name=data_name, objective=objective)
-        #todo meh this return
         return optimizer.optimize(**kwargs)
 
-    def optimize_mp(self, data_name='binary', objective=None, **kwargs):
-        optimizer = Optimizer(self, data_name=data_name, objective=objective)
-        return optimizer.optimize_mp(**kwargs)
-
-
-    # def optimize_mp(self, data_name='binary', method='photons', verbose=False):
-    #     """ Docstring will be added when all optimization types are supported
-    #
-    #     Args:
-    #         data_name (:obj:`str`):
-    #         method:
-    #         verbose:
-    #     """
-    #     pass
-    #
-    #     print(data_name, method, self.name)
-    #
-    #     #optimizer = Optimizer(self)
-    #
-    #
-    #     #todo optimizer as property
-    #     #optimizer.execute()
-    #     optimizer.optimize_overall(verbose=verbose)
+    # def optimize_mp(self, data_name='binary', objective=None, **kwargs):
+    #     optimizer = Optimizer(self, data_name=data_name, objective=objective)
+    #     res, val = optimizer.optimize(**kwargs)
+    #     return res.values()
 
     @property
     def radius(self):
@@ -97,10 +76,11 @@ class Cell(object):
     def a_list(self):
         raise NotImplementedError()
 
-    def l_dist(self):
-        raise NotImplementedError()
+    def l_dist(self, norm_x=False):
+        pass
 
-    #todo choose fluorescence channel or storm
+
+
     def r_dist(self, stop, step, data_name='', norm_x=False, storm_weight='points'):
         """ Calculates the radial distribution of a given data element
 
@@ -204,7 +184,7 @@ class Cell(object):
         for par in self.coords.parameters:
             setattr(new_cell, par, getattr(self.coords, par))
 
-
+        return new_cell
 
 
 class Coordinates(object):
@@ -233,8 +213,7 @@ class Coordinates(object):
         self.xl, self.xr, self.r, self.coeff = self._initial_guesses(data)
         self.shape = data.shape
 
-    #todo maybe remove this and instead store parameters as individual attributes
-
+    #todo maybe remove this and instead store parameters as individual attributes:
     @property
     def a0(self):
         return self.coeff[0]
@@ -516,6 +495,7 @@ class Coordinates(object):
 
         return xl, xr, r, coeff
 
+
 def worker(obj, **kwargs):
     return obj.optimize(**kwargs)
 
@@ -527,16 +507,17 @@ class CellList(object):
         for c in self:
             c.optimize(data_name=data_name, objective=objective, **kwargs)
 
-    def optimize_mp(self, data_name='binary', objective=None, **kwargs):
+    def optimize_mp(self, data_name='binary', objective=None, processes=None, **kwargs):
         kwargs = {'data_name': data_name, 'objective': objective, **kwargs}
-        pool = mp.Pool()
+        pool = mp.Pool(processes=processes)
 
         f = partial(worker, **kwargs)
         res = pool.map(f, self)
+        pool.close()
+        pool.join()
 
         for (r, v), cell in zip(res, self):
             cell.coords.sub_par(r)
-
 
     def append(self, cell_obj):
         assert isinstance(cell_obj, Cell)
@@ -552,8 +533,10 @@ class CellList(object):
         return self.cell_list.__iter__()
 
     def __getitem__(self, key):
-        #todo might want to return a CellList object when slicing
-        return self.cell_list.__getitem__(key)
+        if type(key) == slice:
+            return CellList(self.cell_list.__getitem__(key))
+        else:
+            return self.cell_list.__getitem__(key)
 
     def __setitem__(self, key, value):
         self.cell_list.__setitem__(key, value)
@@ -608,3 +591,6 @@ class CellList(object):
 
     def get_intensity(self, mask='binary', data_name='') -> np.ndarray:
         return np.array([c.get_intensity(mask=mask, data_name=data_name) for c in self])
+
+    def copy(self):
+        return CellList([cell.copy() for cell in self])

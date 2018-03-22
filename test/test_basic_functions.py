@@ -10,7 +10,7 @@ import tifffile
 import numpy as np
 
 
-class CellTest(ArrayTestCase):
+class DataTest(ArrayTestCase):
     def setUp(self):
         self.data = generate_testdata('ds1')
 
@@ -53,6 +53,18 @@ class CellTest(ArrayTestCase):
 
         vol = cl.volume
         self.assertEqual(len(vol), 48)
+
+
+class CellListTest(ArrayTestCase):
+    def setUp(self):
+        data = generate_testdata('ds1')
+        self.cell_list = data_to_cells(data)
+
+    def test_slicing(self):
+        sliced = self.cell_list[:5]
+        self.assertIsInstance(sliced, CellList)
+
+
 
 if __name__ == '__main__':
     unittest.main()
