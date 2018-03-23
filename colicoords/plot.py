@@ -245,7 +245,7 @@ class CellPlot(object):
 
         return ax
 
-    def plot_dist(self, ax=None, mode='r', src='', norm_y=False, norm_x=False, storm_weights='points'):
+    def plot_dist(self, ax=None, mode='r', data_name='', norm_y=False, norm_x=False, storm_weights='points', **kwargs):
 
         if mode == 'r':
             if norm_x:
@@ -254,7 +254,10 @@ class CellPlot(object):
             else:
                 stop = cfg.R_DIST_STOP
                 step = cfg.R_DIST_STEP
-            x, y = self.cell_obj.r_dist(stop, step, data_name=src, norm_x=norm_x, storm_weight=storm_weights)
+
+            stop = kwargs.pop('stop', stop)
+            step = kwargs.pop('step', step)
+            x, y = self.cell_obj.r_dist(stop, step, data_name=data_name, norm_x=norm_x, storm_weight=storm_weights)
 
             if norm_y:
                 y /= y.max()
@@ -271,7 +274,7 @@ class CellPlot(object):
         yunits = 'norm' if norm_y else 'a.u.'
 
         ax = plt.gca() if ax is None else ax
-        ax.plot(x, y)
+        ax.plot(x, y, **kwargs)
         ax.set_xlabel('Distance ({})'.format(xunits))
         ax.set_ylabel('Intensity ({})'.format(yunits))
         if norm_y:
@@ -377,6 +380,18 @@ class CellPlot(object):
 
         ax = plt.gca() if ax is None else ax
         ax.plot(x, y)
+
+    def imshow(self, img, ax=None, **kwargs):
+
+        xmax = self.cell_obj.data.shape[1]
+        ymax = self.cell_obj.data.shape[0]
+
+        extent = kwargs.pop('extent', [0, xmax, ymax, 0])
+        interpolation = kwargs.pop('interpolation', 'nearest')
+        cmap = kwargs.pop('cmap', 'viridis')
+
+        ax = plt.gca() if ax is None else ax
+        ax.imshow(img, extent=extent, interpolation=interpolation, cmap=cmap)
 
     def figure(self):
         plt.figure()

@@ -395,34 +395,56 @@ class Data(object):
                 self.idx = 0
                 raise StopIteration
 
-        data = Data()
+#        data = Data()
         if self.idx >= len(self):
             self.idx = 0
             raise StopIteration
         else:
-            for v in self.data_dict.values():
-                data.add_data(v[self.idx], v.dclass, name=v.name, metadata=v.metadata)
+            #for v in self.data_dict.values():
+             #   data.add_data(v[self.idx], v.dclass, name=v.name, metadata=v.metadata)
+            data = self[self.idx]
+
             self.idx += 1
             return data
 
     def __getitem__(self, key):
         data = Data()
         for v in self.data_dict.values():
+
             if v.dclass == 'storm':
-                b_z = np.ones(len(v)).astype(bool)
-                if len(key) == 3:
+                #todo needs testing
+
+                if type(key) == int:
+                    #Select the appropriate frames, STORM frame numbers start counting at 1
+                    xmin = 0
+                    ymin = 0
+
+                    b_z = v['frame'] == key + 1
+                    b_xy = True
+
+                elif len(key) == 3:
                     #3d slicing, slices the frames? #todo 3d slicing by frame!
                     raise NotImplementedError()
 
                 elif len(key) == 2:
-                    ymin, ymax, ystep = key[0].indices(len(v))
-                    xmin, xmax, ystep = key[1].indices(len(v))
+                    ymin, ymax, ystep = key[0].start, key[0].stop, key[0].step
+                    xmin, xmax, xstep = key[1].start, key[1].stop, key[1].step
+
+                    xmin = xmin if xmin else 0
+                    ymin = ymin if ymin else 0
+                    xmax = xmax if xmax else self.shape[1]
+                    ymax = ymax if ymax else self.shape[0]
+
+                    if ystep is not None or xstep is not None:
+                        raise ValueError('Cannot specify slice steps for slicing images in x and y dimenions')
 
                     #Create boolean array to mask entries withing the chosen range
                     b_xy = (v['x'] > xmin) * (v['x'] < xmax) * (v['y'] > ymin) * (v['y'] < ymax)
+                    b_z = True
 
                 # Choose selected data and copy, rezero x and y
                 b_overall = b_z * b_xy
+
                 table_out = v[b_overall].copy()
                 table_out['x'] -= xmin
                 table_out['y'] -= ymin
@@ -444,13 +466,17 @@ def _rotate_storm(storm_data, theta, shape=None):
     y = storm_data['y'].copy()
 
     if shape:
-        xmax = shape[0]
-        ymax = shape[1]
-        offset = 0.5 * shape[0] * ((shape[0]/shape[1]) * np.sin(-theta) + np.cos(-theta) - 1)
+        ymax = shape[0]
+        xmax = shape[1]
+
+        ynew = np.abs(xmax * np.sin(-theta)) + np.abs(ymax * np.cos(-theta))
+        xnew = np.abs(xmax * np.cos(-theta)) + np.abs(ymax * np.sin(-theta))
+
     else:
         xmax = int(storm_data['x'].max()) + 2
         ymax = int(storm_data['y'].max()) + 2
-        offset = 0
+        ynew = 0
+        xnew = 0
 
     x -= xmax / 2
     y -= ymax / 2
@@ -458,9 +484,8 @@ def _rotate_storm(storm_data, theta, shape=None):
     xr = x * np.cos(theta) + y * np.sin(theta)
     yr = y * np.cos(theta) - x * np.sin(theta)
 
-    xr += xmax / 2
-    yr += ymax / 2
-    yr += offset
+    xr += xnew / 2
+    yr += ynew / 2
 
     storm_out = np.copy(storm_data)
     storm_out['x'] = xr

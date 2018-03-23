@@ -36,6 +36,8 @@ def data_to_cells(input_data, pad_width=3, cell_frac=0.5, rotate='binary'):
             theta = output_data.data_dict[rotate].orientation if rotate else 0
             rotated_data = output_data.rotate(theta)
 
+            #r = rotated_data.data_dict['storm']['y']
+
             #Make cell object and add all the data
             #todo change cell initation and data adding interface
             c = Cell(rotated_data)
