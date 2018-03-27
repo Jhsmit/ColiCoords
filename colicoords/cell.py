@@ -41,11 +41,6 @@ class Cell(object):
         optimizer = Optimizer(self, data_name=data_name, objective=objective)
         return optimizer.optimize(**kwargs)
 
-    # def optimize_mp(self, data_name='binary', objective=None, **kwargs):
-    #     optimizer = Optimizer(self, data_name=data_name, objective=objective)
-    #     res, val = optimizer.optimize(**kwargs)
-    #     return res.values()
-
     @property
     def radius(self):
         """float: Radius of the cell"""
@@ -79,8 +74,6 @@ class Cell(object):
     def l_dist(self, norm_x=False):
         pass
 
-
-
     def r_dist(self, stop, step, data_name='', norm_x=False, storm_weight='points'):
         """ Calculates the radial distribution of a given data element
 
@@ -111,7 +104,6 @@ class Cell(object):
 
         bins = np.arange(0, stop+step, step)
         xvals = bins + 0.5 * step  # xval is the middle of the bin
-
         if not data_name:
             data_elem = list(self.data.flu_dict.values())[0] #yuck
         else:
@@ -179,10 +171,10 @@ class Cell(object):
         return data_elem[m].mean()
 
     def copy(self):
-
+        #todo needs testing
         new_cell = Cell(data_object=self.data.copy(), name=self.name)
         for par in self.coords.parameters:
-            setattr(new_cell, par, getattr(self.coords, par))
+            setattr(new_cell.coords, par, getattr(self.coords, par))
 
         return new_cell
 
@@ -209,8 +201,10 @@ class Coordinates(object):
         Args:
             data:
         """
+        self.data = data
         self.coeff = np.array([1., 1., 1.])
-        self.xl, self.xr, self.r, self.coeff = self._initial_guesses(data)
+        self.xl, self.xr, self.r, self.coeff = self._initial_guesses(data) #refactor to class method
+        self.coeff = self._initial_fit()
         self.shape = data.shape
 
     #todo maybe remove this and instead store parameters as individual attributes:
@@ -494,6 +488,20 @@ class Coordinates(object):
             NotImplementedError("Optimization based on only storm data is not implemented")
 
         return xl, xr, r, coeff
+
+    def get_core_points(self, xl=None, xr=None):
+        xl = xl if xl else self.xl
+        xr = xr if xr else self.xr
+
+        im_x, im_y = np.nonzero(self.data.data_dict['binary'])
+        x_range = np.arange(int(xl), int(xr))
+        y = np.array([np.nanmean(np.where(im_y == y, im_x, np.nan)) for y in x_range])
+
+        return x_range, y
+
+    def _initial_fit(self):
+        x, y = self.get_core_points()
+        return np.polyfit(x, y, 2)[::-1]
 
 
 def worker(obj, **kwargs):
