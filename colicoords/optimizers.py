@@ -24,7 +24,7 @@ class Optimizer(object):
     def __init__(self, cell_obj, data_name='binary', objective=None):
         self.cell_obj = cell_obj
         self.data_name = data_name
-
+        self.val = np.inf
         dclass = self.data_elem.dclass
         objective = self.defaults[dclass] if not objective else objective
 
@@ -69,7 +69,7 @@ class Optimizer(object):
         fun = partial(self.objective, **obj_kwargs) if obj_kwargs else self.objective
         bounds = self.get_bounds(parameters, parameters if type(bounds) == bool else bounds) if bounds else None
         method = kwargs['method'] if 'method' in kwargs else 'Powell' if not bounds else None #todo maybe differnt default
-        verbose = kwargs['verbose'] if 'verbose' in kwargs else False
+        verbose = kwargs.pop('verbose', False)
         par_values = np.array([getattr(self.cell_obj.coords, par) for par in parameters.split(' ')])
 
         result = minimize(fun, par_values, args=(parameters.split(' '), self.cell_obj, self.data_name),
@@ -81,6 +81,7 @@ class Optimizer(object):
             res_dict = {key: val for key, val in zip(parameters.split(' '), [result.x])}
 
         self.sub_par(res_dict)
+        self.val = result.fun
         return res_dict, result.fun
 
     def optimize_stepwise(self, bounds=None, **kwargs):
@@ -107,10 +108,12 @@ class Optimizer(object):
                 i += 1
             prev_val = val
 
+        self.val = val
         return res, val
 
     def optimize(self, bounds=None, **kwargs):
         res, val = self.optimize_parameters('r xl xr a0 a1 a2', bounds=bounds, **kwargs)
+        self.val = val
         return res, val
 
     def sub_par(self, par_dict):
