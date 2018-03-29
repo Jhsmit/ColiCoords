@@ -107,6 +107,8 @@ class CellListPlot(object):
             stop = cfg.R_DIST_STOP
             step = cfg.R_DIST_STEP
 
+        stop = kwargs.pop('stop', stop)
+        step = kwargs.pop('step', step)
         if mode == 'r':
             x, out_arr = self.cell_list.r_dist(stop, step, data_name=src, norm_x=norm_x, storm_weight=storm_weights)
             out_arr = np.nan_to_num(out_arr)
