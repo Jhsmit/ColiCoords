@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.patches as mpatches
 import seaborn.timeseries
 from colicoords.config import cfg
+from colicoords import CellList
 import seaborn as sns
 from scipy import stats
 sns.set_style('white')
@@ -46,6 +47,7 @@ seaborn.timeseries._plot_std_band = _plot_std_band
 
 class CellListPlot(object):
     def __init__(self, cell_list):
+        assert isinstance(cell_list, CellList)
         self.cell_list = cell_list
 
     def hist_property(self, ax=None, tgt='length'):
@@ -88,11 +90,11 @@ class CellListPlot(object):
 
         return ax_d
 
-    def plot_dist(self, ax=None, mode='r', src='', std='std_band', norm_y=False, norm_x=False, storm_weights='points', **kwargs):
+    def plot_dist(self, ax=None, mode='r', data_name='', std='std_band', norm_y=False, norm_x=False, storm_weights='points', **kwargs):
         """
 
         :param mode: r, l, or a for radial, longitudinal or angular
-        :param src: which data source to use
+        :param data_name: Name of the which data elment to use
         :param std: band or bar style std error bars
         :param norm_y: normalize distribution wrt y
         :param norm_x normalize distribution wrt r, l, (not alpha)
@@ -110,7 +112,7 @@ class CellListPlot(object):
         stop = kwargs.pop('stop', stop)
         step = kwargs.pop('step', step)
         if mode == 'r':
-            x, out_arr = self.cell_list.r_dist(stop, step, data_name=src, norm_x=norm_x, storm_weight=storm_weights)
+            x, out_arr = self.cell_list.r_dist(stop, step, data_name=data_name, norm_x=norm_x, storm_weight=storm_weights)
             out_arr = np.nan_to_num(out_arr)
             title = 'Radial Distribution'
         elif mode == 'l':
@@ -119,6 +121,14 @@ class CellListPlot(object):
             raise NotImplementedError()
 
         if norm_y:
+            #todo norm y currently normalized invidivual curves before averaging. which doesnt work well for sparse (storm) data
+            maxes = np.max(out_arr, axis=1)
+            bools = maxes != 0
+            n = np.sum(~bools)
+            if n > 0:
+                print("Warning: removed {} curves with maximum zero".format(n))
+
+            out_arr = out_arr[bools]
             a_max = np.max(out_arr, axis=1)
             out_arr = out_arr / a_max[:, np.newaxis]
 
@@ -134,13 +144,18 @@ class CellListPlot(object):
         if norm_y:
             ax.set_ylim(0, 1.1)
 
-        ax_out = sns.tsplot(data=out_arr, time=t, estimator=np.mean, err_style=std, ax=ax, **kwargs)
+        if 'label' in kwargs:
+            kwargs['condition'] = kwargs.pop('label')
+
+        ax_out = sns.tsplot(data=out_arr, time=t, estimator=np.nanmean, err_style=std, ax=ax, **kwargs)
         ax_out.set_xlabel('Distance ({})'.format(xunits))
         ax_out.set_ylabel('Signal intensity ({})'.format(yunits))
         ax_out.set_title(title)
 
         if norm_y:
             ax_out.set_ylim(0, 1.1)
+
+        return ax_out #todo always return axes
 
     #def hist_intensity(self, ax=None, ):
 

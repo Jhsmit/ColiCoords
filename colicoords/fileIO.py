@@ -142,16 +142,22 @@ def load_thunderstorm(file_path, pixelsize=None):
     :return:
     """
 
-    assert(os.path.splitext(file_path)[1] == '.csv')
-
     dtype = {
         'names': ("id", "frame", "x", "y", "sigma", "intensity", "offset", "bkgstd", "chi2", "uncertainty_xy"),
         'formats': (int, int, float, float, float, float, float, float, float, float)
     }
 
     pixelsize = cfg.IMG_PIXELSIZE if not pixelsize else pixelsize
+    ext = os.path.splitext(file_path)[1]
+    if ext == '.csv':
+        delimiter = ','
+    elif ext == '.xls':
+        delimiter = '\t'
+    else:
+        raise ValueError('Invalid data file')
 
-    storm_table = np.genfromtxt(file_path, skip_header=1, dtype=dtype, delimiter=',')
+
+    storm_table = np.genfromtxt(file_path, skip_header=1, dtype=dtype, delimiter=delimiter)
     storm_table['x'] /= pixelsize
     storm_table['y'] /= pixelsize
     storm_table['uncertainty_xy'] /= pixelsize

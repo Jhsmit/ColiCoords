@@ -91,16 +91,16 @@ class Cell(object):
                 yvals (:class:`np.ndarray`) Array of in heights
         """
 
-        def bin_func(r, y_weight, bins):
-            i_sort = r.argsort()
-            r_sorted = r[i_sort]
-            y_weight = y_weight[i_sort] if y_weight is not None else y_weight
-            bin_inds = np.digitize(r_sorted,
-                                   bins) - 1  # -1 to assure points between 0 and step are in bin 0 (the first)
-            yvals = np.bincount(bin_inds, weights=y_weight, minlength=len(bins))
-            if y_weight is not None:
-                yvals /= np.bincount(bin_inds, minlength=len(bins))
-            return np.nan_to_num(yvals)
+        # def bin_func(r, y_weight, bins):
+        #     i_sort = r.argsort()
+        #     r_sorted = r[i_sort]
+        #     y_weight = y_weight[i_sort] if y_weight is not None else y_weight
+        #     bin_inds = np.digitize(r_sorted,
+        #                            bins) - 1  # -1 to assure points between 0 and step are in bin 0 (the first)
+        #     yvals = np.bincount(bin_inds, weights=y_weight, minlength=len(bins))
+        #     if y_weight is not None:
+        #         yvals /= np.bincount(bin_inds, minlength=len(bins))
+        #     return np.nan_to_num(yvals)
 
         bins = np.arange(0, stop+step, step)
         xvals = bins + 0.5 * step  # xval is the middle of the bin
@@ -126,20 +126,32 @@ class Cell(object):
                 y_weight = data_elem['intensity']
             else:
                 raise ValueError("storm_weights has to be either 'points' or 'photons'")
-            yvals = bin_func(r, y_weight, bins)
+            yvals = self._bin_func(r, y_weight, bins)
 
         elif data_elem.ndim == 2:
             assert data_elem.dclass == 'fluorescence'
 
             r = self.coords.rc / self.coords.r if norm_x else self.coords.rc
 
-            yvals = bin_func(r.flatten(), data_elem.flatten(), bins)
-        elif data_elem.ndim == 3: #todo check if this still works
+            yvals = self._bin_func(r.flatten(), data_elem.flatten(), bins)
+        elif data_elem.ndim == 3:  # todo check if this still works
             r = self.coords.rc / self.coords.r if norm_x else self.coords.rc
-            yvals = np.vstack([bin_func(r.flatten(), d.flatten(), bins) for d in data_elem])
+            yvals = np.vstack([self._bin_func(r.flatten(), d.flatten(), bins) for d in data_elem])
         else:
             raise ValueError('Invalid fluorescence image dimensions')
         return xvals, yvals
+
+    @staticmethod
+    def _bin_func(xvals, y_weight, bins):
+        i_sort = xvals.argsort()
+        r_sorted = xvals[i_sort]
+        y_weight = y_weight[i_sort] if y_weight is not None else y_weight
+        bin_inds = np.digitize(r_sorted,
+                               bins) - 1  # -1 to assure points between 0 and step are in bin 0 (the first)
+        yvals = np.bincount(bin_inds, weights=y_weight, minlength=len(bins))
+        if y_weight is not None:
+            yvals /= np.bincount(bin_inds, minlength=len(bins))
+        return np.nan_to_num(yvals)
 
     def get_intensity(self, mask='binary', data_name='') -> float:
         """ Returns the mean fluorescence intensity in the region masked by either the binary image or synthetic
@@ -531,8 +543,8 @@ class CellList(object):
         assert isinstance(cell_obj, Cell)
         self.cell_list.append(cell_obj)
 
-    def __init__(self, cell_list=None):
-        self.cell_list = list(cell_list) if cell_list else []
+    def __init__(self, cell_list):
+        self.cell_list = np.array(cell_list)
 
     def __len__(self):
         return self.cell_list.__len__()
@@ -541,10 +553,17 @@ class CellList(object):
         return self.cell_list.__iter__()
 
     def __getitem__(self, key):
-        if type(key) == slice:
-            return CellList(self.cell_list.__getitem__(key))
-        else:
+        if type(key) == int:
             return self.cell_list.__getitem__(key)
+        else:
+            return CellList(self.cell_list.__getitem__(key))
+
+
+        # #todo what about boolean array indices slicing?
+        # if type(key) == slice:
+        #     return CellList(self.cell_list.__getitem__(key))
+        # else:
+        #     return self.cell_list.__getitem__(key)
 
     def __setitem__(self, key, value):
         self.cell_list.__setitem__(key, value)
