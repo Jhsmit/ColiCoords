@@ -12,9 +12,15 @@ class PSF(object):
 
 
 class RDistModel(object):
-    num_points = 1501
 
-    def __init__(self, psf, x_range):  #todo more options for psf modelling
+    def __init__(self, psf, x_range, num_points=351):  #todo more options for psf modelling
+        try:
+            assert num_points % 2 == 1
+        except AssertionError:
+            raise ValueError("Value for num_points must be odd")
+
+        self.num_points = num_points
+
         self.dx = 2*x_range / (self.num_points - 1)
         _x = np.arange(self.dx, x_range + self.dx, self.dx)
         self.x = np.r_[-_x[::-1], 0, _x]

@@ -22,7 +22,6 @@ class CellFitting(object):
         self.x = x
         self.y = y
 
-    @profile
     def fit_parameters(self, parameters, bounds=None, constraint=True, basin_hop=True, T=0.01, **kwargs):
         def objective(par_values, par_names, model, x, y):
             par_dict = {par_name: par_value for par_name, par_value in zip(par_names, par_values)}
@@ -39,7 +38,6 @@ class CellFitting(object):
         def print_fun(x, f, accepted):
             print('x', x)
             print("at minimum %.4f accepted %d" % (f, int(accepted)))
-
 
 
         if basin_hop:
@@ -92,8 +90,13 @@ class CellFitting(object):
         self.val = result.fun
         return res_dict, result.fun
 
+    def execute(self, parameters, bounds=True, constraint=True, basin_hop=True, T=0.0001):
+        res, v = self.fit_parameters(parameters, bounds=bounds, constraint=constraint, basin_hop=basin_hop, T=T)
+        self.model.sub_par(res)
+        res, v = self.fit_parameters(parameters, bounds=bounds, constraint=constraint, basin_hop=basin_hop, T=T)
+        return res, v
 
-    def execute(self, bounds=True, constraint=True):
+    def execute1(self, bounds=True, constraint=True):
         # This function assumes the model has parameters a1 a2 r1 r2
 
         self.model.a1.value = 1.

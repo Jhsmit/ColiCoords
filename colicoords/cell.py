@@ -7,6 +7,8 @@ from functools import partial
 from colicoords.optimizers import Optimizer
 #import multiprocessing as mp
 import multiprocess as mp
+from tqdm import tqdm
+import sys
 
 
 # todo obj or class? in docstring
@@ -519,25 +521,86 @@ class Coordinates(object):
 def worker(obj, **kwargs):
     return obj.optimize(**kwargs)
 
+def worker_pb(pbar, obj, **kwargs):
+    res = obj.optimize(**kwargs)
+    pbar.update()
+    return res
+
+
+import contextlib
+
+class DummyTqdmFile(object):
+    """Dummy file-like that will write to tqdm"""
+    file = None
+    def __init__(self, file):
+        self.file = file
+
+    def write(self, x):
+        # Avoid print() second call (useless \n)
+        if len(x.rstrip()) > 0:
+            tqdm.write(x, file=self.file)
+
+    def flush(self):
+        return getattr(self.file, "flush", lambda: None)()
+
+@contextlib.contextmanager
+def std_out_err_redirect_tqdm():
+    orig_out_err = sys.stdout, sys.stderr
+    try:
+        sys.stdout, sys.stderr = map(DummyTqdmFile, orig_out_err)
+        yield orig_out_err[0]
+    # Relay exceptions
+    except Exception as exc:
+        raise exc
+    # Always restore sys.stdout/err if necessary
+    finally:
+        sys.stdout, sys.stderr = orig_out_err
+
+
 
 class CellList(object):
 
     def optimize(self, data_name='binary', objective=None, **kwargs):  #todo refactor dclass to data_src or data_name
         #todo threaded and stuff
-        for c in self:
+        for c in tqdm(self):
             c.optimize(data_name=data_name, objective=objective, **kwargs)
 
-    def optimize_mp(self, data_name='binary', objective=None, processes=None, **kwargs):
+    def optimize_mp(self, data_name='binary', objective=None, processes=None, pbar=True, **kwargs):
         kwargs = {'data_name': data_name, 'objective': objective, **kwargs}
+        print('whaat')
+        print(len(self))
         pool = mp.Pool(processes=processes)
 
         f = partial(worker, **kwargs)
-        res = pool.map(f, self)
+        # pb = tqdm(total=len(self))
+        # f = partial(worker_pb, pb, **kwargs) if pbar else partial(worker, **kwargs)
+
+      #  res = pool.map(f, self)
+
+
+        #res = list(tqdm(pool.imap(f, self), total=len(self))) # works but doenst update in real time
+
+        res = []
+        with std_out_err_redirect_tqdm() as orig_stdout:
+            with tqdm(total=len(self), file=orig_stdout, position=0) as pbar:
+                for i, r in tqdm(enumerate(pool.imap(f, self))):
+                    pbar.update(1)
+                    res.append(r)
+
         pool.close()
         pool.join()
 
         for (r, v), cell in zip(res, self):
             cell.coords.sub_par(r)
+
+    def execute_mp(self, worker, processes=None):
+        pool = mp.Pool(processes=processes)
+        res = pool.map(worker, self)
+
+        pool.close()
+        pool.join()
+
+        return res
 
     def append(self, cell_obj):
         assert isinstance(cell_obj, Cell)
@@ -621,3 +684,29 @@ class CellList(object):
 
     def copy(self):
         return CellList([cell.copy() for cell in self])
+
+
+
+#http://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
+#@Vladimir Ignatyev @Greenstick
+def printProgress(iteration, total, prefix='', suffix='', decimals=1, barLength=50):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        barLength   - Optional  : character length of bar (Int)
+    """
+    formatStr = "{0:." + str(decimals) + "f}"
+    percents = formatStr.format(100 * (iteration / float(total)))
+    filledLength = int(round(barLength * iteration / float(total)))
+    bar = 'X' * filledLength + '-' * (barLength - filledLength)
+    line = '\r%s |%s| %s%s %s' % (prefix, bar, percents, '%', suffix)
+    #sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
+    sys.stdout.write(line)
+    if iteration == total:
+        sys.stdout.write('\n')
+    sys.stdout.flush()

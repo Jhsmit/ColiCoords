@@ -7,7 +7,7 @@ def data_to_cells(input_data, pad_width=3, cell_frac=0.5, rotate='binary', verbo
     assert 'binary' in input_data.dclasses
 
     vprint = print if verbose else lambda *a, **k: None
-    cell_list = CellList()
+    cell_list = []
     for i, data in enumerate(input_data):
         binary = data.binary_img
         if (binary > 0).mean() > cell_frac or binary.mean() == 0.:
@@ -46,4 +46,4 @@ def data_to_cells(input_data, pad_width=3, cell_frac=0.5, rotate='binary', verbo
             c.name = 'img{}c{}'.format(str(i).zfill(3), str(l).zfill(3))
             cell_list.append(c)
 
-    return cell_list
+    return CellList(cell_list)
