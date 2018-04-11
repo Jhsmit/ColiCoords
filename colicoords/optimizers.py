@@ -30,15 +30,21 @@ class CellFitting(object):
             return np.sum((y - y_model)**2)
 
         bounds = self.model.get_bounds(parameters, parameters if type(bounds) == bool else bounds) if bounds else None
+
         method = kwargs['method'] if 'method' in kwargs else 'Powell' if not bounds else None
         verbose = kwargs.pop('verbose', False)
         par_values = np.array([getattr(self.model, par).value for par in parameters.split(' ')])
         constraints = self.model.get_constraints(parameters) if constraint else None
 
-        def print_fun(x, f, accepted):
-            print('x', x)
-            print("at minimum %.4f accepted %d" % (f, int(accepted)))
+        #todo this needs some checking if not all parameters are bounded
+        def _accept_test(bounds, **kwargs):
+            par_values = kwargs['x_new']
+            bools = [(-np.inf if pmin is None else pmin) <= val <= (np.inf if pmax is None else pmax)
+                     for (pmin, pmax), val in zip(bounds, par_values)]
 
+            return np.all(bools)
+
+        accept_test = partial(_accept_test, bounds)
 
         if basin_hop:
             result = basinhopping(objective, par_values,
@@ -51,7 +57,8 @@ class CellFitting(object):
                                       **kwargs},
                                   T=T,
                                   stepsize=1,
-                                  niter=200
+                                  niter=200,
+                                  accept_test=accept_test
                                   )
 
         else:
@@ -81,6 +88,7 @@ class CellFitting(object):
 
         result = minimize(tempfunc, par_values, args=(parameters.split(' '), self.model, self.x, self.y),
                  bounds=bounds, method=method, constraints=constraints, options={'disp': verbose}, **kwargs)
+
 
         try:
             res_dict = {key: val for key, val in zip(parameters.split(' '), result.x)}

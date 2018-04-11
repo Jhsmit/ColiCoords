@@ -602,6 +602,11 @@ class CellList(object):
 
         return res
 
+    def execute(self, worker):
+        res = map(worker, self)
+
+        return res
+
     def append(self, cell_obj):
         assert isinstance(cell_obj, Cell)
         self.cell_list.append(cell_obj)

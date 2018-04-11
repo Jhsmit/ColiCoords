@@ -27,9 +27,9 @@ class RDistModel(object):
         self.psf = psf
 
         self.r1 = Parameter(name='r1', value=5, min=2, max=10)
-        self.a1 = Parameter(name='a1', value=0, min=0)
+        self.a1 = Parameter(name='a1', value=0.5, min=0)
         self.r2 = Parameter(name='r2', value=5, min=2, max=10)
-        self.a2 = Parameter(name='a2', value=0, min=0)
+        self.a2 = Parameter(name='a2', value=0.5, min=0)
 
     def __call__(self, x, **kwargs):
         r1 = kwargs.pop('r1', self.r1.value)

@@ -264,7 +264,7 @@ class Data(object):
         assert name not in [d.name for d in self.data_dict.values()]
         if dclass == 'binary':
             assert self.binary_img is None
-            assert data.dtype in ['int', 'uint', 'uint16', 'uint32', 'bool']
+            assert np.issubdtype(data.dtype, np.integer)
 
             self._check_shape(data.shape, data.ndim)
             self.binary_img = BinaryImage(data, name=name, metadata=metadata)
