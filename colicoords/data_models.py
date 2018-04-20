@@ -329,7 +329,8 @@ class Data(object):
             if v.dclass == 'storm':
                 rotated = _rotate_storm(v, -theta, shape=self.shape)
             else:
-                rotated = scipy_rotate(v, -theta)
+
+                rotated = scipy_rotate(v, -theta, mode='nearest')
 
             data.add_data(rotated, v.dclass, name=v.name, metadata=v.metadata)
         return data

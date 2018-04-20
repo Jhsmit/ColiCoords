@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.optimize import minimize, basinhopping
+from scipy.optimize import minimize, basinhopping, brute
 from colicoords.config import cfg
 from functools import partial
 
@@ -22,17 +22,20 @@ class CellFitting(object):
         self.x = x
         self.y = y
 
-    def fit_parameters(self, parameters, bounds=None, constraint=True, basin_hop=True, T=0.01, **kwargs):
+    def fit_parameters(self, parameters, bounds=None, constraint=True, basin_hop=True, T=0.1, **kwargs):
         def objective(par_values, par_names, model, x, y):
             par_dict = {par_name: par_value for par_name, par_value in zip(par_names, par_values)}
             y_model = model(x, **par_dict)
 
-            return np.sum((y - y_model)**2)
+            yn = y / y.max()
+
+            return np.sum(yn*((y - y_model)**2))
 
         bounds = self.model.get_bounds(parameters, parameters if type(bounds) == bool else bounds) if bounds else None
 
         method = kwargs['method'] if 'method' in kwargs else 'Powell' if not bounds else None
         verbose = kwargs.pop('verbose', False)
+       # method = 'Nelder-Mead'
         par_values = np.array([getattr(self.model, par).value for par in parameters.split(' ')])
         constraints = self.model.get_constraints(parameters) if constraint else None
 
@@ -45,6 +48,16 @@ class CellFitting(object):
             return np.all(bools)
 
         accept_test = partial(_accept_test, bounds)
+
+        # ranges = (slice(0, 1.1, 0.1), slice(0, 1.1, 0.1), slice(4, 6.5, 0.05), slice(4, 6.5, 0.05))
+        # resbrute = brute(
+        #     objective,
+        #     ranges,
+        #     args=(parameters.split(' '), self.model, self.x, self.y),
+        #     full_output=True
+        #
+        # )
+
 
         if basin_hop:
             result = basinhopping(objective, par_values,
@@ -71,6 +84,8 @@ class CellFitting(object):
             res_dict = {key: val for key, val in zip(parameters.split(' '), [result.x])}
 
         self.val = result.fun
+      #  return resbrute
+
         return res_dict, result.fun
 
     def fit_parameters_old(self, parameters, bounds=None, constraint=True, **kwargs):
@@ -171,7 +186,9 @@ class Optimizer(object):
 
     defaults = {
         'binary': 'binary',
-        'storm': 'leastsq'
+        'storm': 'leastsq',
+        'brightfield': 'sim_cell',
+        'fluorescence': 'sim_cell',
     }
 
     def __init__(self, cell_obj, data_name='binary', objective=None):
@@ -320,6 +337,24 @@ def minimize_binary_xor(par_values, par_names, cell_obj, data_name):
 
     return np.sum(np.logical_xor(cell_obj.data.data_dict[data_name], binary))
 
+
+def minimize_sim_cell(par_values, par_names, cell_obj, data_name):
+    par_dict = {par_name: par_value for par_name, par_value in zip(par_names, par_values)}
+    r = par_dict.pop('r', cell_obj.coords.r)
+    r = r / cell_obj.coords.r
+
+    cell_obj.coords.sub_par(par_dict)
+    simulated = cell_obj.sim_cell(data_name, r_scale=r)
+    real = cell_obj.data.data_dict[data_name]
+
+    #print('sim', simulated[:10, 0])
+
+    cost = np.sum((simulated - real) ** 2)
+    #print(par_values, cost)
+
+    return np.sum((simulated - real)**2)
+
+
 objectives_dict = {
     'binary': {
         'binary': minimize_binary_xor
@@ -330,8 +365,10 @@ objectives_dict = {
         'leastsq': minimize_storm_leastsq
     },
     'brightfield': {
+        'sim_cell': minimize_sim_cell
     },
     'fluorescence': {
+        'sim_cell': minimize_sim_cell
     }
 }
 

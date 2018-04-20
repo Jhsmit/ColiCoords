@@ -146,7 +146,7 @@ class Cell(object):
             yvals = self._bin_func(bin_r, y_weight, bins)
 
         elif data_elem.ndim == 2:
-            assert data_elem.dclass == 'fluorescence'
+            #assert data_elem.dclass == 'fluorescence'
 
             r = self.coords.rc / self.coords.r if norm_x else self.coords.rc
             if xlim:
@@ -170,6 +170,19 @@ class Cell(object):
         else:
             raise ValueError('Invalid fluorescence image dimensions')
         return xvals, yvals
+
+    def sim_cell(self, data_name, norm_x=False, r_scale=1, **kwargs):
+        data_elem = self.data.data_dict[data_name]
+        stop = kwargs.pop('stop', 25)  # todo default in cfg?
+        step = kwargs.pop('step', 1) # todo cfg
+
+        xp, fp = self.r_dist(stop, step, data_name=data_name, norm_x=norm_x) #todo what about norm_x?
+
+
+        interp = np.interp(r_scale*self.coords.rc, xp, np.nan_to_num(fp))
+
+        return interp
+
 
     @staticmethod
     def _bin_func(xvals, y_weight, bins):
@@ -339,9 +352,8 @@ class Coordinates(object):
             #r1 = (d1 + np.sqrt(d1 ** 2. - 4. * d0 ** 3.)) / 2
             r1 = (d1 + np.sqrt(r0)) / 2
             #r1 = (d1 + np.sqrt(np.square(d1, 2.) - 4. * np.power(d0, 3.))) / 2
-
-            #dc = np.cbrt(r1)
-            dc = r1**(1/3)
+            dc = np.cbrt(r1)
+            #dc = r1**(1/3)# to power (1/3) gives nan's for coeffs [1.98537881e+01, 1.44894594e-02, 2.38096700e+00]
             #dc = np.power(r1, 1/3)
             #dc = np.cbrt((d1 + np.sqrt(d1 ** 2. - 4. * d0 ** 3.)) / 2.)
             return -(1. / (3. * a)) * (b + dc + (d0 / dc))
@@ -554,7 +566,6 @@ def worker_pb(pbar, obj, **kwargs):
     pbar.update()
     return res
 
-
 import contextlib
 
 class DummyTqdmFile(object):
@@ -595,8 +606,6 @@ class CellList(object):
 
     def optimize_mp(self, data_name='binary', objective=None, processes=None, pbar=True, **kwargs):
         kwargs = {'data_name': data_name, 'objective': objective, **kwargs}
-        print('whaat')
-        print(len(self))
         pool = mp.Pool(processes=processes)
 
         f = partial(worker, **kwargs)
