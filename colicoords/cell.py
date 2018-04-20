@@ -76,7 +76,8 @@ class Cell(object):
     def l_dist(self, norm_x=False):
         pass
 
-    def r_dist(self, stop, step, data_name='', norm_x=False, storm_weight='points'):
+    def r_dist(self, stop, step, data_name='', norm_x=False, storm_weight='points', xlim=None):
+        #todo test xlim!
         """ Calculates the radial distribution of a given data element
 
         Args:
@@ -122,20 +123,47 @@ class Cell(object):
             r = self.coords.calc_rc(x, y)
             r = r / self.coords.r if norm_x else r
 
+            if xlim:
+                xc = self.coords.calc_xc(x, y)
+                if xlim == 'full':
+                    b = (xc > self.coords.xl) * (xc < self.coords.xr).astype(bool)
+                else:
+                    mid_x = (self.coords.xl + self.coords.xr) / 2
+                    b = (xc > mid_x - xlim) * (xc < mid_x + xlim).astype(bool)
+
+                bin_r = r[b].flatten()
+            else:
+                bin_r = r.flatten()
+                b = np.ones_like(x).astype(bool)
+
+
             if storm_weight == 'points':
                 y_weight = None
             elif storm_weight == 'photons':
-                y_weight = data_elem['intensity']
+                y_weight = data_elem['intensity'][b]
             else:
                 raise ValueError("storm_weights has to be either 'points' or 'photons'")
-            yvals = self._bin_func(r, y_weight, bins)
+            yvals = self._bin_func(bin_r, y_weight, bins)
 
         elif data_elem.ndim == 2:
             assert data_elem.dclass == 'fluorescence'
 
             r = self.coords.rc / self.coords.r if norm_x else self.coords.rc
+            if xlim:
+                if xlim == 'full':
+                    b = (self.coords.xc > self.coords.xl) * (self.coords.xc < self.coords.xr).astype(bool)
+                else:
+                    mid_x = (self.coords.xl + self.coords.xr)/2
+                    b = (self.coords.xc > mid_x - xlim)*(self.coords.xc < mid_x + xlim).astype(bool)
 
-            yvals = self._bin_func(r.flatten(), data_elem.flatten(), bins)
+                bin_r = r[b].flatten()
+                y_weight = data_elem[b].flatten()
+            else:
+                bin_r = r.flatten()
+                y_weight = data_elem.flatten()
+
+
+            yvals = self._bin_func(bin_r, y_weight, bins)
         elif data_elem.ndim == 3:  # todo check if this still works
             r = self.coords.rc / self.coords.r if norm_x else self.coords.rc
             yvals = np.vstack([self._bin_func(r.flatten(), d.flatten(), bins) for d in data_elem])
