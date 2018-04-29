@@ -2,6 +2,7 @@ import mahotas as mh
 import numpy as np
 import math
 from scipy.ndimage.interpolation import rotate as scipy_rotate
+from collections import OrderedDict
 from colicoords.config import cfg
 
 
@@ -237,15 +238,17 @@ class Data(object):
     """
 
     def __init__(self):
-        self.data_dict = {}
-        self.flu_dict = {}  #needed or new initialized class doesnt have empty dicts!!!oneone
+        self.data_dict = OrderedDict() #todo ordereddict?
+        self.flu_dict = OrderedDict()  #needed or new initialized class doesnt have empty dicts!!!oneone
         self.storm_dict = {}
 
         self.binary_img = None
         self.brightfield_img = None
 
-        self.idx = 0
         self.shape = None
+        self.ndim = None
+
+        self._idx = 0
 
     def add_data(self, data, dclass, name=None, metadata=None):
         """ Add data to the :class:`Data` to form a new data element
@@ -256,24 +259,30 @@ class Data(object):
             name (:obj:`str`): The data element's name
             metadata: (:obj:`dict`): Optional associated metadata (load/save metadata currently not supported)
         """
+
         if name in ['', u'', r'', None]:
             name = dclass
         else:
             name = str(name)
 
-        assert name not in [d.name for d in self.data_dict.values()]
+        if name in self.names:
+            raise ValueError('Data element name {} is already used'.format(name))
+
         if dclass == 'binary':
-            assert self.binary_img is None
-            assert np.issubdtype(data.dtype, np.integer)
+            if self.binary_img is not None:
+                raise ValueError('Binary image has to be unique and is already given')
+            if not np.issubdtype(data.dtype, np.integer):
+                raise TypeError('Invalid data type {} for data class binary'.format(data.dtype))
 
             self._check_shape(data.shape, data.ndim)
             self.binary_img = BinaryImage(data, name=name, metadata=metadata)
             self.data_dict[name] = self.binary_img
         elif dclass == 'brightfield':
-            assert self.brightfield_img is None
             self._check_shape(data.shape, data.ndim)
-            self.brightfield_img = BrightFieldImage(data, name=name, metadata=metadata)
-            self.data_dict[name] = self.brightfield_img
+            b = BrightFieldImage(data, name=name, metadata=metadata)
+            setattr(self, 'bf_' + name, b)
+            #todo brightfiels in a seperate dictionary?
+            self.data_dict[name] = b
         elif dclass == 'fluorescence':
             assert name
             assert name not in self.flu_dict
@@ -297,17 +306,17 @@ class Data(object):
         self.data_dict.update(self.flu_dict)
         self.data_dict.update(self.storm_dict)
 
-    def prune(self, data_elem):
+    def prune(self, data_name):
         #todo test and docstring
-        storm = self.data_dict.pop(data_elem)
-        self.storm_dict.pop(data_elem)
+        storm = self.data_dict.pop(data_name)
+        self.storm_dict.pop(data_name)
         assert isinstance(storm, STORMTable)
 
         xmax, ymax = self.shape[1], self.shape[0]
         bools = (storm['x'] < 0) + (storm['x'] > xmax) + (storm['y'] < 0) + (storm['y'] > ymax)
         storm_out = storm[bools].copy()
 
-        self.add_data(storm_out, storm.dclass, name=data_elem)
+        self.add_data(storm_out, storm.dclass, name=data_name)
 
     def copy(self):
         data = Data()
@@ -330,7 +339,7 @@ class Data(object):
                 rotated = _rotate_storm(v, -theta, shape=self.shape)
             else:
 
-                rotated = scipy_rotate(v, -theta, mode='nearest')
+                rotated = scipy_rotate(v, -theta, mode='nearest', axes=(-2, -1)) #todo check dis
 
             data.add_data(rotated, v.dclass, name=v.name, metadata=v.metadata)
         return data
@@ -365,8 +374,16 @@ class Data(object):
 
     def _check_shape(self, shape, ndim):
         if self.shape:
-            assert shape == self.shape
-            assert ndim == self.ndim
+            if not ((shape == self.shape) and (ndim == self.ndim)):
+                if not ((ndim == self.ndim + 1) and (shape[1:] == self.shape)):
+                    raise ValueError("Invalid shape")
+            # try:
+            #     assert shape == self.shape
+            #     assert ndim == self.ndim
+            # except AssertionError:
+            #     assert ndim == self.ndim + 1
+            #     assert shape[1:] == self.shape
+
         else:
             self.shape = shape
             self.ndim = ndim
@@ -382,33 +399,32 @@ class Data(object):
             raise ValueError
 
     def __iter__(self):
-        self.idx = 0
+        self._idx = 0
         return self
 
     def __next__(self):
         if not hasattr(self, 'ndim'):
             raise StopIteration
         if self.ndim == 2:
-            if self.idx == 0:
-                self.idx += 1
+            if self._idx == 0:
+                self._idx += 1
                 return self
             else:
-                self.idx = 0
+                self._idx = 0
                 raise StopIteration
 
 #        data = Data()
-        if self.idx >= len(self):
-            self.idx = 0
+        if self._idx >= len(self):
+            self._idx = 0
             raise StopIteration
         else:
-            #for v in self.data_dict.values():
-             #   data.add_data(v[self.idx], v.dclass, name=v.name, metadata=v.metadata)
-            data = self[self.idx]
+            data = self[self._idx]
 
-            self.idx += 1
+            self._idx += 1
             return data
 
     def __getitem__(self, key):
+        #todo len (key) means 2d slicing!
         data = Data()
         for v in self.data_dict.values():
 
@@ -452,9 +468,8 @@ class Data(object):
 
                 data.add_data(table_out, v.dclass, name=v.name, metadata=v.metadata)
 
-            elif v.dclass == 'storm_img':
-                continue
             else:
+                key = (slice(None), *key) if v.ndim == 3 and type(key) == tuple else key #todo this needs maaaasive testing
                 data.add_data(v[key], v.dclass, name=v.name, metadata=v.metadata)
         return data
 

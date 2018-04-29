@@ -90,7 +90,7 @@ class CellListPlot(object):
 
         return ax_d
 
-    def plot_dist(self, ax=None, mode='r', data_name='', std='std_band', norm_y=False, norm_x=False, storm_weights='points', **kwargs):
+    def plot_dist(self, ax=None, mode='r', data_name='', std='std_band', norm_y=False, norm_x=False, storm_weights='points', xlim=None, **kwargs):
         """
 
         :param mode: r, l, or a for radial, longitudinal or angular
@@ -112,7 +112,7 @@ class CellListPlot(object):
         stop = kwargs.pop('stop', stop)
         step = kwargs.pop('step', step)
         if mode == 'r':
-            x, out_arr = self.cell_list.r_dist(stop, step, data_name=data_name, norm_x=norm_x, storm_weight=storm_weights)
+            x, out_arr = self.cell_list.r_dist(stop, step, data_name=data_name, norm_x=norm_x, storm_weight=storm_weights, xlim=xlim)
             out_arr = np.nan_to_num(out_arr)
             title = 'Radial Distribution'
         elif mode == 'l':
@@ -262,7 +262,7 @@ class CellPlot(object):
 
         return ax
 
-    def plot_dist(self, ax=None, mode='r', data_name='', norm_y=False, norm_x=False, storm_weights='points', **kwargs):
+    def plot_dist(self, ax=None, mode='r', data_name='', norm_y=False, norm_x=False, storm_weights='points', xlim=None, **kwargs):
 
         if mode == 'r':
             if norm_x:
@@ -274,7 +274,7 @@ class CellPlot(object):
 
             stop = kwargs.pop('stop', stop)
             step = kwargs.pop('step', step)
-            x, y = self.cell_obj.r_dist(stop, step, data_name=data_name, norm_x=norm_x, storm_weight=storm_weights)
+            x, y = self.cell_obj.r_dist(stop, step, data_name=data_name, norm_x=norm_x, storm_weight=storm_weights, xlim=xlim)
 
             if norm_y:
                 y /= y.max()
@@ -399,6 +399,8 @@ class CellPlot(object):
         ax.plot(x, y)
 
     def imshow(self, img, ax=None, **kwargs):
+        if type(img) == str:
+            img = self.cell_obj.data.data_dict[img]
 
         xmax = self.cell_obj.data.shape[1]
         ymax = self.cell_obj.data.shape[0]
@@ -415,3 +417,6 @@ class CellPlot(object):
 
     def show(self):
         plt.show()
+
+    def savefig(self, *args, **kwargs):
+        plt.savefig(*args, **kwargs)

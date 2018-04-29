@@ -162,8 +162,8 @@ class Cell(object):
                 bin_r = r.flatten()
                 y_weight = data_elem.flatten()
 
-
             yvals = self._bin_func(bin_r, y_weight, bins)
+
         elif data_elem.ndim == 3:  # todo check if this still works
             r = self.coords.rc / self.coords.r if norm_x else self.coords.rc
             yvals = np.vstack([self._bin_func(r.flatten(), d.flatten(), bins) for d in data_elem])
@@ -171,18 +171,27 @@ class Cell(object):
             raise ValueError('Invalid fluorescence image dimensions')
         return xvals, yvals
 
+    def measure_r(self, data_name, func=None, in_place=True):
+        #todo different functions?
+
+        x, y = self.r_dist(15, 1, data_name=data_name) # todo again need sensible default for stop
+        mid_val = (np.min(y) + np.max(y)) / 2
+        r = np.interp(mid_val, y, x)
+
+        print(r)
+        if in_place:
+            self.coords.r = r
+        else:
+            return r
+
     def sim_cell(self, data_name, norm_x=False, r_scale=1, **kwargs):
-        data_elem = self.data.data_dict[data_name]
-        stop = kwargs.pop('stop', 25)  # todo default in cfg?
-        step = kwargs.pop('step', 1) # todo cfg
+        stop = kwargs.pop('stop', np.ceil(np.max(self.data.shape)/2))
+        step = kwargs.pop('step', 1)
 
-        xp, fp = self.r_dist(stop, step, data_name=data_name, norm_x=norm_x) #todo what about norm_x?
-
-
-        interp = np.interp(r_scale*self.coords.rc, xp, np.nan_to_num(fp))
+        xp, fp = self.r_dist(stop, step, data_name=data_name, norm_x=norm_x)
+        interp = np.interp(r_scale*self.coords.rc, xp, np.nan_to_num(fp))  #todo check nantonum cruciality
 
         return interp
-
 
     @staticmethod
     def _bin_func(xvals, y_weight, bins):
@@ -553,6 +562,8 @@ class Coordinates(object):
 
         return x_range, y
 
+
+
     def _initial_fit(self):
         x, y = self.get_core_points()
         return np.polyfit(x, y, 2)[::-1]
@@ -682,11 +693,11 @@ class CellList(object):
     def __contains__(self, item):
         return self.cell_list.__contains__(item)
 
-    def r_dist(self, stop, step, data_name='', norm_x=False, storm_weight='points'):
+    def r_dist(self, stop, step, data_name='', norm_x=False, storm_weight='points', xlim=None):
         numpoints = len(np.arange(0, stop+step, step))
         out_arr = np.zeros((len(self), numpoints))
         for i, c in enumerate(self):
-            x, y = c.r_dist(stop, step, data_name=data_name, norm_x=norm_x, storm_weight=storm_weight)
+            x, y = c.r_dist(stop, step, data_name=data_name, norm_x=norm_x, storm_weight=storm_weight, xlim=xlim)
             out_arr[i] = y
 
         return x, out_arr

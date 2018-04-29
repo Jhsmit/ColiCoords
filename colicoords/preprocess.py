@@ -3,7 +3,7 @@ import numpy as np
 from colicoords.cell import Cell, CellList
 
 
-def data_to_cells(input_data, pad_width=3, cell_frac=0.5, rotate='binary', verbose=True):
+def data_to_cells(input_data, pad_width=2, cell_frac=0.5, rotate='binary', verbose=True):
     assert 'binary' in input_data.dclasses
 
     vprint = print if verbose else lambda *a, **k: None

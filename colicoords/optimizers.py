@@ -178,6 +178,33 @@ class CellFitting(object):
             print(fv)
             print(rs)
 
+    def fit_stepwise(self, bounds=None, **kwargs):
+        i = 0
+        j = 0
+        prev_val = 0
+
+        imax = kwargs.get('imax', 3)
+        jmax = kwargs.get('jmax', 20)
+
+        assert imax > 0
+        assert jmax > 0
+
+        if bounds:
+            assert type(bounds) == bool
+        while i < imax and j < jmax:
+            #todo checking and testng
+            j += 1
+            res, val = self.fit_parameters('r1 r2', bounds=bounds, **kwargs)
+            print(res, val)
+            res, val = self.fit_parameters('a1 a2', bounds=bounds, **kwargs)
+            print(res, val)
+            print('Current minimize value: {}'.format(val))
+            if prev_val == val:
+                i += 1
+            prev_val = val
+
+        self.val = val
+        return res, val
 
 
 class Optimizer(object):
@@ -344,6 +371,7 @@ def minimize_sim_cell(par_values, par_names, cell_obj, data_name):
     r = r / cell_obj.coords.r
 
     cell_obj.coords.sub_par(par_dict)
+    #todo check and make sure that the r_dist isnt calculated to far out which can give some strange results
     simulated = cell_obj.sim_cell(data_name, r_scale=r)
     real = cell_obj.data.data_dict[data_name]
 

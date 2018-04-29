@@ -7,6 +7,22 @@ import warnings
 from colicoords.cell import Cell, CellList
 from colicoords.config import cfg
 from colicoords.data_models import Data
+import re
+
+TYPES = {
+    'id': int,
+    'frame': int,
+    'x': float,
+    'y': float,
+    'sigma': float,
+    'intensity': float,
+    'offset': float,
+    'bkgstd': float,
+    'chi2': float,
+    'uncertainty_xy': float
+}
+
+
 
 #todo add colicoords' version to the files
 def save(file_path, cell_obj, imagej=False):
@@ -142,10 +158,24 @@ def load_thunderstorm(file_path, pixelsize=None):
     :return:
     """
 
-    dtype = {
-        'names': ("id", "frame", "x", "y", "sigma", "intensity", "offset", "bkgstd", "chi2", "uncertainty_xy"),
-        'formats': (int, int, float, float, float, float, float, float, float, float)
-    }
+    # dtype = {
+    #     'names': ("id", "frame", "x", "y", "sigma", "intensity", "offset", "bkgstd", "chi2", "uncertainty_xy"),
+    #     'formats': (int, int, float, float, float, float, float, float, float, float)
+    # }
+    #
+    # types = {
+    #     'id': int,
+    #     'frame': int,
+    #     'x': float,
+    #     'y': float,
+    #     'sigma': float,
+    #     'intensity': float,
+    #     'offset': float,
+    #     'bkgstd': float,
+    #     'chi2': float,
+    #     'uncertainty_xy': float
+    # }
+
 
     pixelsize = cfg.IMG_PIXELSIZE if not pixelsize else pixelsize
     ext = os.path.splitext(file_path)[1]
@@ -155,6 +185,15 @@ def load_thunderstorm(file_path, pixelsize=None):
         delimiter = '\t'
     else:
         raise ValueError('Invalid data file')
+
+
+    with open(file_path, 'r') as f:
+        line = f.readline()
+
+    names = [re.sub("[\[].*?[\]]", '', s).replace('"', '').strip() for s in line.split(delimiter)]
+
+    dtype = {'names': tuple(names),
+             'formats': tuple(TYPES[name] for name in names)}
 
 
     storm_table = np.genfromtxt(file_path, skip_header=1, dtype=dtype, delimiter=delimiter)
