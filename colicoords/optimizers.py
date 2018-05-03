@@ -4,7 +4,6 @@ from colicoords.config import cfg
 from functools import partial
 
 
-
 class Parameter(object):
     def __init__(self, name, value=1., min=1.e-10, max=None, fixed=False):
         self.name = name
@@ -12,6 +11,8 @@ class Parameter(object):
         self.max = max
         self.value = value
         self.fixed = fixed
+
+        self.val = None
 
 
 class CellFitting(object):
@@ -35,7 +36,6 @@ class CellFitting(object):
 
         method = kwargs['method'] if 'method' in kwargs else 'Powell' if not bounds else None
         verbose = kwargs.pop('verbose', False)
-       # method = 'Nelder-Mead'
         par_values = np.array([getattr(self.model, par).value for par in parameters.split(' ')])
         constraints = self.model.get_constraints(parameters) if constraint else None
 
@@ -84,33 +84,6 @@ class CellFitting(object):
             res_dict = {key: val for key, val in zip(parameters.split(' '), [result.x])}
 
         self.val = result.fun
-      #  return resbrute
-
-        return res_dict, result.fun
-
-    def fit_parameters_old(self, parameters, bounds=None, constraint=True, **kwargs):
-        def tempfunc(par_values, par_names, model, x, y):
-            par_dict = {par_name: par_value for par_name, par_value in zip(par_names, par_values)}
-            y_model = model(x, **par_dict)
-
-            return np.sum((y - y_model)**2)
-
-        bounds = self.model.get_bounds(parameters, parameters if type(bounds) == bool else bounds) if bounds else None
-        method = kwargs['method'] if 'method' in kwargs else 'Powell' if not bounds else None
-        verbose = kwargs.pop('verbose', False)
-        par_values = np.array([getattr(self.model, par).value for par in parameters.split(' ')])
-        constraints = self.model.get_constraints(parameters) if constraint else None
-
-        result = minimize(tempfunc, par_values, args=(parameters.split(' '), self.model, self.x, self.y),
-                 bounds=bounds, method=method, constraints=constraints, options={'disp': verbose}, **kwargs)
-
-
-        try:
-            res_dict = {key: val for key, val in zip(parameters.split(' '), result.x)}
-        except TypeError:
-            res_dict = {key: val for key, val in zip(parameters.split(' '), [result.x])}
-
-        self.val = result.fun
         return res_dict, result.fun
 
     def execute(self, parameters, bounds=True, constraint=True, basin_hop=True, T=0.0001):
@@ -118,65 +91,6 @@ class CellFitting(object):
         self.model.sub_par(res)
         res, v = self.fit_parameters(parameters, bounds=bounds, constraint=constraint, basin_hop=basin_hop, T=T)
         return res, v
-
-    def execute1(self, bounds=True, constraint=True):
-        # This function assumes the model has parameters a1 a2 r1 r2
-
-        self.model.a1.value = 1.
-        self.model.a2.value = 0.01
-        res1, val1 = self.fit_parameters('a1 a2 r1 r2', bounds=bounds, constraint=constraint)
-
-        self.model.a1.value = 0.01
-        self.model.a2.value = 1.
-        res2, val2 = self.fit_parameters('a1 a2 r1 r2', bounds=bounds, constraint=constraint)
-
-        if val1 < val2:
-            a1, a2 = res1['a1'], res1['a2']
-        else:
-            a1, a2 = res2['a1'], res2['a2']
-
-        self.model.a1.value = 0.1#a1
-        self.model.a2.value = 1.1#a2
-
-        r_vals = [1, 2, 3, 4, 5, 6, 7, 8]
-        rdicts = []
-        f_vals = []
-        for r in r_vals:
-            self.model.r1.value = r
-            self.model.r2.value = r + 0.5
-            print(r)
-
-            res, val = self.fit_parameters('a1 a2 r1 r2', bounds=bounds, constraint=constraint)
-            rdicts.append(res)
-            f_vals.append(val)
-
-        print('results')
-
-        for rd, fv, rs in zip(rdicts, f_vals, r_vals):
-            print('----')
-            print(rd)
-            print(fv)
-            print(rs)
-
-        r_vals = [3.5, 3.75, 4.0, 4.25, 4.5, 4.75, 5, 5.25, 5.5, 5.75]
-        rdicts = []
-        f_vals = []
-        for r in r_vals:
-            self.model.r1.value = r
-            self.model.r2.value = r + 0.1
-            print(r)
-
-            res, val = self.fit_parameters('a1 a2 r1 r2', bounds=bounds, constraint=constraint)
-            rdicts.append(res)
-            f_vals.append(val)
-
-        print('results')
-
-        for rd, fv, rs in zip(rdicts, f_vals, r_vals):
-            print('----')
-            print(rd)
-            print(fv)
-            print(rs)
 
     def fit_stepwise(self, bounds=None, **kwargs):
         i = 0
@@ -192,7 +106,6 @@ class CellFitting(object):
         if bounds:
             assert type(bounds) == bool
         while i < imax and j < jmax:
-            #todo checking and testng
             j += 1
             res, val = self.fit_parameters('r1 r2', bounds=bounds, **kwargs)
             print(res, val)

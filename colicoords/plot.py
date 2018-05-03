@@ -164,7 +164,7 @@ class CellPlot(object):
     def __init__(self, cell_obj):
         self.cell_obj = cell_obj
 
-    def plot_midline(self, ax=None, coords='mpl', **kwargs):
+    def plot_midline(self, ax=None, **kwargs):
         """
         Plot the final found function and xl, xr
         :param coords:
@@ -185,6 +185,7 @@ class CellPlot(object):
         return ax
 
     def plot_binary_img(self, ax=None, **kwargs):
+        # Equivalent to imshow('binary')
         if 'interpolation' not in kwargs:
             kwargs['interpolation'] = 'nearest'
 
@@ -194,7 +195,7 @@ class CellPlot(object):
 
         return ax
 
-    def plot_simulated_shape(self, ax=None, **kwargs):
+    def plot_simulated_binary(self, ax=None, **kwargs):
         if 'interpolation' not in kwargs:
             kwargs['interpolation'] = 'nearest'
         img = self.cell_obj.coords.rc < self.cell_obj.coords.r
@@ -388,15 +389,13 @@ class CellPlot(object):
 
             ax.imshow(colors, cmap=cmap, extent=[0, xmax, ymax, 0], interpolation='nearest', **kwargs)
 
-    def _plot_intercept_line(self, x_pos, ax=None, coords='cart', **kwargs):
+    def _plot_intercept_line(self, x_pos, ax=None, **kwargs):
         x = np.linspace(x_pos - 10, x_pos + 10, num=200)
         f_d = self.cell_obj.coords.p_dx(x_pos)
         y = (-x / f_d) + self.cell_obj.coords.p(x_pos) + (x_pos / f_d)
 
-        #x, y = self.cell_obj.coords.transform(x, y, src='cart', tgt=coords)
-
         ax = plt.gca() if ax is None else ax
-        ax.plot(x, y)
+        ax.plot(x, y, **kwargs)
 
     def imshow(self, img, ax=None, **kwargs):
         if type(img) == str:
@@ -413,10 +412,11 @@ class CellPlot(object):
         ax.imshow(img, extent=extent, interpolation=interpolation, cmap=cmap)
 
     def figure(self):
-        plt.figure()
+        return plt.figure()
 
     def show(self):
         plt.show()
 
     def savefig(self, *args, **kwargs):
         plt.savefig(*args, **kwargs)
+

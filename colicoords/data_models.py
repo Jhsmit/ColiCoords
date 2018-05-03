@@ -7,7 +7,6 @@ from colicoords.config import cfg
 
 
 # https://stackoverflow.com/questions/26598109/preserve-custom-attributes-when-pickling-subclass-of-numpy-array
-
 class BinaryImage(np.ndarray):
     """ Binary image data class
 
@@ -193,28 +192,6 @@ class STORMTable(np.ndarray):
         # self.name_dict[name] = self.storm_img
 
 
-#todo is this even used?
-class STORMImage(np.ndarray):
-    def __new__(cls, input_array, name=None, metadata=None):
-        """STORM recontructed image
-        
-        Args:
-            input_array: STORM data array 
-        """
-        if input_array is None:
-            return None
-
-        obj = np.asarray(input_array).view(cls)
-        obj.name = name
-        obj.metadata = metadata
-        obj.dclass = 'storm_img'
-        return obj
-
-    @property
-    def orientation(self):
-        return _calc_orientation(self)
-
-
 #todo this shoud be a dict? (use open microscopy format?) (XML)
 class MetaData(dict):
     pass
@@ -233,13 +210,14 @@ class Data(object):
         storm_dict (:obj:`dict`): Subset of `data_dict` with all STORM data elements
 
         binary_img (:class:`BinaryImage`): Convenience attribute which refers to the unique BinaryImage data element
-        brightfield_img (:class:`BrightFieldImage`): Convenience attribute which refers tot he unique BrightFieldImage
+        brightfield_img (:class:`BrightFieldImage`): Convenience attribute which refers to the unique BrightFieldImage
             data element
     """
 
     def __init__(self):
-        self.data_dict = OrderedDict() #todo ordereddict?
-        self.flu_dict = OrderedDict()  #needed or new initialized class doesnt have empty dicts!!!oneone
+        self.data_dict = {}
+        self.flu_dict = {}
+        self.bf_dict = {}
         self.storm_dict = {}
 
         self.binary_img = None
@@ -255,7 +233,7 @@ class Data(object):
 
         Args:
             data: Input data, either np.ndarray with ndim 2 or 3 (images / movies) or numpy structured array for STORM data
-            dclass: hmmm #todo change to enum or not?
+            dclass: hmmm
             name (:obj:`str`): The data element's name
             metadata: (:obj:`dict`): Optional associated metadata (load/save metadata currently not supported)
         """
@@ -281,8 +259,7 @@ class Data(object):
             self._check_shape(data.shape, data.ndim)
             b = BrightFieldImage(data, name=name, metadata=metadata)
             setattr(self, 'bf_' + name, b)
-            #todo brightfiels in a seperate dictionary?
-            self.data_dict[name] = b
+            self.bf_dict[name] = b
         elif dclass == 'fluorescence':
             assert name
             assert name not in self.flu_dict
@@ -303,6 +280,7 @@ class Data(object):
         else:
             raise ValueError('Invalid data class {}'.format(dclass))
 
+        self.data_dict.update(self.bf_dict)
         self.data_dict.update(self.flu_dict)
         self.data_dict.update(self.storm_dict)
 
@@ -344,46 +322,11 @@ class Data(object):
             data.add_data(rotated, v.dclass, name=v.name, metadata=v.metadata)
         return data
 
-    def transform(self, x, y, src='cart', tgt='mpl'):
-        #todo docstring and unify with function on coords
-        raise DeprecationWarning()
-        if src == 'cart':
-            xt1 = x
-            yt1 = y
-        elif src == 'mpl':
-            xt1 = x
-            yt1 = self.shape[0] - y - 0.5
-        elif src == 'matrix':
-            yt1 = self.shape[0] - x - 0.5
-            xt1 = y + 0.5
-        else:
-            raise ValueError("Invalid source coordinates")
-
-        if tgt == 'cart':
-            xt2 = xt1
-            yt2 = yt1
-        elif tgt == 'mpl':
-            xt2 = xt1
-            yt2 = self.shape[0] - yt1 - 0.5
-        elif tgt == 'matrix':
-            xt2 = self.shape[0] - yt1 - 0.5
-            yt2 = xt1 - 0.5
-        else:
-            raise ValueError("Invalid target coordinates")
-        return xt2, yt2
-
     def _check_shape(self, shape, ndim):
         if self.shape:
             if not ((shape == self.shape) and (ndim == self.ndim)):
                 if not ((ndim == self.ndim + 1) and (shape[1:] == self.shape)):
                     raise ValueError("Invalid shape")
-            # try:
-            #     assert shape == self.shape
-            #     assert ndim == self.ndim
-            # except AssertionError:
-            #     assert ndim == self.ndim + 1
-            #     assert shape[1:] == self.shape
-
         else:
             self.shape = shape
             self.ndim = ndim
@@ -413,7 +356,6 @@ class Data(object):
                 self._idx = 0
                 raise StopIteration
 
-#        data = Data()
         if self._idx >= len(self):
             self._idx = 0
             raise StopIteration

@@ -23,9 +23,8 @@ TYPES = {
 }
 
 
-
 #todo add colicoords' version to the files
-def save(file_path, cell_obj, imagej=False):
+def save(file_path, cell_obj):
     ext = os.path.splitext(file_path)[1]
 
     if isinstance(cell_obj, Cell):
@@ -40,16 +39,6 @@ def save(file_path, cell_obj, imagej=False):
 
         elif ext == '.tif' or '.tiff':
             raise NotImplementedError()
-            # with tifffile.TiffWriter(file_path, imagej=imagej) as tif:
-            #     for k, v in cell_obj.data.data_dict.items():
-            #         if v is not None:
-            #             if imagej:
-            #                 if v.dtype == 'int32':
-            #                     print(k)
-            #                     print('something is int32')
-            #                     v = v.astype('int16')
-            #
-            #             tif.save(v.astype('int32'), description=k)
 
     elif isinstance(cell_obj, CellList):
         if ext == 'cc' or '':
@@ -118,37 +107,8 @@ def load(file_path):
                 return cell_list[0]
             else:
                 return CellList(cell_list)
-
-
-            # data_obj = Data()
-            # data_grp = f['data']
-            # for key in list(data_grp.keys()):
-            #     grp = data_grp[key]
-            #     data_arr = grp[key]
-            #     dclass = grp.attrs.get('dclass').decode('UTF-8')
-            #     data_obj.add_data(data_arr, dclass=dclass, name=key)
-            #
-            # c = Cell(data_obj)
-            #
-            # attr_grp = f['attributes']
-            # attr_dict = dict(attr_grp.attrs.items())
-            # for a in ['r', 'xl', 'xr', 'coeff']:
-            #     setattr(c.coords, a, attr_dict.get(a))
-            # c.name = attr_dict.get('label')
-
     else:
         raise ValueError('Invalid file type')
-
-    # elif ext == '.tif' or '.tiff':
-    #     with tifffile.TiffFile(file_path, is_ome=True) as tif:
-    #         omexml = tif.pages[0].tags['image_description'].value
-    #         try:
-    #             root = etree.fromstring(omexml)
-    #         except etree.ParseError as e:
-    #             # TODO: test this
-    #             warnings.warn("ome-xml: %s" % e)
-    #             omexml = omexml.decode('utf-8', 'ignore').encode('utf-8')
-    #             root = etree.fromstring(omexml)
 
 
 def load_thunderstorm(file_path, pixelsize=None):
@@ -157,25 +117,6 @@ def load_thunderstorm(file_path, pixelsize=None):
     :param file_path: Target file to open
     :return:
     """
-
-    # dtype = {
-    #     'names': ("id", "frame", "x", "y", "sigma", "intensity", "offset", "bkgstd", "chi2", "uncertainty_xy"),
-    #     'formats': (int, int, float, float, float, float, float, float, float, float)
-    # }
-    #
-    # types = {
-    #     'id': int,
-    #     'frame': int,
-    #     'x': float,
-    #     'y': float,
-    #     'sigma': float,
-    #     'intensity': float,
-    #     'offset': float,
-    #     'bkgstd': float,
-    #     'chi2': float,
-    #     'uncertainty_xy': float
-    # }
-
 
     pixelsize = cfg.IMG_PIXELSIZE if not pixelsize else pixelsize
     ext = os.path.splitext(file_path)[1]
@@ -194,7 +135,6 @@ def load_thunderstorm(file_path, pixelsize=None):
 
     dtype = {'names': tuple(names),
              'formats': tuple(TYPES[name] for name in names)}
-
 
     storm_table = np.genfromtxt(file_path, skip_header=1, dtype=dtype, delimiter=delimiter)
     storm_table['x'] /= pixelsize

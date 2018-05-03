@@ -9,13 +9,12 @@ from colicoords.optimizers import Optimizer
 import multiprocess as mp
 from tqdm import tqdm
 import sys
+import contextlib
 
 
 # todo obj or class? in docstring
 class Cell(object):
     """ ColiCoords' main single-cell object
-
-
     Attributes:
         data (:class:`Data`): Holds all data describing this single cell.
         coords (:class:`Coordinates`): Calculates and optimizes the cell's coordinate system.
@@ -70,7 +69,7 @@ class Cell(object):
         """float: Volume of the cell in cubic pixels"""
         return np.pi*self.coords.r**2*self.length + (4/3)*np.pi*self.coords.r**3
 
-    def a_list(self):
+    def a_dist(self):
         raise NotImplementedError()
 
     def l_dist(self, norm_x=False):
@@ -246,8 +245,6 @@ class Cell(object):
 class Coordinates(object):
     """Cell's coordinate system described by the polynomial p(x) and associated functions
 
-
-
     Attributes:
         xl (float): Left cell pole x-coordinate
         xr (float): Right cell pole x-coordinate
@@ -259,7 +256,7 @@ class Coordinates(object):
 
     parameters = ['r', 'xl', 'xr', 'a0', 'a1', 'a2']
 
-    def __init__(self, data):
+    def __init__(self, data, initialize=True, **kwargs):
         """
 
         Args:
@@ -267,11 +264,15 @@ class Coordinates(object):
         """
         self.data = data
         self.coeff = np.array([1., 1., 1.])
-        self.xl, self.xr, self.r, self.coeff = self._initial_guesses(data) #refactor to class method
-        self.coeff = self._initial_fit()
-        self.shape = data.shape
 
-    #todo maybe remove this and instead store parameters as individual attributes:
+        if initialize:
+            self.xl, self.xr, self.r, self.coeff = self._initial_guesses(data) #refactor to class method
+            self.coeff = self._initial_fit()
+            self.shape = data.shape
+        else:
+            for p in self.parameters + ['shape']:
+                setattr(self, p , kwargs.pop(p, None))
+
     @property
     def a0(self):
         return self.coeff[0]
@@ -321,8 +322,6 @@ class Coordinates(object):
         #a: float, b: float, c: array, d: array
         discr = 18*a*b*c*d - 4*b**3*d + b**2*c**2 - 4*a*c**3 - 27*a**2*d**2
 
-        #@jit(cache=True, nopython=True)
-        #@profile
         def solve_general_bak(a, b, c, d):
             """
             Solve cubic polynomial in the form a*x^3 + b*x^2 + c*x + d
@@ -338,8 +337,6 @@ class Coordinates(object):
 
             return -(1 / (3 * a)) * (b + dc + (d0 / dc))
 
-
-        #@profile
         def solve_general(a, b, c, d):
             """
             Solve cubic polynomial in the form a*x^3 + b*x^2 + c*x + d
@@ -353,18 +350,12 @@ class Coordinates(object):
             # 32 32: 3.969 s
             # 64 64: 5.804 s
             # 8 8:
-            d0 = (b ** 2. - 3. * a * c)#.astype('float32')
-            d1 = (2. * b ** 3. - 9. * a * b * c + 27. * a ** 2. * d)#.astype('float32')
+            d0 = b ** 2. - 3. * a * c
+            d1 = 2. * b ** 3. - 9. * a * b * c + 27. * a ** 2. * d
 
-            #r0 = (d1 ** 2. - 4. * d0 ** 3.)
-            r0 = (np.square(d1) - 4. * d0 ** 3.)
-            #r1 = (d1 + np.sqrt(d1 ** 2. - 4. * d0 ** 3.)) / 2
+            r0 = np.square(d1) - 4. * d0 ** 3.
             r1 = (d1 + np.sqrt(r0)) / 2
-            #r1 = (d1 + np.sqrt(np.square(d1, 2.) - 4. * np.power(d0, 3.))) / 2
-            dc = np.cbrt(r1)
-            #dc = r1**(1/3)# to power (1/3) gives nan's for coeffs [1.98537881e+01, 1.44894594e-02, 2.38096700e+00]
-            #dc = np.power(r1, 1/3)
-            #dc = np.cbrt((d1 + np.sqrt(d1 ** 2. - 4. * d0 ** 3.)) / 2.)
+            dc = np.cbrt(r1)  # power (1/3) gives nan's for coeffs [1.98537881e+01, 1.44894594e-02, 2.38096700e+00]01, 1.44894594e-02, 2.38096700e+00]
             return -(1. / (3. * a)) * (b + dc + (d0 / dc))
             #todo hit a runtimewaring divide by zero on line above once
 
@@ -400,8 +391,6 @@ class Coordinates(object):
             x_c[mask] = general_part
             x_c[~mask] = trig_part
 
-
-       # print(solve_general.inspect_types())
         return x_c
 
     def calc_rc(self, xp, yp):
@@ -412,10 +401,6 @@ class Coordinates(object):
         :return: 1D array of distances r from (x, y) to (xc, p(xc))
         """
         xc = self.calc_xc(xp, yp)
-
-        # # this is not strictly correct! also requires y coordinates
-        # xc[xc < self.xl] = self.xl
-        # xc[xc > self.xr] = self.xr
 
         # Area left of perpendicular line at xl:
         op = operator.lt if self.p_dx(self.xl) > 0 else operator.gt
@@ -431,7 +416,6 @@ class Coordinates(object):
     def calc_psi(self, xp, yp):
         return
 
-    #todo check this 05 buissisnesese
     @property
     def x_coords(self):
         """ obj:`np.ndarray`: Matrix of shape m x n equal to cell image with cartesian x-coordinates."""
@@ -462,6 +446,7 @@ class Coordinates(object):
 
     @property
     def psi(self):
+        #todo test
         psi_rad = np.arcsin(np.divide(self.y_coords - self.yc, self.rc))
         return psi_rad * (180/np.pi)
 
@@ -505,34 +490,6 @@ class Coordinates(object):
         a0, a1, a2 = self.coeff
         return a1 + 2 * a2 * x_arr
 
-    def transform(self, x, y, src='cart', tgt='mpl'):
-        raise DeprecationWarning('uhohhhh')
-
-        if src == 'cart':
-            xt1 = x
-            yt1 = y
-        elif src == 'mpl':
-            xt1 = x
-            yt1 = self.shape[0] - y - 0.5
-        elif src == 'matrix':
-            yt1 = self.shape[0] - x - 0.5
-            xt1 = y + 0.5
-        else:
-            raise ValueError("Invalid source coordinates")
-
-        if tgt == 'cart':
-            xt2 = xt1
-            yt2 = yt1
-        elif tgt == 'mpl':
-            xt2 = xt1
-            yt2 = self.shape[0] - yt1 - 0.5#!!
-        elif tgt == 'matrix':
-            xt2 = self.shape[0] - yt1 - 0.5
-            yt2 = xt1 - 0.5
-        else:
-            raise ValueError("Invalid target coordinates")
-        return xt2, yt2
-
     def q(self, x, xp):
         """returns q(x) where q(x) is the line perpendicular to p(x) at xp"""
         return (-x / self.p_dx(xp)) + self.p(xp) + (xp / self.p_dx(xp))
@@ -547,8 +504,8 @@ class Coordinates(object):
             xl, xr = x_cen - l/2, x_cen + l/2
             coeff = np.array([y_cen, 0.01, 0.0001])
 
-        elif data.storm_data:
-            NotImplementedError("Optimization based on only storm data is not implemented")
+        else:
+            raise NotImplementedError("Binary image is required for initial guesses of cell coordinates")
 
         return xl, xr, r, coeff
 
@@ -561,8 +518,6 @@ class Coordinates(object):
         y = np.array([np.nanmean(np.where(im_y == y, im_x, np.nan)) for y in x_range])
 
         return x_range, y
-
-
 
     def _initial_fit(self):
         x, y = self.get_core_points()
@@ -577,7 +532,6 @@ def worker_pb(pbar, obj, **kwargs):
     pbar.update()
     return res
 
-import contextlib
 
 class DummyTqdmFile(object):
     """Dummy file-like that will write to tqdm"""
@@ -610,8 +564,10 @@ def std_out_err_redirect_tqdm():
 
 class CellList(object):
 
-    def optimize(self, data_name='binary', objective=None, **kwargs):  #todo refactor dclass to data_src or data_name
-        #todo threaded and stuff
+    def __init__(self, cell_list):
+        self.cell_list = np.array(cell_list)
+
+    def optimize(self, data_name='binary', objective=None, **kwargs):
         for c in tqdm(self):
             c.optimize(data_name=data_name, objective=objective, **kwargs)
 
@@ -620,13 +576,7 @@ class CellList(object):
         pool = mp.Pool(processes=processes)
 
         f = partial(worker, **kwargs)
-        # pb = tqdm(total=len(self))
-        # f = partial(worker_pb, pb, **kwargs) if pbar else partial(worker, **kwargs)
 
-      #  res = pool.map(f, self)
-
-
-        #res = list(tqdm(pool.imap(f, self), total=len(self))) # works but doenst update in real time
 
         res = []
         with std_out_err_redirect_tqdm() as orig_stdout:
@@ -641,6 +591,11 @@ class CellList(object):
         for (r, v), cell in zip(res, self):
             cell.coords.sub_par(r)
 
+    def execute(self, worker):
+        res = map(worker, self)
+
+        return res
+
     def execute_mp(self, worker, processes=None):
         pool = mp.Pool(processes=processes)
         res = pool.map(worker, self)
@@ -650,48 +605,9 @@ class CellList(object):
 
         return res
 
-    def execute(self, worker):
-        res = map(worker, self)
-
-        return res
-
     def append(self, cell_obj):
         assert isinstance(cell_obj, Cell)
         self.cell_list.append(cell_obj)
-
-    def __init__(self, cell_list):
-        self.cell_list = np.array(cell_list)
-
-    def __len__(self):
-        return self.cell_list.__len__()
-
-    def __iter__(self):
-        return self.cell_list.__iter__()
-
-    def __getitem__(self, key):
-        if type(key) == int:
-            return self.cell_list.__getitem__(key)
-        else:
-            return CellList(self.cell_list.__getitem__(key))
-
-
-        # #todo what about boolean array indices slicing?
-        # if type(key) == slice:
-        #     return CellList(self.cell_list.__getitem__(key))
-        # else:
-        #     return self.cell_list.__getitem__(key)
-
-    def __setitem__(self, key, value):
-        self.cell_list.__setitem__(key, value)
-
-    def __delitem__(self, key):
-        self.cell_list.__delitem__(key)
-
-    def __reversed__(self):
-        return self.cell_list.__reversed__()
-
-    def __contains__(self, item):
-        return self.cell_list.__contains__(item)
 
     def r_dist(self, stop, step, data_name='', norm_x=False, storm_weight='points', xlim=None):
         numpoints = len(np.arange(0, stop+step, step))
@@ -707,6 +623,12 @@ class CellList(object):
 
     def a_dist(self):
         raise NotImplementedError()
+
+    def get_intensity(self, mask='binary', data_name='') -> np.ndarray:
+        return np.array([c.get_intensity(mask=mask, data_name=data_name) for c in self])
+
+    def copy(self):
+        return CellList([cell.copy() for cell in self])
 
     @property
     def radius(self):
@@ -732,34 +654,26 @@ class CellList(object):
     def name(self):
         return np.array([c.name for c in self])
 
-    def get_intensity(self, mask='binary', data_name='') -> np.ndarray:
-        return np.array([c.get_intensity(mask=mask, data_name=data_name) for c in self])
+    def __len__(self):
+        return self.cell_list.__len__()
 
-    def copy(self):
-        return CellList([cell.copy() for cell in self])
+    def __iter__(self):
+        return self.cell_list.__iter__()
 
+    def __getitem__(self, key):
+        if type(key) == int:
+            return self.cell_list.__getitem__(key)
+        else:
+            return CellList(self.cell_list.__getitem__(key))
 
+    def __setitem__(self, key, value):
+        self.cell_list.__setitem__(key, value)
 
-#http://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
-#@Vladimir Ignatyev @Greenstick
-def printProgress(iteration, total, prefix='', suffix='', decimals=1, barLength=50):
-    """
-    Call in a loop to create terminal progress bar
-    @params:
-        iteration   - Required  : current iteration (Int)
-        total       - Required  : total iterations (Int)
-        prefix      - Optional  : prefix string (Str)
-        suffix      - Optional  : suffix string (Str)
-        decimals    - Optional  : positive number of decimals in percent complete (Int)
-        barLength   - Optional  : character length of bar (Int)
-    """
-    formatStr = "{0:." + str(decimals) + "f}"
-    percents = formatStr.format(100 * (iteration / float(total)))
-    filledLength = int(round(barLength * iteration / float(total)))
-    bar = 'X' * filledLength + '-' * (barLength - filledLength)
-    line = '\r%s |%s| %s%s %s' % (prefix, bar, percents, '%', suffix)
-    #sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
-    sys.stdout.write(line)
-    if iteration == total:
-        sys.stdout.write('\n')
-    sys.stdout.flush()
+    def __delitem__(self, key):
+        self.cell_list.__delitem__(key)
+
+    def __reversed__(self):
+        return self.cell_list.__reversed__()
+
+    def __contains__(self, item):
+        return self.cell_list.__contains__(item)
