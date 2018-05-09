@@ -8,8 +8,10 @@ def synth_cell(a0, a1, a2, xl, xr, r, pad_width=2):
     #todo choose a0 a1 a2 so that orientation is horizontal
     # shape = (a0*2 + 10, xr - xl + 2*r + 20)
 
-    y_max = int(a0 + a1*xr + a2*xr**2)
-    shape = (y_max + 10 + r, xr + 2*r + 10)
+    y_max = a0 + a1*xr + a2*xr**2
+    print(y_max)
+    shape = tuple(np.ceil([y_max + 10 + r, xr + 2*r + 10]).astype(int))
+    print(shape)
 
     coords = Coordinates(None, a0=a0, a1=a1, a2=a2, xl=xl, xr=xr, r=r, shape=shape, initialize=False)
     binary = coords.rc < r

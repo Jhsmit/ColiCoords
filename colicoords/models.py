@@ -20,8 +20,8 @@ class PSF(object):
     def __call__(self, x):
         return (1/(self.sigma*np.sqrt(2*np.pi))) * np.exp(-(x/self.sigma)**2 / 2)
 
-
-def _y1(x, psf, r1):
+#todo psf is an object and depending on which instance it is joblib will recalculate even if the sigma is the same
+def _y1(x, r1, psf, psf_uid):
     def integrant(x, v, r1, psf):
         return psf(x - v) * np.nan_to_num(np.sqrt(r1 ** 2 - x ** 2))
 
@@ -29,7 +29,7 @@ def _y1(x, psf, r1):
     return yarr
 
 
-def _y2(x, psf, r2):
+def _y2(x, r2, psf, psf_uid):
     def integrant(x, v, r2, psf):
         try:
             return psf(x - v) * np.nan_to_num(np.sqrt(1 + (x ** 2 / (r2 ** 2 - x ** 2))))
@@ -52,8 +52,8 @@ class RDistModel(object):
         self.yerr = None
 
         if mem is not None:
-            self.y1 = mem.cache(_y1)
-            self.y2 = mem.cache(_y2)
+            self.y1 = mem.cache(_y1, ignore=['psf'])
+            self.y2 = mem.cache(_y2, ignore=['psf'])
         else:
             self.y1 = _y1
             self.y2 = _y2
@@ -71,30 +71,29 @@ class RDistModel(object):
             r1_u = int(np.ceil(self.i * r1)) / self.i
 
             if r1_l == r1 and r1_u == r1:
-                y1 = self.y1(x, self.psf, r1)
+                y1 = self.y1(x, r1, self.psf, self.psf.sigma)
             else:
-                y1_l = self.y1(x, self.psf, r1_l)
-                y1_u = self.y1(x, self.psf, r1_u)
+                y1_l = self.y1(x, r1_l, self.psf, self.psf.sigma)
+                y1_u = self.y1(x, r1_u, self.psf, self.psf.sigma)
 
-                y1 = ( y1_l*(r1_u - r1) + y1_u*(r1 - r1_l) ) / (r1_u - r1_l)
+                y1 = (y1_l*(r1_u - r1) + y1_u*(r1 - r1_l)) / (r1_u - r1_l)
 
             r2_l = int(np.floor(self.i * r2)) / self.i
             r2_u = int(np.ceil(self.i * r2)) / self.i
 
             if r2_l == r2 and r2_u == r2:
-                y2 = self.y2(x, self.psf, r2)
+                y2 = self.y2(x, r2, self.psf, self.psf.sigma)
             else:
-                y2_l = self.y2(x, self.psf, r2_l)
-                y2_u = self.y2(x, self.psf, r2_u)
+                y2_l = self.y2(x, r2_l, self.psf, self.psf.sigma)
+                y2_u = self.y2(x, r2_u, self.psf, self.psf.sigma)
 
                 y2 = (y2_l * (r2_u - r2) + y2_u * (r2 - r2_l)) / (r2_u - r2_l)
 
         else:
-            y1 = self.y1(x, self.psf, r1)
-            y2 = self.y2(x, self.psf, r2)
+            y1 = self.y1(x, r1, self.psf, self.psf.sigma)
+            y2 = self.y2(x, r2, self.psf, self.psf.sigma)
 
         yarr = (a1 / (0.5 * np.pi * r1 ** 2))*y1 + (a2 / (np.pi * r2))*y2
-        yarr /= 2*np.pi
 
         return yarr
 

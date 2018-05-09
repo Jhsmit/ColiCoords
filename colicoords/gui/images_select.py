@@ -7,7 +7,6 @@ pg.setConfigOptions(imageAxisOrder='row-major')
 
 
 class ImageWindow(QtGui.QMainWindow):
-
     def __init__(self, img_arr, parent=None, title='ImageWindow'):
         super(ImageWindow, self).__init__(parent)
         self.setWindowTitle(title)

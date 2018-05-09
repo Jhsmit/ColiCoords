@@ -29,7 +29,7 @@ cp.plot_storm('storm', ax=axes[0, 0], kernel='gaus', alpha_cutoff=0.2, upscale=4
 #axes[0, 0].plot(x, y, linestyle='None', marker='.', color='g', alpha=0.2)
 cp.plot_outline(ax=axes[0, 0])
 
-cp.plot_dist(ax=axes[0, 1], src='storm', storm_weights='points')
+cp.plot_dist(ax=axes[0, 1], data_name='storm', storm_weights='points')
 axes[0, 1].set_xlim(0, 1.5)
 axes[0, 1].axvline(c.coords.r * (cfg.IMG_PIXELSIZE / 1000), color='r')
 
@@ -68,7 +68,7 @@ cp.plot_outline(ax=axes[1, 0])
 cp.plot_midline(ax=axes[1, 0])
 axes[1,0].set_title('Optimize value {}'.format(val))
 
-cp.plot_dist(ax=axes[1, 1], src='storm', storm_weights='points')
+cp.plot_dist(ax=axes[1, 1], data_name='storm', storm_weights='points')
 axes[1, 1].set_xlim(0, 1.5)
 axes[1, 1].axvline(c.coords.r * (cfg.IMG_PIXELSIZE / 1000), color='r')
 

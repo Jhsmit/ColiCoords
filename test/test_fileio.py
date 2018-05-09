@@ -2,7 +2,7 @@ from colicoords.fileIO import load, save
 from colicoords.cell import Cell
 from colicoords.preprocess import data_to_cells
 from testcase import ArrayTestCase
-from test_functions import generate_testdata
+from test_functions import load_testdata
 import unittest
 import tifffile
 import numpy as np
@@ -10,7 +10,7 @@ import numpy as np
 
 class FileIOTest(ArrayTestCase):
     def setUp(self):
-        self.data = generate_testdata('ds3')
+        self.data = load_testdata('ds3')
         self.cell_list = data_to_cells(self.data, pad_width=2, cell_frac=0.5, rotate='binary')
         self.cell_obj = self.cell_list[0]
         self.cell_obj.optimize()

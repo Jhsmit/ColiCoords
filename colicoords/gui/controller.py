@@ -339,7 +339,7 @@ class CellObjectController(object):
                     #plotting and writing to disk
                     if cbs_bool[0]:              # Normal
                         plt.figure()
-                        self.cell_list_plot.plot_dist(mode=dist, src=data_src)
+                        self.cell_list_plot.plot_dist(mode=dist, data_name=data_src)
                         plt.savefig(os.path.join(out_dir, dist + '_dist.png'))
 
                     if cbs_bool[1]:             # Normal ASCII
@@ -348,7 +348,7 @@ class CellObjectController(object):
 
                     if cbs_bool[2]:             # Normalized
                         plt.figure()
-                        self.cell_list_plot.plot_dist(mode=dist, src=data_src, norm_y=True)
+                        self.cell_list_plot.plot_dist(mode=dist, data_name=data_src, norm_y=True)
                         plt.savefig(os.path.join(out_dir, dist + '_dist_norm.png'))
 
                     if cbs_bool[3]:             # Normalized ASCII

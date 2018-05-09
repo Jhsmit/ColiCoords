@@ -80,8 +80,7 @@ def generate_stormdata():
     return data
 
 
-#todo refactor to load
-def generate_testdata(dataset):
+def load_testdata(dataset):
     if dataset == 'ds2':
         return load_stormdata()
     elif dataset in ['ds1', 'ds3', 'ds4']:
@@ -93,7 +92,7 @@ def generate_testdata(dataset):
 
 
 if __name__ == '__main__':
-    data = generate_testdata('ds4')
+    data = load_testdata('ds4')
     tifffile.imsave('binary_stack_2.tif', data.binary_img)
     tifffile.imsave('brightfield_stack_2.tif', data.brightfield_img)
     tifffile.imsave('fluorescence_stack_2.tif', data.data_dict['fluorescence'])

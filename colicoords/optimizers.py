@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.optimize import minimize, basinhopping, brute
+from scipy.optimize import minimize, basinhopping, differential_evolution
 from colicoords.config import cfg
 from functools import partial
 
@@ -12,8 +12,117 @@ class Parameter(object):
         self.value = value
         self.fixed = fixed
 
+
+class GlobalCellFitting(object):
+    #todo base class for both fitting objé
+    """Globally fit many radial distribution curves to a model with """
+    def __init__(self, model, x, y_arr):
+        self.model = model
+        self.x = x
+        self.y_arr = y_arr
+
         self.val = None
 
+    def fit_amplitudes(self):
+        """finds the best fit for chi sq by calculating derivatives wrt a1 and a2 and solving the resulting system of
+        equations, where the model's remaining parameters are fixed by their parameter values"""
+        y1 = self.model(self.x, a1=1, a2=0)
+        y2 = self.model(self.x, a1=0, a2=1)
+
+        a1, a2 = solve_linear_system(y1, y2, self.y_arr)
+        return a1, a2
+
+    def fit_global(self, parameters, bounds=None, constraint=True, basin_hop=True, T=0.1, **kwargs):
+        # todo generalize to fit global vars and local vars
+        def objective(par_values, par_names, model, x, y):
+            par_dict = {par_name: par_value for par_name, par_value in zip(par_names, par_values)}
+
+            y1 = model(x, **{'a1': 1, 'a2': 0}, **par_dict)
+            y2 = model(x, **{'a1': 0, 'a2': 1}, **par_dict)
+
+            a1, a2 = solve_linear_system(y1, y2, y)
+            F = np.outer(a1, y1) + np.outer(a2, y2)
+
+            return np.sum((F - y)**2)
+
+        bounds = self.model.get_bounds(parameters, parameters if type(bounds) == bool else bounds) if bounds else None
+        method = None
+        verbose = kwargs.pop('verbose', False)
+        par_values = np.array([getattr(self.model, par).value for par in parameters.split(' ')])
+        constraints = self.model.get_constraints(parameters) if constraint else None
+
+        #todo this needs some checking if not all parameters are bounded
+        def _accept_test(bounds, **kwargs):
+            par_values = kwargs['x_new']
+            bools = [(-np.inf if pmin is None else pmin) <= val <= (np.inf if pmax is None else pmax)
+                     for (pmin, pmax), val in zip(bounds, par_values)]
+
+            return np.all(bools)
+
+        accept_test = partial(_accept_test, bounds)
+
+        if basin_hop:
+            result = basinhopping(objective, par_values,
+                                  minimizer_kwargs={
+                                      'args': (parameters.split(' '), self.model, self.x, self.y_arr),
+                                      'bounds': bounds,
+                                      'method': method,
+                                      'constraints': constraints,
+                                      'options': {'disp': verbose},
+                                      **kwargs},
+                                  T=T,
+                                  stepsize=1,
+                                  niter=200,
+                                  accept_test=accept_test
+                                  )
+
+        else:
+            result = minimize(objective, par_values, args=(parameters.split(' '), self.model, self.x, self.y_arr),
+                              bounds=bounds, method=method, constraints=constraints, options={'disp': verbose}, **kwargs)
+
+        try:
+            res_dict = {key: val for key, val in zip(parameters.split(' '), result.x)}
+        except TypeError:
+            res_dict = {key: val for key, val in zip(parameters.split(' '), [result.x])}
+
+        self.val = result.fun
+        return res_dict, result.fun
+
+    def fit_global_de(self, parameters, bounds=True, constraint=True, **kwargs):
+        # todo generalize to fit global vars and local vars
+        def objective(par_values, par_names, model, x, y):
+            par_dict = {par_name: par_value for par_name, par_value in zip(par_names, par_values)}
+
+            y1 = model(x, **{'a1': 1, 'a2': 0}, **par_dict)
+            y2 = model(x, **{'a1': 0, 'a2': 1}, **par_dict)
+
+            a1, a2 = solve_linear_system(y1, y2, y)
+            F = np.outer(a1, y1) + np.outer(a2, y2)
+
+            return np.sum((F - y)**2)
+
+        bounds = self.model.get_bounds(parameters, parameters if type(bounds) == bool else bounds) if bounds else None
+        method = None
+        verbose = kwargs.pop('verbose', False)
+        par_values = np.array([getattr(self.model, par).value for par in parameters.split(' ')])
+        constraints = self.model.get_constraints(parameters) if constraint else None
+
+
+
+
+        result = differential_evolution(objective, bounds,
+                                        args=(parameters.split(' '), self.model, self.x, self.y_arr)
+
+                              )
+
+
+        try:
+            res_dict = {key: val for key, val in zip(parameters.split(' '), result.x)}
+        except TypeError:
+            res_dict = {key: val for key, val in zip(parameters.split(' '), [result.x])}
+
+        self.val = result.fun
+        return res_dict, result.fun
 
 class CellFitting(object):
     """Fits cell radial distribution curve to a model"""
@@ -22,6 +131,8 @@ class CellFitting(object):
         self.model = model
         self.x = x
         self.y = y
+
+        self.val = None
 
     def fit_parameters(self, parameters, bounds=None, constraint=True, basin_hop=True, T=0.1, **kwargs):
         def objective(par_values, par_names, model, x, y):
@@ -48,16 +159,6 @@ class CellFitting(object):
             return np.all(bools)
 
         accept_test = partial(_accept_test, bounds)
-
-        # ranges = (slice(0, 1.1, 0.1), slice(0, 1.1, 0.1), slice(4, 6.5, 0.05), slice(4, 6.5, 0.05))
-        # resbrute = brute(
-        #     objective,
-        #     ranges,
-        #     args=(parameters.split(' '), self.model, self.x, self.y),
-        #     full_output=True
-        #
-        # )
-
 
         if basin_hop:
             result = basinhopping(objective, par_values,
@@ -318,3 +419,21 @@ objectives_dict = {
 #     par_dict = {par_name: par_value for par_name, par_value in zip(par_names, par_values)}
 #     cell_obj.coords.sub_par(par_dict)
 #     return objective(cell_obj, data_name, **obj_kwargs)
+
+
+# Functions to minimize functions by matrix-fu
+def solve_linear_system(y1, y2, data):
+    """Solve system of linear eqns a1*y1 + a2*y2 == data but then vector edition of that"""
+    Dy1 = data.dot(y1)
+    Dy2 = data.dot(y2)
+    D_vec = np.concatenate((Dy1, Dy2))
+
+    y1y1 = y1.dot(y1)
+    y1y2 = y1.dot(y2)
+    y2y2 = y2.dot(y2)
+
+    M = np.array([[y1y1, y1y2], [y1y2, y2y2]])
+    bigM = np.kron(M, np.eye(len(data)))
+    a1a2 = np.linalg.solve(bigM, D_vec)
+
+    return np.split(a1a2, 2)
