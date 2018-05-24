@@ -46,7 +46,6 @@ class BinaryImage(np.ndarray):
         self.name, self.metadata, self.dclass = state[-3:]
         super(BinaryImage, self).__setstate__(state[0:-3])
 
-
     @property
     def orientation(self):
         """float: The main image axis orientation in degrees"""

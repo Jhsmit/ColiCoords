@@ -12,12 +12,12 @@ import sys
 import contextlib
 
 
-# todo obj or class? in docstring
 class Cell(object):
     """ ColiCoords' main single-cell object
     Attributes:
         data (:class:`Data`): Holds all data describing this single cell.
         coords (:class:`Coordinates`): Calculates and optimizes the cell's coordinate system.
+        name (:obj:`str`): Name identifying the cell (optional)
     """
 
     def __init__(self, data_object, name=None):
@@ -25,6 +25,7 @@ class Cell(object):
         Args:
             data_object (:class:`Data`): Data class holding all data which describes this single cell
             name (:obj:`str`): Name to identify this single cell.
+                #todo generate names when trying to save cell_list without names to disk
         """
 
         self.data = data_object
@@ -32,24 +33,26 @@ class Cell(object):
         self.name = name
 
     def optimize(self, data_name='binary', objective=None, **kwargs):
-        """ Docstring will be added when all optimization types are supported
+        # todo find out if callable is a thing
+        """ Optimize the cell's coordinate system. The optimization is performed on the data element given by `data_name`
+            using objective function `objective`. See the documentation REF or colicoords.optimizers for more details.
 
         Args:
-            data_name (:obj:`str`):
-            method:
-            verbose:
+            data_name (:obj:`str`): Name of the data element on which coordinate optimization is performed.
+            objective (:obj:`str` or :obj:`callable`):
+            **kwargs: keyword arguments which are passed to `Optimizer.optimize`
         """
         optimizer = Optimizer(self, data_name=data_name, objective=objective)
         return optimizer.optimize(**kwargs)
 
     @property
     def radius(self):
-        """float: Radius of the cell"""
+        """float: Radius of the cell in pixels"""
         return self.coords.r
 
     @property
     def length(self):
-        """float: Length of the cell obtained by integration of the spine arc length from xl to xr"""
+        """float: Length of the cell in pixels. Obtained by integration of the spine arc length from `xl` to `xr`"""
         a0, a1, a2 = self.coords.coeff
         xl, xr = self.coords.xl, self.coords.xr
         l = (1 / (4 * a2)) * (
@@ -60,9 +63,19 @@ class Cell(object):
         return l
 
     @property
+    def circumference(self):
+        """float: Circumference of the cell in pixels"""
+        raise NotImplementedError()
+
+    @property
     def area(self):
-        """float: Area of the cell in squared pixels"""
+        """float: Area (2d) of the cell in square pixels"""
         return 2*self.length*self.coords.r + np.pi*self.coords.r**2
+
+    @property
+    def surface(self):
+        """float: Total surface area (3d) of the cell in square pixels"""
+        raise NotImplementedError()
 
     @property
     def volume(self):
@@ -75,34 +88,31 @@ class Cell(object):
     def l_dist(self, norm_x=False):
         pass
 
-    def r_dist(self, stop, step, data_name='', norm_x=False, storm_weight='points', xlim=None):
+    def l_classify(self):
+        #todo classify occurence of storm coordinates in categories poles, mid and whatever is left
+        raise NotImplementedError()
+
+    def r_dist(self, stop, step, data_name='', norm_x=False, xlim=None, storm_weight=False):
         #todo test xlim!
-        """ Calculates the radial distribution of a given data element
+        """ Calculates the radial distribution of a given data element.
 
         Args:
-            stop: Until how far from the cell spine the radial distribution should be calculated
-            step: The binsize of the returned radial distribution
-            data_name: The name of the data element on which to calculate the radial distribution
-            norm_x: If `True` the returned distribution will be normalized with the cell's radius set to 1.
-            storm_weight: When calculating the radial distribution of  # todo change to True/False
+            stop (:obj:`float`): Until how far from the cell spine the radial distribution should be calculated
+            step (:obj:`float`): The binsize of the returned radial distribution
+            data_name (:obj:`str`): The name of the data element on which to calculate the radial distribution
+            norm_x (:obj:`bool`): If `True` the returned distribution will be normalized with the cell's radius set to 1.
+            xlim (:obj:`str`): If `None`, all datapoints are taking into account. This can be limited by providing the
+                value `full` (omit poles only) or a float value which will limit the data points with around the midline
+                where xmid - xlim < x < xmid + xlim.
+            storm_weight (obj:`bool`): Only applicable for analyzing STORM-type data elements. If `True` the returned
+                histogram is weighted with the number of photons measured.
 
         Returns:
             (tuple): tuple containing:
 
                 xvals (:class:`np.ndarray`) Array of distances from the cell midline, values are the middle of the bins
-                yvals (:class:`np.ndarray`) Array of in heights
+                yvals (:class:`np.ndarray`) Array of in bin heights
         """
-
-        # def bin_func(r, y_weight, bins):
-        #     i_sort = r.argsort()
-        #     r_sorted = r[i_sort]
-        #     y_weight = y_weight[i_sort] if y_weight is not None else y_weight
-        #     bin_inds = np.digitize(r_sorted,
-        #                            bins) - 1  # -1 to assure points between 0 and step are in bin 0 (the first)
-        #     yvals = np.bincount(bin_inds, weights=y_weight, minlength=len(bins))
-        #     if y_weight is not None:
-        #         yvals /= np.bincount(bin_inds, minlength=len(bins))
-        #     return np.nan_to_num(yvals)
 
         bins = np.arange(0, stop+step, step)
         xvals = bins + 0.5 * step  # xval is the middle of the bin
@@ -135,18 +145,10 @@ class Cell(object):
                 bin_r = r.flatten()
                 b = np.ones_like(x).astype(bool)
 
-
-            if storm_weight == 'points':
-                y_weight = None
-            elif storm_weight == 'photons':
-                y_weight = data_elem['intensity'][b]
-            else:
-                raise ValueError("storm_weights has to be either 'points' or 'photons'")
+            y_weight = data_elem['intensity'][b] if storm_weight else None
             yvals = self._bin_func(bin_r, y_weight, bins)
 
         elif data_elem.ndim == 2:
-            #assert data_elem.dclass == 'fluorescence'
-
             r = self.coords.rc / self.coords.r if norm_x else self.coords.rc
             if xlim:
                 if xlim == 'full':
@@ -170,9 +172,19 @@ class Cell(object):
             raise ValueError('Invalid fluorescence image dimensions')
         return xvals, yvals
 
-    def measure_r(self, data_name, func=None, in_place=True):
-        #todo different functions?
+    def measure_r(self, data_name='brightfield', in_place=True):
+        """
+        Measure the radius of the cell by finding the intensity-midpoint of the radial distribution derived from
+        brightfield (defualt) or another data element.
 
+        Args:
+            data_name (:obj:`str`): Name of the data element to use.
+            in_place (:obj:`bool`): If `True` the found value of `r` is directly substituded in the cell's coordinate
+                system, otherwise the value is returned.
+
+        Returns:
+            The measured radius `r` if `in_place` is `False`, otherwise `None`.
+        """
         x, y = self.r_dist(15, 1, data_name=data_name) # todo again need sensible default for stop
         mid_val = (np.min(y) + np.max(y)) / 2
         r = np.interp(mid_val, y, x)
@@ -183,7 +195,21 @@ class Cell(object):
         else:
             return r
 
-    def sim_cell(self, data_name, norm_x=False, r_scale=1, **kwargs):
+    def reconstruct_cell(self, data_name, norm_x=False, r_scale=1, **kwargs):
+        #todo stop and step defaults when norm_x=True?
+        #todo allow reconstruction of standardized cell shape
+        """
+            Reconstruct the cell from a given data element and the cell's current coordinate system.
+        Args:
+            data_name (:obj:`str`): Name of the data element to use
+            norm_x (:obj:`bool`): Boolean indicating whether or not to normalize to r=1
+            r_scale:
+            **kwargs: kwargs to optionally provide 'stop' and 'step' values for the used `r_dist`.
+
+        Returns:
+            :`class`: np.ndarray: Image of the reconstructed cell
+        """
+
         stop = kwargs.pop('stop', np.ceil(np.max(self.data.shape)/2))
         step = kwargs.pop('step', 1)
 
@@ -192,25 +218,14 @@ class Cell(object):
 
         return interp
 
-    @staticmethod
-    def _bin_func(xvals, y_weight, bins):
-        i_sort = xvals.argsort()
-        r_sorted = xvals[i_sort]
-        y_weight = y_weight[i_sort] if y_weight is not None else y_weight
-        bin_inds = np.digitize(r_sorted,
-                               bins) - 1  # -1 to assure points between 0 and step are in bin 0 (the first)
-        yvals = np.bincount(bin_inds, weights=y_weight, minlength=len(bins))
-        if y_weight is not None:
-            yvals /= np.bincount(bin_inds, minlength=len(bins))
-        return np.nan_to_num(yvals)
-
-    def get_intensity(self, mask='binary', data_name='') -> float:
+    def get_intensity(self, mask='binary', data_name=''):
         """ Returns the mean fluorescence intensity in the region masked by either the binary image or synthetic
             binary image derived from the cell's coordinate system
 
         Args:
-            mask (:obj:`str`): Either 'binary' or 'coords' to specify the source of the mask used
-            data_name (:obj:`str`): The name of the fluorescence image data element to get the intensity values from.
+            mask (:obj:`str`): Either 'binary' or 'coords' to specify the source of the mask used.
+                'binary' uses the binary imagea as mask, 'coords' uses reconstructed binary from coordinate system
+            data_name (:obj:`str`): The name of the image data element to get the intensity values from.
 
         Returns:
             Mean fluorescence pixel value
@@ -233,8 +248,28 @@ class Cell(object):
 
         return data_elem[m].mean()
 
+    @staticmethod
+    def _bin_func(xvals, y_weight, bins):
+        """bins xvals in given bins using y_weight as weights"""
+        i_sort = xvals.argsort()
+        r_sorted = xvals[i_sort]
+        y_weight = y_weight[i_sort] if y_weight is not None else y_weight
+        bin_inds = np.digitize(r_sorted,
+                               bins) - 1  # -1 to assure points between 0 and step are in bin 0 (the first)
+        yvals = np.bincount(bin_inds, weights=y_weight, minlength=len(bins))
+        if y_weight is not None:
+            yvals /= np.bincount(bin_inds, minlength=len(bins))
+        return np.nan_to_num(yvals)
+
     def copy(self):
-        #todo needs testing
+        """
+        Make a copy of the cell object and all its associated data elements
+
+        Returns:
+            :class:`Cell`: Copied cell object
+
+        """
+        #todo needs testing (this is done?) arent there more properties to copy?
         new_cell = Cell(data_object=self.data.copy(), name=self.name)
         for par in self.coords.parameters:
             setattr(new_cell.coords, par, getattr(self.coords, par))
@@ -258,9 +293,12 @@ class Coordinates(object):
 
     def __init__(self, data, initialize=True, **kwargs):
         """
-
         Args:
-            data:
+            data (:class:`Data`): Data object holding all the cell's data elements
+            initialize (:obj:`bool`): If `True` the cell coordinates will be initialized by deriving initial guesses
+                from the binary image.
+            **kwargs: optional keyword arguments. If `initialize` is `False` parameters can be passed in `kwargs` to
+                manually set these parameters.
         """
         self.data = data
         self.coeff = np.array([1., 1., 1.])
@@ -271,10 +309,11 @@ class Coordinates(object):
             self.shape = data.shape
         else:
             for p in self.parameters + ['shape']:
-                setattr(self, p , kwargs.pop(p, None))
+                setattr(self, p, kwargs.pop(p, None))
 
     @property
     def a0(self):
+        """float: Polynomial p(x) 0th degree coefficient"""
         return self.coeff[0]
 
     @a0.setter
@@ -283,6 +322,7 @@ class Coordinates(object):
 
     @property
     def a1(self):
+        """float: Polynomial p(x) 1st degree coefficient"""
         return self.coeff[1]
 
     @a1.setter
@@ -291,6 +331,8 @@ class Coordinates(object):
 
     @property
     def a2(self):
+        """float: Polynomial p(x) 2nd degree coefficient"""
+
         return self.coeff[2]
 
     @a2.setter
@@ -298,10 +340,17 @@ class Coordinates(object):
         self.coeff[2] = value
 
     def sub_par(self, par_dict):
+        """
+        Substitute the values in `par_dict` as the coordinate systems parameters.
+
+        Args:
+            par_dict (:obj:`dict`): Dictionary with parameters which values are set to the attributes.
+        """
         for k, v in par_dict.items():
             setattr(self, k, v)
 
     def calc_xc(self, xp, yp):
+        #todo test if this even works with scalars
         """ Calculates the coordinate xc on p(x) closest to xp, yp
         
         All coordinates are cartesian. Solutions are found by solving the cubic equation.
@@ -373,7 +422,13 @@ class Coordinates(object):
             k = 0.
             t_k = 2. * np.sqrt(-p/3.) * np.cos((1 / 3.) * np.arccos(((3.*q)/(2.*p)) * np.sqrt(-3./p)) - (2*np.pi*k)/3.)
             x_r = t_k - (b/(3*a))
-            assert(np.all(x_r > 0)) # dont know if this is guaranteed otherwise boundaries need to be passed and choosing from 3 slns
+            try:
+                assert(np.all(x_r > 0)) # dont know if this is guaranteed otherwise boundaries need to be passed and choosing from 3 slns
+            except AssertionError:
+                print(x_r)
+                #todo find out of this is bad or not
+                print('warning!')
+                #raise ValueError
             return x_r
 
         if np.any(discr == 0):
@@ -394,6 +449,7 @@ class Coordinates(object):
         return x_c
 
     def calc_rc(self, xp, yp):
+        #todo 1d array? maybe it work siwth any shape like xc (it better)
         """
         Applies endcap limits xl and xr and calculates distance r to cell spine
         :param xp: 1D array of x coordinates
@@ -452,47 +508,54 @@ class Coordinates(object):
 
     def p(self, x_arr):
         """
-        Function to call the polynomial describing the cell spine
+            Calculate p(x).
+        Args:
+            x_arr (`obj:`np.ndarray`): Input x values.
 
-        Parameters
-        ----------
-
-        x_arr : obj:`np.ndarray`
-            Input x array
-
-        Returns
-        -------
-        obj: `np.ndarray`
-            Output array of shape equal to input array with values p(x)
-
+        Returns:
+            obj:`np.ndarray`: p(x)
         """
-
         a0, a1, a2 = self.coeff
         return a0 + a1*x_arr + a2*x_arr**2
 
     def p_dx(self, x_arr):
         """
-        Function to call the first derivative of the polynomial describing the cell spine to coordinate x
+            Calculate the derivative p'(x) of p(x) evaluated at x.
+        Args:
+            x_arr (:obj:`np.ndarray`): Input x values.
 
-        Parameters
-        ----------
-
-        x_arr : obj:`np.ndarray`
-            Input x array
-
-        Returns
-        -------
-        obj: `np.ndarray`
-            Output array of shape equal to input array with values p'(x)
-
+        Returns:
+            obj:`np.ndarray`: p'(x)
         """
-
         a0, a1, a2 = self.coeff
         return a1 + 2 * a2 * x_arr
 
     def q(self, x, xp):
         """returns q(x) where q(x) is the line perpendicular to p(x) at xp"""
         return (-x / self.p_dx(xp)) + self.p(xp) + (xp / self.p_dx(xp))
+
+    def get_core_points(self, xl=None, xr=None):
+        """
+            Returns the coordinates of the roughly estimated 'core' points of the cell. Used for determining the
+                initial guesses for the coefficients of p(x).
+        Args:
+            xl (:obj:`float`): starting point x of where to get the 'core' points.
+            xr (:obj:`float`): end point x of where to get the 'core' points.
+
+        Returns:
+            (tuple): tuple containing:
+
+                xvals (:class:`np.ndarray`) Array of x coordinates of 'core' points.
+                yvals (:class:`np.ndarray`) Array of y coordinates of 'core' points.
+        """
+        xl = xl if xl else self.xl
+        xr = xr if xr else self.xr
+
+        im_x, im_y = np.nonzero(self.data.data_dict['binary'])
+        x_range = np.arange(int(xl), int(xr))
+        y = np.array([np.nanmean(np.where(im_y == y, im_x, np.nan)) for y in x_range])
+
+        return x_range, y
 
     @staticmethod
     def _initial_guesses(data):
@@ -509,16 +572,6 @@ class Coordinates(object):
 
         return xl, xr, r, coeff
 
-    def get_core_points(self, xl=None, xr=None):
-        xl = xl if xl else self.xl
-        xr = xr if xr else self.xr
-
-        im_x, im_y = np.nonzero(self.data.data_dict['binary'])
-        x_range = np.arange(int(xl), int(xr))
-        y = np.array([np.nanmean(np.where(im_y == y, im_x, np.nan)) for y in x_range])
-
-        return x_range, y
-
     def _initial_fit(self):
         x, y = self.get_core_points()
         return np.polyfit(x, y, 2)[::-1]
@@ -526,6 +579,7 @@ class Coordinates(object):
 
 def worker(obj, **kwargs):
     return obj.optimize(**kwargs)
+
 
 def worker_pb(pbar, obj, **kwargs):
     res = obj.optimize(**kwargs)
@@ -561,22 +615,52 @@ def std_out_err_redirect_tqdm():
         sys.stdout, sys.stderr = orig_out_err
 
 
-
 class CellList(object):
+    """Object holding a list of cell objects exposing several methods to either apply functions to all cells or to extract
+        values from all cell objects. This object supports iteration over Cell objects and Numpy-style array indexing.
+    Attributes:
+        cell_list (:obj:`np.ndarray`): Numpy array of `Cell` objects
 
+    """
     def __init__(self, cell_list):
+        """
+
+        Args:
+            cell_list:
+        """
         self.cell_list = np.array(cell_list)
 
     def optimize(self, data_name='binary', objective=None, **kwargs):
+        #todo REF
+        #todo describe objective kwargs
+        """ Optimize the all the cell's coordinate system. The optimization is performed on the data element given by
+            `data_name` using objective function `objective`. See the documentation REF or colicoords.optimizers for
+            more details.
+
+        Args:
+            data_name (:obj:`str`): Name of the data element on which coordinate optimization is performed.
+            objective (:obj:`str` or :obj:`callable`):
+            **kwargs: keyword arguments which are passed to `Optimizer.optimize`
+        """
+
         for c in tqdm(self):
             c.optimize(data_name=data_name, objective=objective, **kwargs)
 
     def optimize_mp(self, data_name='binary', objective=None, processes=None, pbar=True, **kwargs):
+        """ Optimize all cell's coordinate systems using `optimize` through parallel computing. Note that if this
+            is called the call must be protected by if __name__ == '__main__'.
+
+        Args:
+            data_name (:obj:`str`): Name of the data element on which coordinate optimization is performed.
+            objective (:obj:`str` or :obj:`callable`):
+            processes (:obj:`int`): Number of parallel processes.
+            **kwargs: keyword arguments which are passed to `Optimizer.optimize`
+        """
+
         kwargs = {'data_name': data_name, 'objective': objective, **kwargs}
         pool = mp.Pool(processes=processes)
 
         f = partial(worker, **kwargs)
-
 
         res = []
         with std_out_err_redirect_tqdm() as orig_stdout:
@@ -592,11 +676,13 @@ class CellList(object):
             cell.coords.sub_par(r)
 
     def execute(self, worker):
+        """Apply worker function `worker` to all cell objects and returns the results"""
         res = map(worker, self)
 
         return res
 
     def execute_mp(self, worker, processes=None):
+        """Applies the worker function `worker` to all cells objects and returns the results using parallel computing."""
         pool = mp.Pool(processes=processes)
         res = pool.map(worker, self)
 
@@ -606,17 +692,38 @@ class CellList(object):
         return res
 
     def append(self, cell_obj):
+        """Append Cell object `cell_obj` to the list of cells."""
         assert isinstance(cell_obj, Cell)
-        self.cell_list.append(cell_obj)
+        np.append(self.cell_list, cell_obj)
 
-    def r_dist(self, stop, step, data_name='', norm_x=False, storm_weight='points', xlim=None):
+    def r_dist(self, stop, step, data_name='', norm_x=False, storm_weight=False, xlim=None):
+        """ Calculates the radial distribution of a given data element for all cells in the `CellList`.
+
+        Args:
+            stop (:obj:`float`): Until how far from the cell spine the radial distribution should be calculated
+            step (:obj:`float`): The binsize of the returned radial distribution
+            data_name (:obj:`str`): The name of the data element on which to calculate the radial distribution
+            norm_x (:obj:`bool`): If `True` the returned distribution will be normalized with the cell's radius set to 1.
+            xlim (:obj:`str`): If `None`, all datapoints are taking into account. This can be limited by providing the
+                value `full` (omit poles only) or a float value which will limit the data points with around the midline
+                where xmid - xlim < x < xmid + xlim.
+            storm_weight (obj:`bool`): Only applicable for analyzing STORM-type data elements. If `True` the returned
+                histogram is weighted with the number of photons measured.
+
+        Returns:
+            (tuple): tuple containing:
+
+                xvals (:class:`np.ndarray`) Array of distances from the cell midline, values are the middle of the bins
+                out_arr (:class:`np.ndarray`) Matrix of in bin heights
+        """
+
         numpoints = len(np.arange(0, stop+step, step))
         out_arr = np.zeros((len(self), numpoints))
         for i, c in enumerate(self):
-            x, y = c.r_dist(stop, step, data_name=data_name, norm_x=norm_x, storm_weight=storm_weight, xlim=xlim)
-            out_arr[i] = y
+            xvals, yvals = c.r_dist(stop, step, data_name=data_name, norm_x=norm_x, storm_weight=storm_weight, xlim=xlim)
+            out_arr[i] = yvals
 
-        return x, out_arr
+        return xvals, out_arr
 
     def l_dist(self, stop, step, data_name='', norm_x=False, storm_weight='points'):
         raise NotImplementedError()
@@ -624,34 +731,63 @@ class CellList(object):
     def a_dist(self):
         raise NotImplementedError()
 
-    def get_intensity(self, mask='binary', data_name='') -> np.ndarray:
+    def get_intensity(self, mask='binary', data_name=''):
+        """ Returns for all cells the mean fluorescence intensity in the region masked by either the binary image or synthetic
+            binary image derived from the cell's coordinate system
+
+        Args:
+            mask (:obj:`str`): Either 'binary' or 'coords' to specify the source of the mask used.
+                'binary' uses the binary imagea as mask, 'coords' uses reconstructed binary from coordinate system
+            data_name (:obj:`str`): The name of the image data element to get the intensity values from.
+
+        Returns:
+            :obj:`np.ndarray`: Array of mean fluorescence pixel values
+
+        """
         return np.array([c.get_intensity(mask=mask, data_name=data_name) for c in self])
 
     def copy(self):
+        """
+        Make a copy of the `CellList` object and all its associated data elements.
+
+        Returns:
+            :class:`CellList`: Copied `CellList` object
+        """
         return CellList([cell.copy() for cell in self])
 
     @property
     def radius(self):
+        """:obj:`np.ndarray`: Array of cell's radii in pixels"""
         return np.array([c.radius for c in self])
 
     @property
     def length(self):
+        """:obj:`np.ndarray`: Array of cell's lengths in pixels"""
         return np.array([c.length for c in self])
 
     @property
+    def circumference(self):
+        """:obj:`np.ndarray`: Array of cell's circumference in pixels"""
+        return np.array([c.circumference for c in self])
+
+    @property
     def area(self):
+        """:obj:`np.ndarray`: Array of cell's area in square pixels"""
         return np.array([c.area for c in self])
 
     @property
+    def surface(self):
+        """:obj:`np.ndarray`: Array of cell's surface area (3d) in square pixels"""
+        return np.array([c.surface for c in self])
+
+    @property
     def volume(self):
+        """:obj:`np.ndarray`: Array of cell's volume in cubic pixels"""
         return np.array([c.volume for c in self])
 
     @property
-    def label(self):
-        return np.array([c.label for c in self])
-
-    @property
     def name(self):
+        """:obj:`np.ndarray: Array of cell's names"""
         return np.array([c.name for c in self])
 
     def __len__(self):
@@ -671,9 +807,6 @@ class CellList(object):
 
     def __delitem__(self, key):
         self.cell_list.__delitem__(key)
-
-    def __reversed__(self):
-        return self.cell_list.__reversed__()
 
     def __contains__(self, item):
         return self.cell_list.__contains__(item)

@@ -32,7 +32,7 @@ class GlobalCellFitting(object):
         a1, a2 = solve_linear_system(y1, y2, self.y_arr)
         return a1, a2
 
-    def fit_global(self, parameters, bounds=None, constraint=True, basin_hop=True, T=0.1, **kwargs):
+    def fit_global(self, parameters, bounds=None, constraint=True, solver='DE', solver_kwargs=None, **kwargs):
         # todo generalize to fit global vars and local vars
         def objective(par_values, par_names, model, x, y):
             par_dict = {par_name: par_value for par_name, par_value in zip(par_names, par_values)}
@@ -46,10 +46,12 @@ class GlobalCellFitting(object):
             return np.sum((F - y)**2)
 
         bounds = self.model.get_bounds(parameters, parameters if type(bounds) == bool else bounds) if bounds else None
-        method = None
+        method = kwargs.pop('method', None)
         verbose = kwargs.pop('verbose', False)
         par_values = np.array([getattr(self.model, par).value for par in parameters.split(' ')])
         constraints = self.model.get_constraints(parameters) if constraint else None
+
+        solver_kwargs = {} if solver_kwargs is None else solver_kwargs
 
         #todo this needs some checking if not all parameters are bounded
         def _accept_test(bounds, **kwargs):
@@ -61,7 +63,15 @@ class GlobalCellFitting(object):
 
         accept_test = partial(_accept_test, bounds)
 
-        if basin_hop:
+        #todo use mystic for constraints: https://github.com/uqfoundation/mystic/blob/master/mystic/differential_evolution.py
+        if solver == 'DE':
+            result = differential_evolution(objective, bounds,
+                                            args=(parameters.split(' '), self.model, self.x, self.y_arr),
+                                            **solver_kwargs
+                                            )
+        elif solver == 'basin_hop':
+            stepsize = solver_kwargs.pop('stepsize', 1)
+            niter = solver_kwargs.pop('niter', 200)
             result = basinhopping(objective, par_values,
                                   minimizer_kwargs={
                                       'args': (parameters.split(' '), self.model, self.x, self.y_arr),
@@ -70,15 +80,16 @@ class GlobalCellFitting(object):
                                       'constraints': constraints,
                                       'options': {'disp': verbose},
                                       **kwargs},
-                                  T=T,
-                                  stepsize=1,
-                                  niter=200,
-                                  accept_test=accept_test
+                                  stepsize=stepsize,
+                                  niter=niter,
+                                  accept_test=accept_test,
+                                  **solver_kwargs
                                   )
-
-        else:
+        elif solver == 'normal':
             result = minimize(objective, par_values, args=(parameters.split(' '), self.model, self.x, self.y_arr),
                               bounds=bounds, method=method, constraints=constraints, options={'disp': verbose}, **kwargs)
+        else:
+            raise ValueError("Value for 'solver' must be either 'DE', 'basin_hop' or 'normal'")
 
         try:
             res_dict = {key: val for key, val in zip(parameters.split(' '), result.x)}
@@ -88,7 +99,7 @@ class GlobalCellFitting(object):
         self.val = result.fun
         return res_dict, result.fun
 
-    def fit_global_de(self, parameters, bounds=True, constraint=True, **kwargs):
+    def _fit_global_de(self, parameters, bounds=True, constraint=True, **kwargs):
         # todo generalize to fit global vars and local vars
         def objective(par_values, par_names, model, x, y):
             par_dict = {par_name: par_value for par_name, par_value in zip(par_names, par_values)}
@@ -107,14 +118,10 @@ class GlobalCellFitting(object):
         par_values = np.array([getattr(self.model, par).value for par in parameters.split(' ')])
         constraints = self.model.get_constraints(parameters) if constraint else None
 
-
-
-
         result = differential_evolution(objective, bounds,
                                         args=(parameters.split(' '), self.model, self.x, self.y_arr)
 
                               )
-
 
         try:
             res_dict = {key: val for key, val in zip(parameters.split(' '), result.x)}
@@ -123,6 +130,7 @@ class GlobalCellFitting(object):
 
         self.val = result.fun
         return res_dict, result.fun
+
 
 class CellFitting(object):
     """Fits cell radial distribution curve to a model"""
@@ -256,9 +264,9 @@ class Optimizer(object):
                             min=cell_obj.coords.xl - cfg.ENDCAP_RANGE / 2, max=cell_obj.coords.xl + cfg.ENDCAP_RANGE / 2)
         self.xr = Parameter('xr', value=cell_obj.coords.xr,
                             min=cell_obj.coords.xr - cfg.ENDCAP_RANGE / 2, max=cell_obj.coords.xr + cfg.ENDCAP_RANGE / 2)
-        self.a0 = Parameter('a0', value=cell_obj.coords.coeff[0], min=0)
-        self.a1 = Parameter('a1', value=cell_obj.coords.coeff[1])
-        self.a2 = Parameter('a2', value=cell_obj.coords.coeff[2])
+        self.a0 = Parameter('a0', value=cell_obj.coords.coeff[0], min=0, max=cell_obj.data.shape[0]*1.5)
+        self.a1 = Parameter('a1', value=cell_obj.coords.coeff[1], min=-5, max=5)
+        self.a2 = Parameter('a2', value=cell_obj.coords.coeff[2], min=-0.5, max=0.5)
 
     @property
     def data_elem(self):
@@ -275,7 +283,60 @@ class Optimizer(object):
         else:
             return bounds
 
-    def optimize_parameters(self, parameters, bounds=None, obj_kwargs=None, **kwargs):
+    def optimize_parameters(self, parameters, solver='normal', bounds=None, obj_kwargs=None, solver_kwargs=None, **kwargs):
+
+        solver_kwargs = {} if solver_kwargs is None else solver_kwargs
+        fun = partial(self.objective, **obj_kwargs) if obj_kwargs else self.objective
+        bounds = True if solver == 'DE' else bounds
+        bounds = self.get_bounds(parameters, parameters if type(bounds) == bool else bounds) if bounds else None
+        method = kwargs['method'] if 'method' in kwargs else 'Powell' if not bounds else None #todo maybe differnt default
+        verbose = kwargs.pop('verbose', False)
+        par_values = np.array([getattr(self.cell_obj.coords, par) for par in parameters.split(' ')])
+
+        if solver == 'DE':
+            result = differential_evolution(fun, bounds,
+                                            args=(parameters.split(' '), self.cell_obj, self.data_name),
+                                            **solver_kwargs)
+
+        elif solver == 'basin_hop':
+            def _accept_test(bounds, **kwargs):
+                par_values = kwargs['x_new']
+                bools = [(-np.inf if pmin is None else pmin) <= val <= (np.inf if pmax is None else pmax)
+                         for (pmin, pmax), val in zip(bounds, par_values)]
+
+                return np.all(bools)
+
+            accept_test = partial(_accept_test, bounds)
+            stepsize = solver_kwargs.pop('stepsize', 1)
+            niter = solver_kwargs.pop('niter', 200)
+            result = basinhopping(fun, par_values,
+                                  minimizer_kwargs={
+                                      'args': (parameters.split(' '), self.cell_obj, self.data_name),
+                                      'bounds': bounds,
+                                      'method': method,
+                                      'options': {'disp': verbose},
+                                      **kwargs},
+                                  stepsize=stepsize,
+                                  niter=niter,
+                                  accept_test=accept_test,
+                                  **solver_kwargs)
+
+        elif solver == 'normal':
+            result = minimize(fun, par_values, args=(parameters.split(' '), self.cell_obj, self.data_name),
+                              method=method, bounds=bounds, options={'disp': verbose}, **kwargs)
+        else:
+            raise ValueError("Value for 'solver' must be either 'DE', 'basin_hop' or 'normal'")
+
+        try:
+            res_dict = {key: val for key, val in zip(parameters.split(' '), result.x)}
+        except TypeError:
+            res_dict = {key: val for key, val in zip(parameters.split(' '), [result.x])}
+
+        self.sub_par(res_dict)
+        self.val = result.fun
+        return res_dict, result.fun
+
+    def optimize_parameters_bak(self, parameters, bounds=None, obj_kwargs=None, **kwargs):
 
         fun = partial(self.objective, **obj_kwargs) if obj_kwargs else self.objective
         bounds = self.get_bounds(parameters, parameters if type(bounds) == bool else bounds) if bounds else None
@@ -283,8 +344,17 @@ class Optimizer(object):
         verbose = kwargs.pop('verbose', False)
         par_values = np.array([getattr(self.cell_obj.coords, par) for par in parameters.split(' ')])
 
-        result = minimize(fun, par_values, args=(parameters.split(' '), self.cell_obj, self.data_name),
-                          method=method, bounds=bounds, options={'disp': verbose}, **kwargs)
+     #   bounds = [(-100, 100)] * len(parameters.split(' '))
+        print(parameters)
+        print(bounds)
+        result = differential_evolution(fun, bounds,
+                                        args=(parameters.split(' '), self.cell_obj, self.data_name)
+
+                              )
+        #
+        #
+        # result = minimize(fun, par_values, args=(parameters.split(' '), self.cell_obj, self.data_name),
+        #                   method=method, bounds=bounds, options={'disp': verbose}, **kwargs)
 
         try:
             res_dict = {key: val for key, val in zip(parameters.split(' '), result.x)}
@@ -386,7 +456,7 @@ def minimize_sim_cell(par_values, par_names, cell_obj, data_name):
 
     cell_obj.coords.sub_par(par_dict)
     #todo check and make sure that the r_dist isnt calculated to far out which can give some strange results
-    simulated = cell_obj.sim_cell(data_name, r_scale=r)
+    simulated = cell_obj.reconstruct_cell(data_name, r_scale=r)
     real = cell_obj.data.data_dict[data_name]
 
     #print('sim', simulated[:10, 0])
@@ -423,17 +493,19 @@ objectives_dict = {
 
 # Functions to minimize functions by matrix-fu
 def solve_linear_system(y1, y2, data):
-    """Solve system of linear eqns a1*y1 + a2*y2 == data but then vector edition of that"""
+    """Solve system of linear eqns a1*y1 + a2*y2 == data but then also vector edition of that"""
     Dy1 = data.dot(y1)
     Dy2 = data.dot(y2)
-    D_vec = np.concatenate((Dy1, Dy2))
+
+    D_vec = np.stack((Dy1, Dy2)).flatten()
 
     y1y1 = y1.dot(y1)
     y1y2 = y1.dot(y2)
     y2y2 = y2.dot(y2)
 
     M = np.array([[y1y1, y1y2], [y1y2, y2y2]])
-    bigM = np.kron(M, np.eye(len(data)))
+    l = len(data) if data.ndim == 2 else 1
+    bigM = np.kron(M, np.eye(l))
     a1a2 = np.linalg.solve(bigM, D_vec)
 
     return np.split(a1a2, 2)

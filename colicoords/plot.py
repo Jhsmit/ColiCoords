@@ -1,8 +1,6 @@
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 import numpy as np
-import matplotlib.patches as mpatches
-import seaborn.timeseries
 from colicoords.config import cfg
 from colicoords import CellList
 import seaborn as sns
@@ -10,168 +8,31 @@ from scipy import stats
 sns.set_style('white')
 
 
-
-# #todo add src, python 2
-# def _plot_std_bars(*args, central_data=None, ci=None, data=None, **kwargs):
-#     std = data.std(axis=0)
-#     ci = np.asarray((central_data - std, central_data + std))
-#     kwargs.update({"central_data": central_data, "ci": ci, "data": data})
-#     seaborn.timeseries._plot_ci_bars(*args, **kwargs)
-
-
-# https://stackoverflow.com/questions/34293687/standard-deviation-and-errors-bars-in-seaborn-tsplot-function-in-python
-def _plot_std_bars(*args, **kwargs):
-    data = kwargs.pop('data')
-    central_data = kwargs.pop('central_data')
-    kwargs.pop('ci')
-
-    std = data.std(axis=0)
-    ci = np.asarray((central_data - std, central_data + std))
-    kwargs.update({"central_data": central_data, "ci": ci, "data": data})
-    seaborn.timeseries._plot_ci_bars(*args, **kwargs)
-
-
-def _plot_std_band(*args, **kwargs):
-    data = kwargs.pop('data')
-    central_data = kwargs.pop('central_data')
-    kwargs.pop('ci')
-
-    std = data.std(axis=0)
-    ci = np.asarray((central_data - std, central_data + std))
-    kwargs.update({"central_data": central_data, "ci": ci, "data": data})
-    seaborn.timeseries._plot_ci_band(*args, **kwargs)
-
-seaborn.timeseries._plot_std_bars = _plot_std_bars
-seaborn.timeseries._plot_std_band = _plot_std_band
-
-
-class CellListPlot(object):
-    def __init__(self, cell_list):
-        assert isinstance(cell_list, CellList)
-        self.cell_list = cell_list
-
-    def hist_property(self, ax=None, tgt='length'):
-        #todo update the values getting (implemented on clp)
-        if tgt == 'length':
-            values = np.array([c.length for c in self.cell_list]) * (cfg.IMG_PIXELSIZE / 1000)
-            title = 'Cell length'
-            xlabel = r'Length ($\mu m$)'
-        elif tgt == 'radius':
-            values = np.array([c.radius for c in self.cell_list]) * (cfg.IMG_PIXELSIZE / 1000)
-            title = 'Cell radius'
-            xlabel = r'Radius ($\mu m$)'
-        elif tgt == 'area':
-            values = np.array([c.area for c in self.cell_list]) * (cfg.IMG_PIXELSIZE / 1000)**2
-            title = 'Cell area'
-            xlabel = r'Area ($\mu m^{2}$)'
-            #todo check these numbers!!!
-        elif tgt == 'volume':
-            values = np.array([c.volume for c in self.cell_list]) * (cfg.IMG_PIXELSIZE / 1000) ** 3
-            title = 'Cell volume'
-            xlabel = r'Volume ($\mu m^{3}$'
-        else:
-            raise ValueError('Invalid target')
-
-        ax_d = sns.distplot(values, kde=False, ax=ax)
-        ax_d.set_title(title)
-        ax_d.set_xlabel(xlabel)
-        ax_d.set_ylabel('Cell count')
-
-        return ax_d
-
-    def hist_intensity(self, ax=None, mask='binary', data_name='', **kwargs):
-        # todo option to convert to photons?
-        values = self.cell_list.get_intensity(mask=mask, data_name=data_name)
-
-        ax_d = sns.distplot(values, kde=False, ax=ax, **kwargs)
-        ax_d.set_title('Cell mean fluorescence intensity')
-        ax_d.set_xlabel('Mean fluorescence (a.u.)')
-        ax_d.set_ylabel('Cell count')
-
-        return ax_d
-
-    def plot_dist(self, ax=None, mode='r', data_name='', std='std_band', norm_y=False, norm_x=False, storm_weights='points', xlim=None, **kwargs):
-        """
-
-        :param mode: r, l, or a for radial, longitudinal or angular
-        :param data_name: Name of the which data elment to use
-        :param std: band or bar style std error bars
-        :param norm_y: normalize distribution wrt y
-        :param norm_x normalize distribution wrt r, l, (not alpha)
-        :param kwargs: are passed to plot
-        :return:
-        """
-
-        if norm_x:
-            stop = cfg.R_DIST_NORM_STOP
-            step = cfg.R_DIST_NORM_STEP
-        else:
-            stop = cfg.R_DIST_STOP
-            step = cfg.R_DIST_STEP
-
-        stop = kwargs.pop('stop', stop)
-        step = kwargs.pop('step', step)
-        if mode == 'r':
-            x, out_arr = self.cell_list.r_dist(stop, step, data_name=data_name, norm_x=norm_x, storm_weight=storm_weights, xlim=xlim)
-            out_arr = np.nan_to_num(out_arr)
-            title = 'Radial Distribution'
-        elif mode == 'l':
-            raise NotImplementedError()
-        elif mode == 'a':
-            raise NotImplementedError()
-
-        if norm_y:
-            #todo norm y currently normalized invidivual curves before averaging. which doesnt work well for sparse (storm) data
-            maxes = np.max(out_arr, axis=1)
-            bools = maxes != 0
-            n = np.sum(~bools)
-            if n > 0:
-                print("Warning: removed {} curves with maximum zero".format(n))
-
-            out_arr = out_arr[bools]
-            a_max = np.max(out_arr, axis=1)
-            out_arr = out_arr / a_max[:, np.newaxis]
-
-        t = x if norm_x else x * (cfg.IMG_PIXELSIZE / 1000)
-
-        xunits = 'norm' if norm_x else '$\mu m$'
-        yunits = 'norm' if norm_y else 'a.u.'
-
-        ax = plt.gca() if ax is None else ax
-        ax.set_xlabel('Distance ({})'.format(xunits))
-        ax.set_ylabel('Intensity ({})'.format(yunits))
-
-        if norm_y:
-            ax.set_ylim(0, 1.1)
-
-        if 'label' in kwargs:
-            kwargs['condition'] = kwargs.pop('label')
-
-        ax_out = sns.tsplot(data=out_arr, time=t, estimator=np.nanmean, err_style=std, ax=ax, **kwargs)
-        ax_out.set_xlabel('Distance ({})'.format(xunits))
-        ax_out.set_ylabel('Signal intensity ({})'.format(yunits))
-        ax_out.set_title(title)
-
-        if norm_y:
-            ax_out.set_ylim(0, 1.1)
-
-        return ax_out #todo always return axes
-
-    #def hist_intensity(self, ax=None, ):
-
-
 class CellPlot(object):
+    """ Object for plotting single-cell derived data.
+
+    Attributes:
+        cell_obj (:class:`Cell`): Single-cell object to plot.
+    """
     def __init__(self, cell_obj):
+        """
+
+        Args:
+            cell_obj (:class:`Cell`): Single-cell object to plot.
+        """
         self.cell_obj = cell_obj
 
     def plot_midline(self, ax=None, **kwargs):
-        """
-        Plot the final found function and xl, xr
-        :param coords:
-        :param kwargs:
-        :return:
-        """
+        """Plot the cell's coordinate system midline.
 
+        Args:
+            ax (:class:`Axes`): Optional matplotlib axes to use for plotting.
+            **kwargs: Optional kwargs passed to ax.plot().
+
+        Returns:
+            (:class:`Axes`): The created or specified with `ax` matplotlib axes.
+
+        """
         x = np.linspace(self.cell_obj.coords.xl, self.cell_obj.coords.xr, 100)
         y = self.cell_obj.coords.p(x)
         if 'color' not in kwargs:
@@ -185,7 +46,17 @@ class CellPlot(object):
         return ax
 
     def plot_binary_img(self, ax=None, **kwargs):
-        # Equivalent to imshow('binary')
+        """Plot the cell's binary image. Equivalent to CellPlot.imshow('binary').
+
+        Args:
+            ax (:class:`Axes`): Optional matplotlib axes to use for plotting
+            **kwargs: Optional kwargs passed to ax.plot()
+
+        Returns:
+            (:class:`Axes`): The created or specified with `ax` matplotlib axes
+
+        """
+
         if 'interpolation' not in kwargs:
             kwargs['interpolation'] = 'nearest'
 
@@ -196,6 +67,17 @@ class CellPlot(object):
         return ax
 
     def plot_simulated_binary(self, ax=None, **kwargs):
+        """Plot the cell's binary image calculated from the coordinate system.
+
+        Args:
+            ax (:class:`Axes`): Optional matplotlib axes to use for plotting.
+            **kwargs: Optional kwargs passed to ax.plot().
+
+        Returns:
+            (:class:`Axes`): The created or specified with `ax` matplotlib axes.
+
+        """
+
         if 'interpolation' not in kwargs:
             kwargs['interpolation'] = 'nearest'
         img = self.cell_obj.coords.rc < self.cell_obj.coords.r
@@ -207,6 +89,16 @@ class CellPlot(object):
         return ax
 
     def plot_bin_fit_comparison(self, ax=None, **kwargs):
+        """Plot the cell's binary image together with the calculated binary image from the coordinate system.
+
+        Args:
+            ax (:class:`Axes`): Optional matplotlib axes to use for plotting.
+            **kwargs: Optional kwargs passed to ax.plot().
+
+        Returns:
+            (:class:`Axes`): The created or specified with `ax` matplotlib axes.
+
+        """
         if 'interpolation' not in kwargs:
             kwargs['interpolation'] = 'nearest'
         img = self.cell_obj.coords.rc < self.cell_obj.coords.r
@@ -216,9 +108,18 @@ class CellPlot(object):
         ax.imshow(3 - (2 * img + self.cell_obj.data.binary_img), extent=[0, xmax, ymax, 0], **kwargs)
 
         return ax
-        #todo sequential colormap
 
     def plot_outline(self, ax=None, **kwargs):
+        """Plot the outline of the cell based on the current coordinate system.
+
+        Args:
+            ax (:class:`Axes`): Optional matplotlib axes to use for plotting.
+            **kwargs: Optional kwargs passed to ax.plot().
+
+        Returns:
+            (:class:`Axes`): The created or specified with `ax` matplotlib axes.
+
+        """
         # Parametric plotting of offset line
         # http://cagd.cs.byu.edu/~557/text/ch8.pdf
         #
@@ -264,7 +165,7 @@ class CellPlot(object):
         return ax
 
     def plot_dist(self, ax=None, mode='r', data_name='', norm_y=False, norm_x=False, storm_weights='points', xlim=None, **kwargs):
-
+        #todo add doctring later when l and a dist are implemented
         if mode == 'r':
             if norm_x:
                 stop = cfg.R_DIST_NORM_STOP
@@ -301,7 +202,26 @@ class CellPlot(object):
         return ax
 
     def plot_storm(self, data_name, ax=None, kernel=None, bw_method=0.05, upscale=2, alpha_cutoff=None, **kwargs):
+        """Graphically represent STORM data
+
+        Args:
+            data_name (:obj:`str`): Name of the data element to plot. Must have the data class 'storm'.
+            ax (:class:`Axes`): Optional matplotlib axes to use for plotting.
+            kernel: (:obj:`bool`):  If `True` kernel density estimation will be used to visualize storm data.
+            bw_method (:obj:`float`): The method used to calculate the estimator bandwidth. Passed to
+                scipy.stats.gaussian_kde.
+            upscale: Upscale factor for the output image. Number of pixels is increased wrt data.shape with a factor
+                upscale**2
+            alpha_cutoff:
+            **kwargs: Optional kwargs passed to ax.plot()
+
+        Returns:
+            (:class:`Axes`): The created or specified with `ax` matplotlib axes
+
+        """
+        #todo alpha cutoff docstirng and adjustment / testing
         storm_table = self.cell_obj.data.data_dict[data_name]
+        assert storm_table.dclass == 'storm'
         x, y = storm_table['x'], storm_table['y']
 
         if self.cell_obj.data.shape:
@@ -389,15 +309,20 @@ class CellPlot(object):
 
             ax.imshow(colors, cmap=cmap, extent=[0, xmax, ymax, 0], interpolation='nearest', **kwargs)
 
-    def _plot_intercept_line(self, x_pos, ax=None, **kwargs):
-        x = np.linspace(x_pos - 10, x_pos + 10, num=200)
-        f_d = self.cell_obj.coords.p_dx(x_pos)
-        y = (-x / f_d) + self.cell_obj.coords.p(x_pos) + (x_pos / f_d)
-
-        ax = plt.gca() if ax is None else ax
-        ax.plot(x, y, **kwargs)
-
     def imshow(self, img, ax=None, **kwargs):
+        """Equivalent to matplotlib's imshow but with default extent kwargs to assure proper overlay of pixel and
+            carthesian coordinates.
+
+        Args:
+            img (:obj:`str` or :obj:`np.ndarray`) : Image to show. It can be either a data name of the image-type data
+                element to plot or a 2D numpy ndarray.
+            ax (:class:`Axes`): Optional matplotlib axes to use for plotting.
+            **kwargs: Optional kwargs passed to ax.plot().
+
+        Returns:
+            (:class:`Axes`): The created or specified with `ax` matplotlib axes
+
+        """
         if type(img) == str:
             img = self.cell_obj.data.data_dict[img]
 
@@ -412,11 +337,172 @@ class CellPlot(object):
         ax.imshow(img, extent=extent, interpolation=interpolation, cmap=cmap)
 
     def figure(self):
+        """Calls matplotlib.pyplot.figure()"""
         return plt.figure()
 
     def show(self):
+        """Calls matplotlib.pyplot.show()"""
         plt.show()
 
     def savefig(self, *args, **kwargs):
+        """Calls matplotlib.pyplot.savefig(*args, **kwargs)"""
         plt.savefig(*args, **kwargs)
+
+    def _plot_intercept_line(self, x_pos, ax=None, **kwargs):
+        x = np.linspace(x_pos - 10, x_pos + 10, num=200)
+        f_d = self.cell_obj.coords.p_dx(x_pos)
+        y = (-x / f_d) + self.cell_obj.coords.p(x_pos) + (x_pos / f_d)
+
+        ax = plt.gca() if ax is None else ax
+        ax.plot(x, y, **kwargs)
+
+        return ax
+
+
+class CellListPlot(object):
+    """ Object for plotting single-cell derived data
+
+      Attributes:
+          cell_list (:class:`CellList`): List of Cell objects to plot
+    """
+    def __init__(self, cell_list):
+        assert isinstance(cell_list, CellList)
+        self.cell_list = cell_list
+
+    def hist_property(self, prop='length', ax=None, **kwargs):
+        """Plot a histogram of a given geometrical property.
+
+        Args:
+            prop (:obj:`str`): Property to histogram.
+            ax (:class:`Axes`): Optional matplotlib axes to use for plotting.
+            **kwargs: Optional kwargs passed to ax.hist().
+
+        Returns:
+            (:class:`Axes`): The created or specified with `ax` matplotlib axes
+
+        """
+        if prop == 'length':
+            values = self.cell_list.length * (cfg.IMG_PIXELSIZE / 1000)
+            title = 'Cell length'
+            xlabel = r'Length ($\mu m$)'
+        elif prop == 'radius':
+            values = self.cell_list.radius * (cfg.IMG_PIXELSIZE / 1000)
+            title = 'Cell radius'
+            xlabel = r'Radius ($\mu m$)'
+        elif prop == 'circumference':
+            values = self.cell_list.circumference * (cfg.IMG_PIXELSIZE / 1000)
+        elif prop == 'area':
+            values = self.cell_list.area * (cfg.IMG_PIXELSIZE / 1000)**2
+            title = 'Cell area'
+            xlabel = r'Area ($\mu m^{2}$)'
+        elif prop == 'surface':
+            values = self.cell_list.surface * (cfg.IMG_PIXELSIZE / 1000)**2
+            title = 'Cell surface'
+            xlabel = r'Area ($\mu m^{2}$)'
+        elif prop == 'volume':
+            values = self.cell_list.volume * (cfg.IMG_PIXELSIZE / 1000) ** 3
+            title = 'Cell volume'
+            xlabel = r'Volume ($\mu m^{3}$'
+        else:
+            raise ValueError('Invalid target')
+
+        ax = plt.gca() if ax is None else ax
+        ax.hist(values, **kwargs)
+
+        ax.set_title(title)
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel('Cell count')
+
+        return ax
+
+    def hist_intensity(self, mask='binary', data_name='', ax=None, **kwargs):
+        """Histogram all cell's neab fluorescence intensity. Intensities values are calculated by calling
+        `Cell.get_intensity()`
+
+        Args:
+            mask (:obj:`str`): Either 'binary' or 'coords' to specify the source of the mask used
+                'binary' uses the binary imagea as mask, 'coords' uses reconstructed binary from coordinate system.
+            data_name (:obj:`str`): The name of the image data element to get the intensity values from.
+            ax (:class:`Axes`): Optional matplotlib axes to use for plotting.
+            **kwargs: Optional kwargs passed to ax.hist().
+
+        Returns:
+            (:class:`Axes`): The created or specified with `ax` matplotlib axes.
+
+        """
+        values = self.cell_list.get_intensity(mask=mask, data_name=data_name)
+
+        ax = plt.gca() if ax is None else ax
+        ax.hist(values, **kwargs)
+        ax.set_title('Cell mean fluorescence intensity')
+        ax.set_xlabel('Mean fluorescence (a.u.)')
+        ax.set_ylabel('Cell count')
+
+        return ax
+
+    def plot_dist(self, ax=None, mode='r', data_name='', norm_y=False, norm_x=False, storm_weights=False, xlim=None, band_func=np.std, **kwargs):
+        #todo add docstring
+        if norm_x:
+            stop = cfg.R_DIST_NORM_STOP
+            step = cfg.R_DIST_NORM_STEP
+        else:
+            stop = cfg.R_DIST_STOP
+            step = cfg.R_DIST_STEP
+
+        stop = kwargs.pop('stop', stop)
+        step = kwargs.pop('step', step)
+        if mode == 'r':
+            x, out_arr = self.cell_list.r_dist(stop, step, data_name=data_name, norm_x=norm_x, storm_weight=storm_weights, xlim=xlim)
+            out_arr = np.nan_to_num(out_arr)
+            title = 'Radial Distribution'
+        elif mode == 'l':
+            raise NotImplementedError()
+        elif mode == 'a':
+            raise NotImplementedError()
+
+        if norm_y:
+            maxes = np.max(out_arr, axis=1)
+            bools = maxes != 0
+            n = np.sum(~bools)
+            if n > 0:
+                print("Warning: removed {} curves with maximum zero".format(n))
+
+            out_arr = out_arr[bools]
+            a_max = np.max(out_arr, axis=1)
+            out_arr = out_arr / a_max[:, np.newaxis]
+
+        x = x if norm_x else x * (cfg.IMG_PIXELSIZE / 1000)
+
+        xunits = 'norm' if norm_x else '$\mu m$'
+        yunits = 'norm' if norm_y else 'a.u.'
+
+        ax = plt.gca() if ax is None else ax
+        ax.set_xlabel('Distance ({})'.format(xunits))
+        ax.set_ylabel('Intensity ({})'.format(yunits))
+
+        if norm_y:
+            ax.set_ylim(0, 1.1)
+
+        mean = np.nanmean(out_arr, axis=0)
+        ax.plot(x, mean, **kwargs)
+
+        if band_func:
+            width = band_func(out_arr, axis=0)
+            ax.fill_between(x, mean + width, mean - width, alpha=0.25)
+
+        ax.set_xlabel('Distance ({})'.format(xunits))
+        ax.set_ylabel('Signal intensity ({})'.format(yunits))
+        ax.set_title(title)
+
+        if norm_y:
+            ax.set_ylim(0, 1.1)
+
+        return ax
+
+    def show(self):
+        """Calls matplotlib.pyplot.show()"""
+        plt.show()
+
+
+
 
