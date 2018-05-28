@@ -1,8 +1,8 @@
 Introduction
 =============
 
-ColiCoords is a python project aimed to make analysis of fluorescence data from rodlike cells more streamlined and
-intuitive. These goals are achieved by describing the shape of the cell by a 2nd degree polynomial, and this simple
+ColiCoords is a python project aimed to make analysis of fluorescence microscopy data from rodlike cells more streamlined
+and intuitive. These goals are achieved by describing the shape of the cell by a 2nd degree polynomial, and this simple
 mathematical description together with a data structure to organize cell data on a single cell basis allows for
 straightforward and detailed analysis.
 
@@ -36,9 +36,8 @@ The ``Cell`` object has two main attributes: ``data`` and ``coords``. The ``data
 used to initialize the ``Cell`` object and holds all images as ``np.ndarray`` subclasses in ``data_dict``. The
 ``coords`` attribute is an instance of ``Coordinates`` and is used to optimize the cell's coordinate system and perform
 related calculations. The coordinate system described by a polynomial of second degree together with left and right
-bounds and the radius of the cell. These values are first inital guesses based on the binary image but can be optimized
+bounds and the radius of the cell. These values are first initial guesses based on the binary image but can be optimized
 iteratively:
-
 
 .. code-block:: python
 
@@ -46,7 +45,6 @@ iteratively:
 
 
 We can now use the cell's coordinate system together with any fluorescence data (image-based or storm) to plot fuorescence distrubtion along any axis, or calculate properties related to the cells shape, such as radius and lenght as well as area and volume. The units used in the inner workings or ``ColiCoords`` are pixels, in colicoords/config.py the pixel size can be defined which is used for output graphs.
-
 
 .. code-block:: python
 
@@ -56,9 +54,9 @@ We can now use the cell's coordinate system together with any fluorescence data 
   cp = CellPlot(cell_obj)
 
   plt.figure()
-  plt.imshow(cell_obj.data.data_dict['flu_514'], cmap='viridis', interpolation='nearest')
-  cp.plot_outline(coords='mpl')
-  cp.plot_midline(coords='mpl')
+  cp.imshow('flu_514', cmap='viridis', interpolation='nearest')
+  cp.plot_outline()
+  cp.plot_midline()
   plt.show()
 
 .. figure:: ../examples/example1/fluorescence_outline.png
@@ -80,7 +78,11 @@ To plot the radial distribution of the ``flu_514`` fluorescence channel:
 
 Radial distribution curve of fluorescence as measured (left) and normalized (right).
 
-The displayed curve is basically a histogram of mean intensity of all fluorescence pixels binned by their distance from the cell midline. When using the ``plot_dist`` method on ``CellPlot`` the bin size is chosen automatically as defined in the config. It is also possible to directly access the data from the ``Cell`` object by calling ``r_dist()``. The radial distribution curves can be normalized in both ``x`` and ``y`` directions. When normalized in the ``x`` direction the radius obtained from the brightfield image is set to one, thereby eliminating cell-to-cell variations in width.
+The displayed curve is basically a histogram of mean intensity of all fluorescence pixels binned by their distance from
+the cell midline. When using the ``plot_dist`` method on ``CellPlot`` the bin size is chosen automatically as defined in
+ the config. It is also possible to directly access the data from the ``Cell`` object by calling ``r_dist()``.
+ The radial distribution curves can be normalized in both ``x`` and ``y`` directions. When normalized in the ``x``
+ direction the radius obtained from the brightfield image is set to one, thereby eliminating cell-to-cell variations in width.
 
 ColiCoords for many Cell objects
 --------------------------------

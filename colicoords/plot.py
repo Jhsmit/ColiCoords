@@ -26,11 +26,11 @@ class CellPlot(object):
         """Plot the cell's coordinate system midline.
 
         Args:
-            ax (:class:`Axes`): Optional matplotlib axes to use for plotting.
+            ax (:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting.
             **kwargs: Optional kwargs passed to ax.plot().
 
         Returns:
-            (:class:`Axes`): The created or specified with `ax` matplotlib axes.
+            (:class:`matplotlib.axes.Axes`:): The created or specified with `ax` matplotlib axes.
 
         """
         x = np.linspace(self.cell_obj.coords.xl, self.cell_obj.coords.xr, 100)
@@ -49,11 +49,11 @@ class CellPlot(object):
         """Plot the cell's binary image. Equivalent to CellPlot.imshow('binary').
 
         Args:
-            ax (:class:`Axes`): Optional matplotlib axes to use for plotting
+            ax (:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting
             **kwargs: Optional kwargs passed to ax.plot()
 
         Returns:
-            (:class:`Axes`): The created or specified with `ax` matplotlib axes
+            :class:`matplotlib.axes.Axes`: The created or specified with `ax` matplotlib axes
 
         """
 
@@ -70,11 +70,11 @@ class CellPlot(object):
         """Plot the cell's binary image calculated from the coordinate system.
 
         Args:
-            ax (:class:`Axes`): Optional matplotlib axes to use for plotting.
+            ax (:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting.
             **kwargs: Optional kwargs passed to ax.plot().
 
         Returns:
-            (:class:`Axes`): The created or specified with `ax` matplotlib axes.
+            :class:`matplotlib.axes.Axes`: The created or specified with `ax` matplotlib axes.
 
         """
 
@@ -92,11 +92,11 @@ class CellPlot(object):
         """Plot the cell's binary image together with the calculated binary image from the coordinate system.
 
         Args:
-            ax (:class:`Axes`): Optional matplotlib axes to use for plotting.
+            ax (:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting.
             **kwargs: Optional kwargs passed to ax.plot().
 
         Returns:
-            (:class:`Axes`): The created or specified with `ax` matplotlib axes.
+            (:class:`matplotlib.axes.Axes`:): The created or specified with `ax` matplotlib axes.
 
         """
         if 'interpolation' not in kwargs:
@@ -113,11 +113,11 @@ class CellPlot(object):
         """Plot the outline of the cell based on the current coordinate system.
 
         Args:
-            ax (:class:`Axes`): Optional matplotlib axes to use for plotting.
+            ax (:c:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting.
             **kwargs: Optional kwargs passed to ax.plot().
 
         Returns:
-            (:class:`Axes`): The created or specified with `ax` matplotlib axes.
+            (:class:`matplotlib.axes.Axes`:): The created or specified with `ax` matplotlib axes.
 
         """
         # Parametric plotting of offset line
@@ -206,7 +206,7 @@ class CellPlot(object):
 
         Args:
             data_name (:obj:`str`): Name of the data element to plot. Must have the data class 'storm'.
-            ax (:class:`Axes`): Optional matplotlib axes to use for plotting.
+            ax (:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting.
             kernel: (:obj:`bool`):  If `True` kernel density estimation will be used to visualize storm data.
             bw_method (:obj:`float`): The method used to calculate the estimator bandwidth. Passed to
                 scipy.stats.gaussian_kde.
@@ -216,7 +216,7 @@ class CellPlot(object):
             **kwargs: Optional kwargs passed to ax.plot()
 
         Returns:
-            (:class:`Axes`): The created or specified with `ax` matplotlib axes
+            (:class:`matplotlib.axes.Axes`:): The created or specified with `ax` matplotlib axes
 
         """
         #todo alpha cutoff docstirng and adjustment / testing
@@ -314,13 +314,13 @@ class CellPlot(object):
             carthesian coordinates.
 
         Args:
-            img (:obj:`str` or :obj:`np.ndarray`) : Image to show. It can be either a data name of the image-type data
+            img (:obj:`str` or :class:`~numpy.ndarray`) : Image to show. It can be either a data name of the image-type data
                 element to plot or a 2D numpy ndarray.
-            ax (:class:`Axes`): Optional matplotlib axes to use for plotting.
+            ax (:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting.
             **kwargs: Optional kwargs passed to ax.plot().
 
         Returns:
-            (:class:`Axes`): The created or specified with `ax` matplotlib axes
+            :class:`matplotlib.axes.Axes`: The created or specified with `ax` matplotlib axes
 
         """
         if type(img) == str:
@@ -336,15 +336,18 @@ class CellPlot(object):
         ax = plt.gca() if ax is None else ax
         ax.imshow(img, extent=extent, interpolation=interpolation, cmap=cmap)
 
-    def figure(self):
+    @staticmethod
+    def figure():
         """Calls matplotlib.pyplot.figure()"""
         return plt.figure()
 
-    def show(self):
+    @staticmethod
+    def show():
         """Calls matplotlib.pyplot.show()"""
         plt.show()
 
-    def savefig(self, *args, **kwargs):
+    @staticmethod
+    def savefig(*args, **kwargs):
         """Calls matplotlib.pyplot.savefig(*args, **kwargs)"""
         plt.savefig(*args, **kwargs)
 
@@ -373,12 +376,13 @@ class CellListPlot(object):
         """Plot a histogram of a given geometrical property.
 
         Args:
-            prop (:obj:`str`): Property to histogram.
-            ax (:class:`Axes`): Optional matplotlib axes to use for plotting.
+            prop (:obj:`str`): Property to histogram. This can be one of 'length', radius, 'circumference', 'area',
+                'surface' or 'volume'.
+            ax (:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting.
             **kwargs: Optional kwargs passed to ax.hist().
 
         Returns:
-            (:class:`Axes`): The created or specified with `ax` matplotlib axes
+            :class:`matplotlib.axes.Axes`: The created or specified with `ax` matplotlib axes
 
         """
         if prop == 'length':
@@ -416,18 +420,18 @@ class CellListPlot(object):
         return ax
 
     def hist_intensity(self, mask='binary', data_name='', ax=None, **kwargs):
-        """Histogram all cell's neab fluorescence intensity. Intensities values are calculated by calling
+        """Histogram all cell's mean fluorescence intensity. Intensities values are calculated by calling
         `Cell.get_intensity()`
 
         Args:
             mask (:obj:`str`): Either 'binary' or 'coords' to specify the source of the mask used
                 'binary' uses the binary imagea as mask, 'coords' uses reconstructed binary from coordinate system.
             data_name (:obj:`str`): The name of the image data element to get the intensity values from.
-            ax (:class:`Axes`): Optional matplotlib axes to use for plotting.
+            ax (:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting.
             **kwargs: Optional kwargs passed to ax.hist().
 
         Returns:
-            (:class:`Axes`): The created or specified with `ax` matplotlib axes.
+            :class:`matplotlib.axes.Axes`: The created or specified with `ax` matplotlib axes.
 
         """
         values = self.cell_list.get_intensity(mask=mask, data_name=data_name)

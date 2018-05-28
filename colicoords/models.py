@@ -21,6 +21,7 @@ class PSF(object):
         return (1/(self.sigma*np.sqrt(2*np.pi))) * np.exp(-(x/self.sigma)**2 / 2)
 
 #todo psf is an object and depending on which instance it is joblib will recalculate even if the sigma is the same
+#todo https://docs.scipy.org/doc/scipy/reference/generated/scipy.LowLevelCallable.html#scipy.LowLevelCallable
 def _y1(x, r1, psf, psf_uid):
     def integrant(x, v, r1, psf):
         return psf(x - v) * np.nan_to_num(np.sqrt(r1 ** 2 - x ** 2))

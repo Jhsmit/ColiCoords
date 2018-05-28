@@ -15,37 +15,27 @@ Cell
 Data
 ----
 
-.. automodule:: symfit.data_models
+.. automodule:: colicoords.data_models
    :members:
-   :special-members:
-   :exclude-members: __weakref__
-   :show-inheritance:
+
 
 Plot
 ----
 
-.. automodule:: symfit.plot
+.. automodule:: colicoords.plot
    :members:
-   :special-members:
-   :exclude-members: __weakref__
-   :show-inheritance:
 
 
 Optimizers
 ----------
 
-.. automodule:: symfit.optimizers
+.. automodule:: colicoords.optimizers
    :members:
-   :special-members:
-   :exclude-members: __weakref__
-   :show-inheritance:
 
 
 FileIO
 ------
 
-.. automodule:: symfit.fileIO
+.. automodule:: colicoords.fileIO
    :members:
-   :special-members:
-   :exclude-members: __weakref__
-   :show-inheritance:
+

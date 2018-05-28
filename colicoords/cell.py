@@ -5,6 +5,7 @@ import numpy as np
 import operator
 from functools import partial
 from colicoords.optimizers import Optimizer
+from scipy.integrate import quad
 #import multiprocessing as mp
 import multiprocess as mp
 from tqdm import tqdm
@@ -13,7 +14,10 @@ import contextlib
 
 
 class Cell(object):
-    """ ColiCoords' main single-cell object
+    """ ColiCoords' main single-cell object.
+
+    This class hold all single-cell associated data as well as an internal coordinate system.
+
     Attributes:
         data (:class:`Data`): Holds all data describing this single cell.
         coords (:class:`Coordinates`): Calculates and optimizes the cell's coordinate system.
@@ -47,12 +51,12 @@ class Cell(object):
 
     @property
     def radius(self):
-        """float: Radius of the cell in pixels"""
+        """:obj:`float`: Radius of the cell in pixels"""
         return self.coords.r
 
     @property
     def length(self):
-        """float: Length of the cell in pixels. Obtained by integration of the spine arc length from `xl` to `xr`"""
+        """:obj:`float`: Length of the cell in pixels. Obtained by integration of the spine arc length from `xl` to `xr`"""
         a0, a1, a2 = self.coords.coeff
         xl, xr = self.coords.xl, self.coords.xr
         l = (1 / (4 * a2)) * (
@@ -64,29 +68,39 @@ class Cell(object):
 
     @property
     def circumference(self):
-        """float: Circumference of the cell in pixels"""
-        raise NotImplementedError()
+        """:obj:`float`: Circumference of the cell in pixels"""
+        #http://tutorial.math.lamar.edu/Classes/CalcII/ParaArcLength.aspx
+        def integrant_top(t, a1, a2, r):
+            return np.sqrt(1 + (a1 + 2*a2*t)**2 + ( (4*a2**2*r**2) / (1 + (a1 + 2*a2*t)**2)**2 ) + ( (4*a2*r) / np.sqrt(1 + (a1 + 2*a2*t)) ))
+
+        def integrant_bot(t, a1, a2, r):
+            return np.sqrt(1 + (a1 + 2 * a2 * t) ** 2 + ((4 * a2 ** 2 * r ** 2) / (1 + (a1 + 2 * a2 * t) ** 2) ** 2) - ((4 * a2 * r) / np.sqrt(1 + (a1 + 2 * a2 * t))))
+
+        top, terr = quad(integrant_top, self.coords.xl, self.coords.xr, args=(self.coords.a1, self.coords.a2, self.coords.r))
+        bot, berr = quad(integrant_bot, self.coords.xl, self.coords.xr, args=(self.coords.a1, self.coords.a2, self.coords.r))
+
+        return top + bot + 2*np.pi*self.coords.r
 
     @property
     def area(self):
-        """float: Area (2d) of the cell in square pixels"""
+        """:obj:`float`: Area (2d) of the cell in square pixels"""
         return 2*self.length*self.coords.r + np.pi*self.coords.r**2
 
     @property
     def surface(self):
-        """float: Total surface area (3d) of the cell in square pixels"""
-        raise NotImplementedError()
+        """:obj:`float`: Total surface area (3d) of the cell in square pixels"""
+        return self.length*2*np.pi*self.coords.r + 4*np.pi*self.coords.r**2
 
     @property
     def volume(self):
-        """float: Volume of the cell in cubic pixels"""
+        """:obj:`float`: Volume of the cell in cubic pixels"""
         return np.pi*self.coords.r**2*self.length + (4/3)*np.pi*self.coords.r**3
 
     def a_dist(self):
         raise NotImplementedError()
 
     def l_dist(self, norm_x=False):
-        pass
+        raise NotImplementedError()
 
     def l_classify(self):
         #todo classify occurence of storm coordinates in categories poles, mid and whatever is left
@@ -104,14 +118,15 @@ class Cell(object):
             xlim (:obj:`str`): If `None`, all datapoints are taking into account. This can be limited by providing the
                 value `full` (omit poles only) or a float value which will limit the data points with around the midline
                 where xmid - xlim < x < xmid + xlim.
-            storm_weight (obj:`bool`): Only applicable for analyzing STORM-type data elements. If `True` the returned
+            storm_weight (:obj:`bool`): Only applicable for analyzing STORM-type data elements. If `True` the returned
                 histogram is weighted with the number of photons measured.
 
         Returns:
-            (tuple): tuple containing:
+            :obj:`tuple`: tuple containing:
 
-                xvals (:class:`np.ndarray`) Array of distances from the cell midline, values are the middle of the bins
-                yvals (:class:`np.ndarray`) Array of in bin heights
+                xvals (:class:`~numpy.ndarray`) Array of distances from the cell midline, values are the middle of the bins
+
+                yvals (:class:`~numpy.ndarray`) Array of in bin heights
         """
 
         bins = np.arange(0, stop+step, step)
@@ -175,7 +190,7 @@ class Cell(object):
     def measure_r(self, data_name='brightfield', in_place=True):
         """
         Measure the radius of the cell by finding the intensity-midpoint of the radial distribution derived from
-        brightfield (defualt) or another data element.
+        brightfield (default) or another data element.
 
         Args:
             data_name (:obj:`str`): Name of the data element to use.
@@ -189,7 +204,6 @@ class Cell(object):
         mid_val = (np.min(y) + np.max(y)) / 2
         r = np.interp(mid_val, y, x)
 
-        print(r)
         if in_place:
             self.coords.r = r
         else:
@@ -207,7 +221,7 @@ class Cell(object):
             **kwargs: kwargs to optionally provide 'stop' and 'step' values for the used `r_dist`.
 
         Returns:
-            :`class`: np.ndarray: Image of the reconstructed cell
+            :class:`~numpy.ndarray`: Image of the reconstructed cell
         """
 
         stop = kwargs.pop('stop', np.ceil(np.max(self.data.shape)/2))
@@ -228,7 +242,7 @@ class Cell(object):
             data_name (:obj:`str`): The name of the image data element to get the intensity values from.
 
         Returns:
-            Mean fluorescence pixel value
+            :obj:`float`: Mean fluorescence pixel value
 
         """
         if mask == 'binary':
@@ -474,26 +488,26 @@ class Coordinates(object):
 
     @property
     def x_coords(self):
-        """ obj:`np.ndarray`: Matrix of shape m x n equal to cell image with cartesian x-coordinates."""
+        """:class:`~numpy.ndarray``: Matrix of shape m x n equal to cell image with cartesian x-coordinates."""
         ymax = self.shape[0]
         xmax = self.shape[1]
         return np.repeat(np.arange(xmax), ymax).reshape(xmax, ymax).T + 0.5
 
     @property
     def y_coords(self):
-        """ obj:`np.ndarray`: Matrix of shape m x n equal to cell image with cartesian y-coordinates."""
+        """:class:`~numpy.ndarray`: Matrix of shape m x n equal to cell image with cartesian y-coordinates."""
         ymax = self.shape[0]
         xmax = self.shape[1]
         return np.repeat(np.arange(ymax), xmax).reshape(ymax, xmax) + 0.5
 
     @property
     def xc(self):
-        """obj:`np.ndarray`: Matrix of shape m x n equal to cell image with x coordinates on p(x)"""
+        """:class:`~numpy.ndarray`: Matrix of shape m x n equal to cell image with x coordinates on p(x)"""
         return self.calc_xc(self.x_coords, self.y_coords)
 
     @property
     def yc(self):
-        """obj:`np.ndarray`: Matrix of shape m x n equal to cell image with y coordinates on p(x)"""
+        """:class:`~numpy.ndarray`: Matrix of shape m x n equal to cell image with y coordinates on p(x)"""
         return self.p(self.xc)
 
     @property
@@ -510,10 +524,10 @@ class Coordinates(object):
         """
             Calculate p(x).
         Args:
-            x_arr (`obj:`np.ndarray`): Input x values.
+            x_arr (:class:`~numpy.ndarray`): Input x values.
 
         Returns:
-            obj:`np.ndarray`: p(x)
+            :class:`~numpy.ndarray`: p(x)
         """
         a0, a1, a2 = self.coeff
         return a0 + a1*x_arr + a2*x_arr**2
@@ -522,10 +536,10 @@ class Coordinates(object):
         """
             Calculate the derivative p'(x) of p(x) evaluated at x.
         Args:
-            x_arr (:obj:`np.ndarray`): Input x values.
+            x_arr (:class:`~numpy.ndarray`): Input x values.
 
         Returns:
-            obj:`np.ndarray`: p'(x)
+            :class:`~numpy.ndarray`: p'(x)
         """
         a0, a1, a2 = self.coeff
         return a1 + 2 * a2 * x_arr
@@ -619,7 +633,7 @@ class CellList(object):
     """Object holding a list of cell objects exposing several methods to either apply functions to all cells or to extract
         values from all cell objects. This object supports iteration over Cell objects and Numpy-style array indexing.
     Attributes:
-        cell_list (:obj:`np.ndarray`): Numpy array of `Cell` objects
+        cell_list (:class:`~numpy.ndarray`): Numpy array of `Cell` objects
 
     """
     def __init__(self, cell_list):
@@ -713,8 +727,8 @@ class CellList(object):
         Returns:
             (tuple): tuple containing:
 
-                xvals (:class:`np.ndarray`) Array of distances from the cell midline, values are the middle of the bins
-                out_arr (:class:`np.ndarray`) Matrix of in bin heights
+                xvals (:class:`~numpy.ndarray`) Array of distances from the cell midline, values are the middle of the bins
+                out_arr (:class:`~numpy.ndarray`) Matrix of in bin heights
         """
 
         numpoints = len(np.arange(0, stop+step, step))
@@ -741,7 +755,7 @@ class CellList(object):
             data_name (:obj:`str`): The name of the image data element to get the intensity values from.
 
         Returns:
-            :obj:`np.ndarray`: Array of mean fluorescence pixel values
+            :class:`~numpy.ndarray` Array of mean fluorescence pixel values
 
         """
         return np.array([c.get_intensity(mask=mask, data_name=data_name) for c in self])
@@ -757,37 +771,37 @@ class CellList(object):
 
     @property
     def radius(self):
-        """:obj:`np.ndarray`: Array of cell's radii in pixels"""
+        """:class:`~numpy.ndarray` Array of cell's radii in pixels"""
         return np.array([c.radius for c in self])
 
     @property
     def length(self):
-        """:obj:`np.ndarray`: Array of cell's lengths in pixels"""
+        """:class:`~numpy.ndarray` Array of cell's lengths in pixels"""
         return np.array([c.length for c in self])
 
     @property
     def circumference(self):
-        """:obj:`np.ndarray`: Array of cell's circumference in pixels"""
+        """:class:`~numpy.ndarray`: Array of cell's circumference in pixels"""
         return np.array([c.circumference for c in self])
 
     @property
     def area(self):
-        """:obj:`np.ndarray`: Array of cell's area in square pixels"""
+        """:class:`~numpy.ndarray`: Array of cell's area in square pixels"""
         return np.array([c.area for c in self])
 
     @property
     def surface(self):
-        """:obj:`np.ndarray`: Array of cell's surface area (3d) in square pixels"""
+        """:class:`~numpy.ndarray`: Array of cell's surface area (3d) in square pixels"""
         return np.array([c.surface for c in self])
 
     @property
     def volume(self):
-        """:obj:`np.ndarray`: Array of cell's volume in cubic pixels"""
+        """:class:`~numpy.ndarray`: Array of cell's volume in cubic pixels"""
         return np.array([c.volume for c in self])
 
     @property
     def name(self):
-        """:obj:`np.ndarray: Array of cell's names"""
+        """:class:`~numpy.ndarray`: Array of cell's names"""
         return np.array([c.name for c in self])
 
     def __len__(self):

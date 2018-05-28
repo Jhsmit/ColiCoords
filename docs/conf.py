@@ -53,7 +53,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'ColiCoords'
-copyright = '2017, Jochem Smit'
+copyright = '2018, Jochem Smit'
 author = 'Jochem Smit'
 
 # The version info for the project you're documenting, acts as replacement for
