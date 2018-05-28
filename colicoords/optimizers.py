@@ -20,6 +20,102 @@ class Parameter(object):
         self.value = value
 
 
+class BaseFit(object):
+    """base object for fitting"""
+
+    def __init__(self):
+        self.val = None
+
+    @property
+    def objective(self):
+        raise NotImplementedError()
+
+    @property
+    def model(self):
+        raise NotImplementedError()
+
+    @property
+    def x(self):
+        raise NotImplementedError()
+
+    @property
+    def y(self):
+        raise NotImplementedError()
+
+    def fit_parameters(self, parameters, bounds=None, constraint=True, solver='DE', solver_kwargs=None, **kwargs):
+        """ Fit the current model and data optimizing given (global) *parameters*.
+
+        Args:
+            parameters (:obj:`str`): Parameters to fit. Format is a single string where paramers are separated by a space
+            bounds: If *True* the model's :meth:`get_bounds` is called to determine the bounds. Otherwise, specify a sequence or
+                :class:`scipy.optimize.Bounds` class as specified in :meth:`scipy.optimize.minimize`.
+            constraint: If *True* the model's :meth:`get_constraints` is called to set constraints.
+            solver (:obj:`str`): Either 'DE', 'basin_hop' or 'normal' to use :meth:scipy.optimize.differential_evolution`,
+                :meth:scipy.optimize.basin_hop` or :meth:scip.optimize.minimize:, respectively.
+            solver_kwargs: Optional kwargs to pass to the solver when using either differential evolution or basin_hop.
+            **kwargs: Optional kwargs to pass to :meth:`scipy.optimize.minimize`.
+
+        Returns:
+            :`obj`:dict: Dictionary with fitting results. The entries are the global fit parameters as well as the amplitudes.
+        """
+
+        bounds = self.model.get_bounds(parameters, parameters if type(bounds) == bool else bounds) if bounds else None
+        method = kwargs.pop('method', None)
+        verbose = kwargs.pop('verbose', False)
+        par_values = np.array([getattr(self.model, par).value for par in parameters.split(' ')])
+        constraints = self.model.get_constraints(parameters) if constraint else None
+
+        solver_kwargs = {} if solver_kwargs is None else solver_kwargs
+
+        # todo this needs some checking if not all parameters are bounded
+        accept_test = partial(self._accept_test, bounds)
+
+        # todo use mystic for constraints: https://github.com/uqfoundation/mystic/blob/master/mystic/differential_evolution.py
+        if solver == 'DE':
+            result = differential_evolution(self.objective, bounds,
+                                            args=(parameters.split(' '), self.model, self.x, self.y_arr),
+                                            **solver_kwargs
+                                            )
+        elif solver == 'basin_hop':
+            stepsize = solver_kwargs.pop('stepsize', 1)
+            niter = solver_kwargs.pop('niter', 200)
+            result = basinhopping(self.objective, par_values,
+                                  minimizer_kwargs={
+                                      'args': (parameters.split(' '), self.model, self.x, self.y_arr),
+                                      'bounds': bounds,
+                                      'method': method,
+                                      'constraints': constraints,
+                                      'options': {'disp': verbose},
+                                      **kwargs},
+                                  stepsize=stepsize,
+                                  niter=niter,
+                                  accept_test=accept_test,
+                                  **solver_kwargs
+                                  )
+        elif solver == 'normal':
+            result = minimize(self.objective, par_values, args=(parameters.split(' '), self.model, self.x, self.y_arr),
+                              bounds=bounds, method=method, constraints=constraints, options={'disp': verbose},
+                              **kwargs)
+        else:
+            raise ValueError("Value for 'solver' must be either 'DE', 'basin_hop' or 'normal'")
+
+        try:
+            res_dict = {key: val for key, val in zip(parameters.split(' '), result.x)}
+        except TypeError:
+            res_dict = {key: val for key, val in zip(parameters.split(' '), [result.x])}
+
+        self.val = result.fun
+        return res_dict, result.fun
+
+    @staticmethod
+    def _accept_test(bounds, **kwargs):
+        par_values = kwargs['x_new']
+        bools = [(-np.inf if pmin is None else pmin) <= val <= (np.inf if pmax is None else pmax)
+                 for (pmin, pmax), val in zip(bounds, par_values)]
+
+        return np.all(bools)
+
+
 class LinearModelFit(object):
     """Fitting of a linear model with two components.
 
@@ -142,7 +238,7 @@ class LinearModelFit(object):
         y2 = self.model(self.x, **{'a1': 0, 'a2': 1}, **res_dict)
 
         res_dict['a1'], res_dict['a2'] = solve_linear_system(y1, y2, self.y_arr)
-        
+
         self.val = result.fun
         return res_dict, result.fun
 
@@ -179,8 +275,8 @@ class LinearModelFit(object):
         return res_dict, result.fun
 
 
-class CellFitting(object):
-    """Fits cell radial distribution curve to a model"""
+class AbstractFit(object):
+    """General class for fitting of a model with a set of parameters to a dataset with x- and y data"""
 
     def __init__(self, model, x, y):
         self.model = model
@@ -290,7 +386,7 @@ class Optimizer(object):
     def __init__(self, cell_obj, data_name='binary', objective=None):
         self.cell_obj = cell_obj
         self.data_name = data_name
-        self.val = np.inf
+        self.val = None
         dclass = self.data_elem.dclass
         objective = self.defaults[dclass] if not objective else objective
 
@@ -320,12 +416,22 @@ class Optimizer(object):
         return self.cell_obj.data.data_dict[self.data_name]
 
     def get_bounds(self, parameters, bounded):
+        """Get the bounds for given parameters.
+
+        Args:
+            parameters (:obj:`str`): Parameters separated by spaces for which to get the bounds
+            bounded (:obj:`str`): Names of parameters which should be bounded. Should be a string where parameter names
+                are separated by spaces.
+
+        Returns:
+
+        """
         bounds = [(getattr(self, par).min, getattr(self, par).max) if par in bounded.split(' ') else (None, None)
                   for par in parameters.split(' ')]
 
         if len(bounds) == 0:
             return None
-        elif np.all(np.array(bounds) == (None, None)):
+        elif np.all(np.array(bounds) == (None, None)): #todo for diff evolution this will give problems
             return None
         else:
             return bounds
