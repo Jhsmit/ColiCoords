@@ -5,18 +5,41 @@ from functools import partial
 
 
 class Parameter(object):
-    def __init__(self, name, value=1., min=1.e-10, max=None, fixed=False):
+    def __init__(self, name, value=1., min=1.e-10, max=None):
+        """
+
+        Args:
+            name (:obj:`str`): Name of the parameter.
+            value (:obj:`float`): Initial guess value.
+            min (:obj:`float`): Minimum bound. Use *None* for unbounded.
+            max (:obj:`float`): Maximum bound. use *None* for unbounded.
+        """
         self.name = name
         self.min = min
         self.max = max
         self.value = value
-        self.fixed = fixed
 
 
-class GlobalCellFitting(object):
-    #todo base class for both fitting objé
-    """Globally fit many radial distribution curves to a model with """
+class LinearModelFit(object):
+    """Fitting of a linear model with two components.
+
+    Apart from the linear coefficients the model can have (global) fit parameters. When fitting many datasets the
+    amplitudes are return as an array while the other fit parameters are global.
+
+        Attributes:
+            val (:obj:`float`): Current chi-squared value.
+
+    """
     def __init__(self, model, x, y_arr):
+        """
+
+        Args:
+            model :
+            x (:class:`~numpy.ndarray`:): Array of x datapoints
+            y_arr (:class:`~numpy.ndarray`:): Array of y datapoints. Either 1D of equal size to x or NxM with N datasets
+                of length M equal to length of x.
+
+        """
         self.model = model
         self.x = x
         self.y_arr = y_arr
@@ -24,16 +47,35 @@ class GlobalCellFitting(object):
         self.val = None
 
     def fit_amplitudes(self):
-        """finds the best fit for chi sq by calculating derivatives wrt a1 and a2 and solving the resulting system of
-        equations, where the model's remaining parameters are fixed by their parameter values"""
+        """ Minimizes chi squared by finding amplitudes a1 and a2 in a1*y1 + a2*y2 == y.
+
+        Returns:
+            :obj:`tuple`: Tuple of amplitudus (a1, a2) solution
+
+        """
+
         y1 = self.model(self.x, a1=1, a2=0)
         y2 = self.model(self.x, a1=0, a2=1)
 
         a1, a2 = solve_linear_system(y1, y2, self.y_arr)
         return a1, a2
 
-    def fit_global(self, parameters, bounds=None, constraint=True, solver='DE', solver_kwargs=None, **kwargs):
-        # todo generalize to fit global vars and local vars
+    def fit_parameters(self, parameters, bounds=None, constraint=True, solver='DE', solver_kwargs=None, **kwargs):
+        """ Fit the current model and data optimizing given (global) *parameters*.
+
+        Args:
+            parameters (:obj:`str`): Parameters to fit. Format is a single string where paramers are separated by a space
+            bounds: If *True* the model's :meth:`get_bounds` is called to determine the bounds. Otherwise, specify a sequence or
+                :class:`scipy.optimize.Bounds` class as specified in :meth:`scipy.optimize.minimize`.
+            constraint: If *True* the model's :meth:`get_constraints` is called to set constraints.
+            solver (:obj:`str`): Either 'DE', 'basin_hop' or 'normal' to use :meth:scipy.optimize.differential_evolution`,
+                :meth:scipy.optimize.basin_hop` or :meth:scip.optimize.minimize:, respectively.
+            solver_kwargs: Optional kwargs to pass to the solver when using either differential evolution or basin_hop.
+            **kwargs: Optional kwargs to pass to :meth:`scipy.optimize.minimize`.
+
+        Returns:
+            :`obj`:dict: Dictionary with fitting results. The entries are the global fit parameters as well as the amplitudes.
+        """
         def objective(par_values, par_names, model, x, y):
             par_dict = {par_name: par_value for par_name, par_value in zip(par_names, par_values)}
 
@@ -96,6 +138,11 @@ class GlobalCellFitting(object):
         except TypeError:
             res_dict = {key: val for key, val in zip(parameters.split(' '), [result.x])}
 
+        y1 = self.model(self.x, **{'a1': 1, 'a2': 0}, **res_dict)
+        y2 = self.model(self.x, **{'a1': 0, 'a2': 1}, **res_dict)
+
+        res_dict['a1'], res_dict['a2'] = solve_linear_system(y1, y2, self.y_arr)
+        
         self.val = result.fun
         return res_dict, result.fun
 

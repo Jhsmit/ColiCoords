@@ -30,7 +30,7 @@ class CellPlot(object):
             **kwargs: Optional kwargs passed to ax.plot().
 
         Returns:
-            (:class:`matplotlib.axes.Axes`:): The created or specified with `ax` matplotlib axes.
+            :class:`matplotlib.axes.Axes`: The created or specified with `ax` matplotlib axes.
 
         """
         x = np.linspace(self.cell_obj.coords.xl, self.cell_obj.coords.xr, 100)
