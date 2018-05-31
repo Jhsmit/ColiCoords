@@ -42,6 +42,9 @@ def _y2(x, r2, psf, psf_uid):
 
 
 class RDistModel(object):
+    parameters = 'a1 r1 r2 a2'
+    linear_parameters = 'a1 a2'
+
     def __init__(self, psf, mem=None):
         self.psf = psf
 

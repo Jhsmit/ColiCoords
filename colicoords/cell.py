@@ -6,6 +6,7 @@ import operator
 from functools import partial
 from colicoords.optimizers import Optimizer
 from scipy.integrate import quad
+from scipy.optimize import fsolve
 #import multiprocessing as mp
 import multiprocess as mp
 from tqdm import tqdm
@@ -102,9 +103,40 @@ class Cell(object):
     def l_dist(self, norm_x=False):
         raise NotImplementedError()
 
-    def l_classify(self):
-        #todo classify occurence of storm coordinates in categories poles, mid and whatever is left
-        raise NotImplementedError()
+    def l_classify(self, data_name=''):
+        """Classifies foci in STORM-type data by they x-position along the long axis.
+
+        The spots are classfied into 3 categories: 'poles', 'between' and 'mid'. The pole category are spots who are to
+            the left and right of xl and xr, respectively. The class 'mid' is a section in the middle of the cell with a
+            total length of half the cell's length, the class 'between' is the remaining two quarters between 'mid' and
+            'poles'
+
+        Args:
+            data_name (:obj:`str`): Name of the STORM-type data element to classifty. When its not specified the first
+                STORM data element is used.
+
+        Returns:
+            :obj:`tuple`: Tuple with number of spots in poles, between and mid classes, respectively.
+        """
+        if not data_name:
+            data_elem = list(self.data.storm_dict.values())[0]
+        else:
+            data_elem = self.data.data_dict[data_name]
+            assert data_elem.dclass == 'storm'
+
+        x, y = data_elem['x'], data_elem['y']
+        xs = self.coords.calc_xc(x, y)
+
+        xq1 = fsolve(_solve_len, self.coords.xl + self.length/4,
+                     args=(self.coords.xl, self.length/4, self.coords.coeff))
+        xq3 = fsolve(_solve_len, self.coords.xl + 3*(self.length/4),
+                     args=(self.coords.xl, 3*(self.length/4), self.coords.coeff))
+
+        poles = np.sum(xs < self.coords.xl) + np.sum(xs > self.coords.xr)
+        between = np.sum(np.logical_and(xs >= self.coords.xl, xs < xq1)) + np.sum(np.logical_and(xs <= self.coords.xr, xs > xq3))
+        mid = np.sum(np.logical_and(xs >= xq1, xs <= xq3))
+
+        return poles, between, mid
 
     def r_dist(self, stop, step, data_name='', norm_x=False, xlim=None, storm_weight=False):
         #todo test xlim!
@@ -742,6 +774,25 @@ class CellList(object):
     def l_dist(self, stop, step, data_name='', norm_x=False, storm_weight='points'):
         raise NotImplementedError()
 
+    def l_classify(self, data_name=''):
+        """Classifies foci in STORM-type data by they x-position along the long axis.
+
+        The spots are classfied into 3 categories: 'poles', 'between' and 'mid'. The pole category are spots who are to
+            the left and right of xl and xr, respectively. The class 'mid' is a section in the middle of the cell with a
+            total length of half the cell's length, the class 'between' is the remaining two quarters between 'mid' and
+            'poles'
+
+        Args:
+            data_name (:obj:`str`): Name of the STORM-type data element to classifty. When its not specified the first
+                STORM data element is used.
+
+        Returns:
+            :class:`~numpy.ndarray`: Array with number of spots in poles, between and mid classes, respectively, for
+                each cell (rows)
+        """
+
+        return np.array([c.l_classify(data_name=data_name) for c in self])
+
     def a_dist(self):
         raise NotImplementedError()
 
@@ -824,3 +875,14 @@ class CellList(object):
 
     def __contains__(self, item):
         return self.cell_list.__contains__(item)
+
+
+def _solve_len(x, xl, l, coeff):
+    a0, a1, a2 = coeff
+
+    l0 = (1 / (4 * a2)) * (
+            ((a1 + 2 * a2 * x) * np.sqrt(1 + (a1 + 2 * a2 * x) ** 2) + np.arcsinh((a1 + 2 * a2 * x))) -
+            ((a1 + 2 * a2 * xl) * np.sqrt(1 + (a1 + 2 * a2 * xl) ** 2) + np.arcsinh((a1 + 2 * a2 * xl)))
+    )
+
+    return l0 - l

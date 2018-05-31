@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
+from matplotlib.ticker import MaxNLocator
 import numpy as np
 from colicoords.config import cfg
 from colicoords import CellList
@@ -201,13 +202,14 @@ class CellPlot(object):
 
         return ax
 
-    def plot_storm(self, data_name, ax=None, kernel=None, bw_method=0.05, upscale=2, alpha_cutoff=None, **kwargs):
+    def plot_storm(self, data_name='', ax=None, method='plot', bw_method=0.05, upscale=2, alpha_cutoff=None, **kwargs):
         """Graphically represent STORM data
 
         Args:
             data_name (:obj:`str`): Name of the data element to plot. Must have the data class 'storm'.
             ax (:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting.
-            kernel: (:obj:`bool`):  If `True` kernel density estimation will be used to visualize storm data.
+            method: (:obj:`str`):  Method of visualization. Options are 'plot', 'hist', or 'kde' just plotting points,
+                histogram plot or kernel density estimator plot.
             bw_method (:obj:`float`): The method used to calculate the estimator bandwidth. Passed to
                 scipy.stats.gaussian_kde.
             upscale: Upscale factor for the output image. Number of pixels is increased wrt data.shape with a factor
@@ -220,8 +222,12 @@ class CellPlot(object):
 
         """
         #todo alpha cutoff docstirng and adjustment / testing
-        storm_table = self.cell_obj.data.data_dict[data_name]
-        assert storm_table.dclass == 'storm'
+        if not data_name:
+            storm_table = list(self.cell_obj.data.storm_dict.values())[0]
+        else:
+            storm_table = self.cell_obj.data.data_dict[data_name]
+            assert storm_table.dclass == 'storm'
+
         x, y = storm_table['x'], storm_table['y']
 
         if self.cell_obj.data.shape:
@@ -237,13 +243,19 @@ class CellPlot(object):
         h, xedges, yedges = np.histogram2d(x, y, bins=[x_bins, y_bins])
 
         ax = plt.gca() if ax is None else ax
-        if not kernel:
+        if method == 'plot':
+            color = kwargs.pop('color', 'r')
+            marker = kwargs.pop('marker', '.')
+            linestyle = kwargs.pop('linestyle', 'None')
+            ax.plot(x, y, color=color, marker=marker, linestyle=linestyle, **kwargs)
+
+        elif method == 'hist':
             cm = plt.cm.get_cmap('Blues')
             cmap = cm if not 'cmap' in kwargs else kwargs.pop('cmap')
 
             img = h.T
             ax.imshow(img, interpolation='nearest', cmap=cmap, extent=[0, xmax, ymax, 0], **kwargs)
-        else:
+        elif method == 'kde':
             # https://jakevdp.github.io/PythonDataScienceHandbook/05.13-kernel-density-estimation.html
             #todo check the mgrid describes the coords correctly
             X, Y = np.mgrid[0:xmax:xmax*upscale*1j, ymax:0:ymax*upscale*1j]
@@ -264,6 +276,32 @@ class CellPlot(object):
             colors[..., -1] = alphas
 
             ax.imshow(colors, cmap=cmap, extent=[0, xmax, ymax, 0], interpolation='nearest', **kwargs)
+        else:
+            raise ValueError('Invalid plotting method')
+
+        return ax
+
+    def plot_l_class(self, data_name='', ax=None, **kwargs):
+        """Plots a bar chart of how many foci are in a given STORM data set in classes depending on x-position.
+
+        Args:
+            data_name (:obj:`str`): Name of the data element to plot. Must have the data class 'storm'.
+            ax (:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting.
+            **kwargs: Optional kwargs passed to ax.bar().
+
+        Returns:
+            (:class:`matplotlib.axes.Axes`:): The created or specified with `ax` matplotlib axes
+
+        """
+        #todo created in all there return docstrings is not truthful
+        cl = self.cell_obj.l_classify(data_name=data_name)
+
+        ax = plt.gca() if ax is None else ax
+        ax.bar(np.arange(3), cl, tick_label=['Pole', 'Between', 'Middle'], **kwargs)
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+        ax.set_ylabel('Number of spots')
+
+        return ax
 
     def _plot_storm(self, storm_table, ax=None, kernel=None, bw_method=0.05, upscale=2, alpha_cutoff=None, **kwargs):
         x, y = storm_table['x'], storm_table['y']
@@ -500,6 +538,38 @@ class CellListPlot(object):
 
         if norm_y:
             ax.set_ylim(0, 1.1)
+
+        return ax
+
+    def plot_l_class(self, data_name='', ax=None, yerr='std', **kwargs):
+        """Plots a bar chart of how many foci are in a given STORM data set in classes depending on x-position.
+
+        Args:
+            data_name (:obj:`str`): Name of the data element to plot. Must have the data class 'storm'.
+            ax (:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting.
+            yerr (:obj:`str`): How to calcuated error bars. Can be 'std' or 'sem' for standard deviation or standard
+                error of the mean, respectively.
+            **kwargs: Optional kwargs passed to ax.bar().
+
+        Returns:
+            (:class:`matplotlib.axes.Axes`:): The created or specified with `ax` matplotlib axes
+
+        """
+        #todo created in all the return docstrings is not truthful
+        cl = self.cell_list.l_classify(data_name=data_name)
+        mean = np.mean(cl, axis=0)
+        std = np.std(cl, axis=0)
+        if yerr == 'std':
+            yerr = std
+        elif yerr == 'sem':
+            yerr = std / np.sqrt(len(cl))
+        else:
+            raise ValueError("Invalid valoue for 'yerr', must be either 'std' or 'sem'")
+
+        ax = plt.gca() if ax is None else ax
+        ax.bar(np.arange(3), mean, tick_label=['Pole', 'Between', 'Middle'], yerr=yerr, **kwargs)
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+        ax.set_ylabel('Mean number of spots')
 
         return ax
 

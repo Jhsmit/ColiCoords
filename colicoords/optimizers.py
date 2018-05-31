@@ -2,7 +2,7 @@ import numpy as np
 from scipy.optimize import minimize, basinhopping, differential_evolution
 from colicoords.config import cfg
 from functools import partial
-
+from abc import ABCMeta, abstractmethod
 
 class Parameter(object):
     def __init__(self, name, value=1., min=1.e-10, max=None):
@@ -20,27 +20,38 @@ class Parameter(object):
         self.value = value
 
 
-class BaseFit(object):
+class BaseFit(metaclass=ABCMeta):
     """base object for fitting"""
 
     def __init__(self):
+      #  super(BaseFit, self).__init__()
         self.val = None
 
     @property
+    @abstractmethod
     def objective(self):
-        raise NotImplementedError()
+        raise NotImplementedError("Subclasses of BaseFit must have an 'objective' property")
 
     @property
     def model(self):
-        raise NotImplementedError()
+        try:
+            return self._model
+        except AttributeError:
+            raise NotImplementedError("Subclasses of BaseFit must set the 'model' attribute")
 
     @property
     def x(self):
-        raise NotImplementedError()
+        try:
+            return self._x
+        except AttributeError:
+            raise NotImplementedError("Subclasses of BaseFit must set the 'x' attribute")
 
     @property
     def y(self):
-        raise NotImplementedError()
+        try:
+            return self._y
+        except AttributeError:
+            raise NotImplementedError("Subclasses of BaseFit must set the 'y' attribute")
 
     def fit_parameters(self, parameters, bounds=None, constraint=True, solver='DE', solver_kwargs=None, **kwargs):
         """ Fit the current model and data optimizing given (global) *parameters*.
@@ -59,6 +70,7 @@ class BaseFit(object):
             :`obj`:dict: Dictionary with fitting results. The entries are the global fit parameters as well as the amplitudes.
         """
 
+        bounds = True if solver == 'DE' else bounds
         bounds = self.model.get_bounds(parameters, parameters if type(bounds) == bool else bounds) if bounds else None
         method = kwargs.pop('method', None)
         verbose = kwargs.pop('verbose', False)
@@ -73,7 +85,7 @@ class BaseFit(object):
         # todo use mystic for constraints: https://github.com/uqfoundation/mystic/blob/master/mystic/differential_evolution.py
         if solver == 'DE':
             result = differential_evolution(self.objective, bounds,
-                                            args=(parameters.split(' '), self.model, self.x, self.y_arr),
+                                            args=(parameters.split(' '), self.model, self.x, self.y),
                                             **solver_kwargs
                                             )
         elif solver == 'basin_hop':
@@ -81,7 +93,7 @@ class BaseFit(object):
             niter = solver_kwargs.pop('niter', 200)
             result = basinhopping(self.objective, par_values,
                                   minimizer_kwargs={
-                                      'args': (parameters.split(' '), self.model, self.x, self.y_arr),
+                                      'args': (parameters.split(' '), self.model, self.x, self.y),
                                       'bounds': bounds,
                                       'method': method,
                                       'constraints': constraints,
@@ -93,7 +105,7 @@ class BaseFit(object):
                                   **solver_kwargs
                                   )
         elif solver == 'normal':
-            result = minimize(self.objective, par_values, args=(parameters.split(' '), self.model, self.x, self.y_arr),
+            result = minimize(self.objective, par_values, args=(parameters.split(' '), self.model, self.x, self.y),
                               bounds=bounds, method=method, constraints=constraints, options={'disp': verbose},
                               **kwargs)
         else:
@@ -107,6 +119,10 @@ class BaseFit(object):
         self.val = result.fun
         return res_dict, result.fun
 
+    def execute(self, bounds=True, constraint=True, solver='normal'):
+        self.fit_parameters(self.model.parameters, bounds=bounds, constraint=constraint, solver=vsolver)
+        return res, v
+
     @staticmethod
     def _accept_test(bounds, **kwargs):
         par_values = kwargs['x_new']
@@ -116,7 +132,7 @@ class BaseFit(object):
         return np.all(bools)
 
 
-class LinearModelFit(object):
+class LinearModelFit(BaseFit):
     """Fitting of a linear model with two components.
 
     Apart from the linear coefficients the model can have (global) fit parameters. When fitting many datasets the
@@ -126,7 +142,7 @@ class LinearModelFit(object):
             val (:obj:`float`): Current chi-squared value.
 
     """
-    def __init__(self, model, x, y_arr):
+    def __init__(self, model, x, y):
         """
 
         Args:
@@ -136,24 +152,38 @@ class LinearModelFit(object):
                 of length M equal to length of x.
 
         """
-        self.model = model
-        self.x = x
-        self.y_arr = y_arr
+        self._model = model
+        self._x = x
+        self._y = y
+        super(LinearModelFit, self).__init__()
 
-        self.val = None
+
+    @property
+    def objective(self):
+        def _objective(par_values, par_names, model, x, y):
+            par_dict = {par_name: par_value for par_name, par_value in zip(par_names, par_values)}
+
+            y1 = model(x, **{'a1': 1, 'a2': 0}, **par_dict)
+            y2 = model(x, **{'a1': 0, 'a2': 1}, **par_dict)
+
+            a1, a2 = solve_linear_system(y1, y2, y)
+            F = np.outer(a1, y1) + np.outer(a2, y2)
+
+            return np.sum(F*(F - y)**2)
+        return _objective
 
     def fit_amplitudes(self):
         """ Minimizes chi squared by finding amplitudes a1 and a2 in a1*y1 + a2*y2 == y.
 
         Returns:
-            :obj:`tuple`: Tuple of amplitudus (a1, a2) solution
+            :obj:`tuple`: Tuple of amplitudes (a1, a2) solution
 
         """
 
         y1 = self.model(self.x, a1=1, a2=0)
         y2 = self.model(self.x, a1=0, a2=1)
 
-        a1, a2 = solve_linear_system(y1, y2, self.y_arr)
+        a1, a2 = solve_linear_system(y1, y2, self.y)
         return a1, a2
 
     def fit_parameters(self, parameters, bounds=None, constraint=True, solver='DE', solver_kwargs=None, **kwargs):
@@ -172,16 +202,33 @@ class LinearModelFit(object):
         Returns:
             :`obj`:dict: Dictionary with fitting results. The entries are the global fit parameters as well as the amplitudes.
         """
-        def objective(par_values, par_names, model, x, y):
-            par_dict = {par_name: par_value for par_name, par_value in zip(par_names, par_values)}
 
-            y1 = model(x, **{'a1': 1, 'a2': 0}, **par_dict)
-            y2 = model(x, **{'a1': 0, 'a2': 1}, **par_dict)
+        res_dict, val = super(LinearModelFit, self).fit_parameters(parameters, bounds=bounds, constraint=constraint,
+                                                   solver=solver, solver_kwargs=solver_kwargs, **kwargs)
 
-            a1, a2 = solve_linear_system(y1, y2, y)
-            F = np.outer(a1, y1) + np.outer(a2, y2)
+        y1 = self.model(self.x, **{'a1': 1, 'a2': 0}, **res_dict)
+        y2 = self.model(self.x, **{'a1': 0, 'a2': 1}, **res_dict)
 
-            return np.sum((F - y)**2)
+        res_dict['a1'], res_dict['a2'] = solve_linear_system(y1, y2, self.y)
+        return res_dict, val
+
+    def fit_parameters_bak(self, parameters, bounds=None, constraint=True, solver='DE', solver_kwargs=None, **kwargs):
+        """ Fit the current model and data optimizing given (global) *parameters*.
+
+        Args:
+            parameters (:obj:`str`): Parameters to fit. Format is a single string where paramers are separated by a space
+            bounds: If *True* the model's :meth:`get_bounds` is called to determine the bounds. Otherwise, specify a sequence or
+                :class:`scipy.optimize.Bounds` class as specified in :meth:`scipy.optimize.minimize`.
+            constraint: If *True* the model's :meth:`get_constraints` is called to set constraints.
+            solver (:obj:`str`): Either 'DE', 'basin_hop' or 'normal' to use :meth:scipy.optimize.differential_evolution`,
+                :meth:scipy.optimize.basin_hop` or :meth:scip.optimize.minimize:, respectively.
+            solver_kwargs: Optional kwargs to pass to the solver when using either differential evolution or basin_hop.
+            **kwargs: Optional kwargs to pass to :meth:`scipy.optimize.minimize`.
+
+        Returns:
+            :`obj`:dict: Dictionary with fitting results. The entries are the global fit parameters as well as the amplitudes.
+        """
+
 
         bounds = self.model.get_bounds(parameters, parameters if type(bounds) == bool else bounds) if bounds else None
         method = kwargs.pop('method', None)
@@ -242,109 +289,30 @@ class LinearModelFit(object):
         self.val = result.fun
         return res_dict, result.fun
 
-    def _fit_global_de(self, parameters, bounds=True, constraint=True, **kwargs):
-        # todo generalize to fit global vars and local vars
-        def objective(par_values, par_names, model, x, y):
-            par_dict = {par_name: par_value for par_name, par_value in zip(par_names, par_values)}
 
-            y1 = model(x, **{'a1': 1, 'a2': 0}, **par_dict)
-            y2 = model(x, **{'a1': 0, 'a2': 1}, **par_dict)
-
-            a1, a2 = solve_linear_system(y1, y2, y)
-            F = np.outer(a1, y1) + np.outer(a2, y2)
-
-            return np.sum((F - y)**2)
-
-        bounds = self.model.get_bounds(parameters, parameters if type(bounds) == bool else bounds) if bounds else None
-        method = None
-        verbose = kwargs.pop('verbose', False)
-        par_values = np.array([getattr(self.model, par).value for par in parameters.split(' ')])
-        constraints = self.model.get_constraints(parameters) if constraint else None
-
-        result = differential_evolution(objective, bounds,
-                                        args=(parameters.split(' '), self.model, self.x, self.y_arr)
-
-                              )
-
-        try:
-            res_dict = {key: val for key, val in zip(parameters.split(' '), result.x)}
-        except TypeError:
-            res_dict = {key: val for key, val in zip(parameters.split(' '), [result.x])}
-
-        self.val = result.fun
-        return res_dict, result.fun
-
-
-class AbstractFit(object):
+class AbstractFit(BaseFit):
     """General class for fitting of a model with a set of parameters to a dataset with x- and y data"""
 
     def __init__(self, model, x, y):
-        self.model = model
-        self.x = x
-        self.y = y
+        self._model = model
+        self._x = x
+        self._y = y
 
-        self.val = None
-
-    def fit_parameters(self, parameters, bounds=None, constraint=True, basin_hop=True, T=0.1, **kwargs):
-        def objective(par_values, par_names, model, x, y):
+    @property
+    def objective(self):
+        def _objective(par_values, par_names, model, x, y):
             par_dict = {par_name: par_value for par_name, par_value in zip(par_names, par_values)}
             y_model = model(x, **par_dict)
 
             yn = y / y.max()
 
             return np.sum(yn*((y - y_model)**2))
+        return _objective
 
-        bounds = self.model.get_bounds(parameters, parameters if type(bounds) == bool else bounds) if bounds else None
 
-        method = kwargs['method'] if 'method' in kwargs else 'Powell' if not bounds else None
-        verbose = kwargs.pop('verbose', False)
-        par_values = np.array([getattr(self.model, par).value for par in parameters.split(' ')])
-        constraints = self.model.get_constraints(parameters) if constraint else None
 
-        #todo this needs some checking if not all parameters are bounded
-        def _accept_test(bounds, **kwargs):
-            par_values = kwargs['x_new']
-            bools = [(-np.inf if pmin is None else pmin) <= val <= (np.inf if pmax is None else pmax)
-                     for (pmin, pmax), val in zip(bounds, par_values)]
 
-            return np.all(bools)
-
-        accept_test = partial(_accept_test, bounds)
-
-        if basin_hop:
-            result = basinhopping(objective, par_values,
-                                  minimizer_kwargs={
-                                      'args': (parameters.split(' '), self.model, self.x, self.y),
-                                      'bounds': bounds,
-                                      'method': method,
-                                      'constraints': constraints,
-                                      'options': {'disp': verbose},
-                                      **kwargs},
-                                  T=T,
-                                  stepsize=1,
-                                  niter=200,
-                                  accept_test=accept_test
-                                  )
-
-        else:
-            result = minimize(objective, par_values, args=(parameters.split(' '), self.model, self.x, self.y),
-                              bounds=bounds, method=method, constraints=constraints, options={'disp': verbose}, **kwargs)
-
-        try:
-            res_dict = {key: val for key, val in zip(parameters.split(' '), result.x)}
-        except TypeError:
-            res_dict = {key: val for key, val in zip(parameters.split(' '), [result.x])}
-
-        self.val = result.fun
-        return res_dict, result.fun
-
-    def execute(self, parameters, bounds=True, constraint=True, basin_hop=True, T=0.0001):
-        res, v = self.fit_parameters(parameters, bounds=bounds, constraint=constraint, basin_hop=basin_hop, T=T)
-        self.model.sub_par(res)
-        res, v = self.fit_parameters(parameters, bounds=bounds, constraint=constraint, basin_hop=basin_hop, T=T)
-        return res, v
-
-    def fit_stepwise(self, bounds=None, **kwargs):
+    def __fit_stepwise(self, bounds=None, **kwargs):
         i = 0
         j = 0
         prev_val = 0
