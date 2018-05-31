@@ -148,8 +148,8 @@ class Cell(object):
             data_name (:obj:`str`): The name of the data element on which to calculate the radial distribution
             norm_x (:obj:`bool`): If `True` the returned distribution will be normalized with the cell's radius set to 1.
             xlim (:obj:`str`): If `None`, all datapoints are taking into account. This can be limited by providing the
-                value `full` (omit poles only) or a float value which will limit the data points with around the midline
-                where xmid - xlim < x < xmid + xlim.
+                value `full` (omit poles only), 'poles' (include only poles), or a float value which will limit the data
+                points with around the midline where xmid - xlim < x < xmid + xlim.
             storm_weight (:obj:`bool`): Only applicable for analyzing STORM-type data elements. If `True` the returned
                 histogram is weighted with the number of photons measured.
 
@@ -182,7 +182,9 @@ class Cell(object):
             if xlim:
                 xc = self.coords.calc_xc(x, y)
                 if xlim == 'full':
-                    b = (xc > self.coords.xl) * (xc < self.coords.xr).astype(bool)
+                    b = ((xc > self.coords.xl) * (xc < self.coords.xr)).astype(bool)
+                elif xlim == 'poles':
+                    b = ((xc <= self.coords.xl) * (xc >= self.coords.xr)).astype(bool)
                 else:
                     mid_x = (self.coords.xl + self.coords.xr) / 2
                     b = (xc > mid_x - xlim) * (xc < mid_x + xlim).astype(bool)
@@ -751,8 +753,8 @@ class CellList(object):
             data_name (:obj:`str`): The name of the data element on which to calculate the radial distribution
             norm_x (:obj:`bool`): If `True` the returned distribution will be normalized with the cell's radius set to 1.
             xlim (:obj:`str`): If `None`, all datapoints are taking into account. This can be limited by providing the
-                value `full` (omit poles only) or a float value which will limit the data points with around the midline
-                where xmid - xlim < x < xmid + xlim.
+                value `full` (omit poles only), 'poles' (include only poles), or a float value which will limit the data
+                points with around the midline where xmid - xlim < x < xmid + xlim.
             storm_weight (obj:`bool`): Only applicable for analyzing STORM-type data elements. If `True` the returned
                 histogram is weighted with the number of photons measured.
 
