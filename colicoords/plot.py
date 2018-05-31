@@ -114,7 +114,7 @@ class CellPlot(object):
         """Plot the outline of the cell based on the current coordinate system.
 
         Args:
-            ax (:c:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting.
+            ax (:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting.
             **kwargs: Optional kwargs passed to ax.plot().
 
         Returns:
@@ -165,29 +165,38 @@ class CellPlot(object):
 
         return ax
 
-    def plot_dist(self, ax=None, mode='r', data_name='', norm_y=False, norm_x=False, storm_weights='points', xlim=None, **kwargs):
-        #todo add doctring later when l and a dist are implemented
-        if mode == 'r':
-            if norm_x:
-                stop = cfg.R_DIST_NORM_STOP
-                step = cfg.R_DIST_NORM_STEP
-            else:
-                stop = cfg.R_DIST_STOP
-                step = cfg.R_DIST_STEP
+    def plot_r_dist(self, ax=None, data_name='', norm_x=False, norm_y=False, storm_weight=False, xlim=None, **kwargs):
+        """Plots the radial distribution of a given data element.
 
-            stop = kwargs.pop('stop', stop)
-            step = kwargs.pop('step', step)
-            x, y = self.cell_obj.r_dist(stop, step, data_name=data_name, norm_x=norm_x, storm_weight=storm_weights, xlim=xlim)
+        Args:
+            ax (:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting.
+            data_name (:obj:`str`): Name of the data element to use.
+            norm_x (:obj:`bool`): If *True* the output distribution will be normalized along the length axis.
+            norm_y: (:obj:`bool`): If *True* the output data will be normalized in the y (intensity).
+            storm_weight (:obj:`bool`): If *True* the datapoints of the specified STORM-type data will be weighted by their intensity.
+            xlim (:obj:`str`): If `None`, all datapoints are taking into account. This can be limited by providing the
+                value `full` (omit poles only), 'poles' (include only poles), or a float value which will limit the data
+                points with around the midline where xmid - xlim < x < xmid + xlim.
+            **kwargs: Optional kwargs passed to ax.plot().
 
-            if norm_y:
-                y /= y.max()
+        Returns:
+            (:class:`matplotlib.axes.Axes`:): The created or specified with `ax` matplotlib axes.
 
-        elif mode == 'l':
-            raise NotImplementedError
-        elif mode == 'a':
-            raise NotImplementedError
+        """
+
+        if norm_x:
+            stop = cfg.R_DIST_NORM_STOP
+            step = cfg.R_DIST_NORM_STEP
         else:
-            raise ValueError('Distribution mode {} not supported'.format(mode))
+            stop = cfg.R_DIST_STOP
+            step = cfg.R_DIST_STEP
+
+        stop = kwargs.pop('stop', stop)
+        step = kwargs.pop('step', step)
+        x, y = self.cell_obj.r_dist(stop, step, data_name=data_name, norm_x=norm_x, storm_weight=storm_weight, xlim=xlim)
+
+        if norm_y:
+            y /= y.max()
 
         x = x if norm_x else x * (cfg.IMG_PIXELSIZE / 1000)
         xunits = 'norm' if norm_x else '$\mu m$'
@@ -199,6 +208,48 @@ class CellPlot(object):
         ax.set_ylabel('Intensity ({})'.format(yunits))
         if norm_y:
             ax.set_ylim(0, 1.1)
+
+        return ax
+
+    def plot_l_dist(self, ax=None, data_name='', r_max=None, norm_x=False, norm_y=False, storm_weight=False, **kwargs):
+        """Plots the longitudinal distribution of a given data element.
+
+        Args:
+            ax (:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting.
+            data_name (:obj:`str`): Name of the data element to use.
+            r_max: (:obj:`float`): Datapoints within r_max from the cell midline are included. If *None* the value
+                from the cell's coordinate system will be used.
+            norm_x (:obj:`bool`): If *True* the output distribution will be normalized along the length axis.
+            norm_y: (:obj:`bool`): If *True* the output data will be normalized in the y (intensity).
+            storm_weight: If *True* the datapoints of the specified STORM-type data will be weighted by their intensity.
+
+        Returns:
+            (:class:`matplotlib.axes.Axes`:): The created or specified with `ax` matplotlib axes.
+
+        """
+        nbins = kwargs.pop('nbins', cfg.L_DIST_NBINS)
+        x, y = self.cell_obj.l_dist(nbins, data_name=data_name, norm_x=norm_x, r_max=r_max, storm_weight=storm_weight)
+        print(x.max())
+        if norm_y:
+            y /= y.max()
+
+        x = x if norm_x else x * (cfg.IMG_PIXELSIZE / 1000)
+        xunits = 'norm' if norm_x else '$\mu m$'
+        yunits = 'norm' if norm_y else 'a.u.'
+
+        ax = plt.gca() if ax is None else ax
+        ax.set_xlabel('Distance ({})'.format(xunits))
+        ax.set_ylabel('Intensity ({})'.format(yunits))
+
+        ax = plt.gca() if ax is None else ax
+        ax.plot(x, y, **kwargs)
+        ax.set_xlabel('Distance ({})'.format(xunits))
+        ax.set_ylabel('Intensity ({})'.format(yunits))
+        if norm_y:
+            ax.set_ylim(0, 1.1)
+        else:
+            ymin, ymax = ax.get_ylim()
+            ax.set_ylim(0, ymax)
 
         return ax
 
@@ -482,8 +533,26 @@ class CellListPlot(object):
 
         return ax
 
-    def plot_dist(self, ax=None, mode='r', data_name='', norm_y=False, norm_x=False, storm_weights=False, xlim=None, band_func=np.std, **kwargs):
-        #todo add docstring
+    def plot_r_dist(self, ax=None, data_name='', norm_y=False, norm_x=False, storm_weight=False, xlim=None, band_func=np.std, **kwargs):
+        """Plots the radial distribution of a given data element.
+
+        Args:
+            ax (:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting.
+            data_name (:obj:`str`): Name of the data element to use.
+            norm_x (:obj:`bool`): If *True* the output distribution will be normalized along the length axis.
+            norm_y: (:obj:`bool`): If *True* the output data will be normalized in the y (intensity).
+            storm_weight (:obj:`bool`): If *True* the datapoints of the specified STORM-type data will be weighted by their intensity.
+            xlim (:obj:`str`): If `None`, all datapoints are taking into account. This can be limited by providing the
+                value `full` (omit poles only), 'poles' (include only poles), or a float value which will limit the data
+                points with around the midline where xmid - xlim < x < xmid + xlim.
+            band_func (:obj:`callable`): Callable to determine the fill area around the graph. Default is standard deviation.
+            **kwargs: Optional kwargs passed to ax.plot().
+
+        Returns:
+            (:class:`matplotlib.axes.Axes`:): The created or specified with `ax` matplotlib axes.
+
+        """
+
         if norm_x:
             stop = cfg.R_DIST_NORM_STOP
             step = cfg.R_DIST_NORM_STEP
@@ -493,14 +562,8 @@ class CellListPlot(object):
 
         stop = kwargs.pop('stop', stop)
         step = kwargs.pop('step', step)
-        if mode == 'r':
-            x, out_arr = self.cell_list.r_dist(stop, step, data_name=data_name, norm_x=norm_x, storm_weight=storm_weights, xlim=xlim)
-            out_arr = np.nan_to_num(out_arr)
-            title = 'Radial Distribution'
-        elif mode == 'l':
-            raise NotImplementedError()
-        elif mode == 'a':
-            raise NotImplementedError()
+        x, out_arr = self.cell_list.r_dist(stop, step, data_name=data_name, norm_x=norm_x, storm_weight=storm_weight, xlim=xlim)
+        out_arr = np.nan_to_num(out_arr)
 
         if norm_y:
             maxes = np.max(out_arr, axis=1)
@@ -534,10 +597,71 @@ class CellListPlot(object):
 
         ax.set_xlabel('Distance ({})'.format(xunits))
         ax.set_ylabel('Signal intensity ({})'.format(yunits))
-        ax.set_title(title)
+        ax.set_title('Radial Distribution')
 
         if norm_y:
             ax.set_ylim(0, 1.1)
+
+        return ax
+
+    def plot_l_dist(self, ax=None, data_name='', r_max=None, norm_y=False, storm_weight=False, band_func=np.std, **kwargs):
+        """Plots the longitudinal distribution of a given data element.
+
+        The data is normalized along the long axis so multiple cells can be combined.
+
+        Args:
+            ax (:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting.
+            data_name (:obj:`str`): Name of the data element to use.
+            r_max: (:obj:`float`): Datapoints within r_max from the cell midline are included. If *None* the value
+                from the cell's coordinate system will be used.
+            norm_y: (:obj:`bool`): If *True* the output data will be normalized in the y (intensity).
+            storm_weight (:obj:`bool`): If *True* the datapoints of the specified STORM-type data will be weighted by their intensity.
+            band_func (:obj:`callable`): Callable to determine the fill area around the graph. Default is standard deviation.
+            **kwargs: Optional kwargs passed to ax.hist().
+
+        Returns:
+            (:class:`matplotlib.axes.Axes`:): The created or specified with `ax` matplotlib axes.
+
+        """
+        nbins = kwargs.pop('nbins', cfg.L_DIST_NBINS)
+        x_arr, out_arr = self.cell_list.l_dist(nbins, data_name=data_name, norm_x=True, r_max=r_max, storm_weight=storm_weight)
+        x = x_arr[0]
+
+        if norm_y:
+            maxes = np.max(out_arr, axis=1)
+            bools = maxes != 0
+            n = np.sum(~bools)
+            if n > 0:
+                print("Warning: removed {} curves with maximum zero".format(n))
+
+            out_arr = out_arr[bools]
+            a_max = np.max(out_arr, axis=1)
+            out_arr = out_arr / a_max[:, np.newaxis]
+
+        xunits = 'norm'
+        yunits = 'norm' if norm_y else 'a.u.'
+
+        ax = plt.gca() if ax is None else ax
+        ax.set_xlabel('Distance ({})'.format(xunits))
+        ax.set_ylabel('Intensity ({})'.format(yunits))
+
+
+        mean = np.nanmean(out_arr, axis=0)
+        ax.plot(x, mean, **kwargs)
+
+        if band_func:
+            width = band_func(out_arr, axis=0)
+            ax.fill_between(x, mean + width, mean - width, alpha=0.25)
+
+        ax.set_xlabel('Distance ({})'.format(xunits))
+        ax.set_ylabel('Signal intensity ({})'.format(yunits))
+        ax.set_title('Longitudinal Distribution')
+
+        if norm_y:
+            ax.set_ylim(0, 1.1)
+        else:
+            ymin, ymax = ax.get_ylim()
+            ax.set_ylim(0, ymax)
 
         return ax
 

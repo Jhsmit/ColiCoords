@@ -100,8 +100,72 @@ class Cell(object):
     def a_dist(self):
         raise NotImplementedError()
 
-    def l_dist(self, norm_x=False):
-        raise NotImplementedError()
+    def l_dist(self, nbins, data_name='', norm_x=False, r_max=None, storm_weight=False):
+        """Calculated the longitudinal distribution of a given data element.
+
+        Args:
+            nbins (:obj:`int`): Number of bins between xl and xr
+            data_name (:obj:`str`): Name of the data element to use.
+            norm_x (:obj:`bool`): If *True* the output distribution will be normalized.
+            r_max: (:obj:`float`): Datapoints within r_max from the cell midline will be included. If *None* the value
+                from the cell's coordinate system will be used.
+            storm_weight: If *True* the datapoints of the specified STORM-type data will be weighted by their intensity.
+
+        Returns:
+            :obj:`tuple`: tuple containing:
+
+                xvals (:class:`~numpy.ndarray`) Array of distances along the cell midline, values are the middle of the bins
+
+                yvals (:class:`~numpy.ndarray`) Array of in bin heights
+
+        """
+        #todo check the bins
+        if not data_name:
+            data_elem = list(self.data.flu_dict.values())[0] #yuck
+        else:
+            try:
+                data_elem = self.data.data_dict[data_name]
+            except KeyError:
+                raise ValueError('Chosen data not found')
+
+        r_max = r_max if r_max else self.coords.r
+        stop = 1 if norm_x else self.length
+        bins = np.linspace(0, stop, num=nbins, endpoint=False)
+        xvals = bins + 0.5 * np.diff(bins)[0]  # xval is the middle of the bin
+
+        if data_elem.ndim == 1:
+            assert data_elem.dclass == 'storm'
+            x = data_elem['x']
+            y = data_elem['y']
+
+            r = self.coords.calc_rc(x, y)
+            xc = self.coords.calc_xc(x, y)
+
+        elif data_elem.ndim == 2 or data_elem.ndim == 3:  # image data
+            r = self.coords.rc
+            xc = self.coords.xc
+
+        else:
+            raise ValueError('Invalid data element dimensions')
+
+        b1 = r < r_max
+        b2 = np.logical_and(xc >= self.coords.xl, xc <= self.coords.xr)
+        b = np.logical_and(b1, b2)
+        x_len = _calc_len(self.coords.xl, xc[b].flatten(), self.coords.coeff)
+        x_len = x_len / self.length if norm_x else x_len
+
+        if data_elem.ndim == 1:
+            y_weight = data_elem['intensity'][b] if storm_weight else None
+            yvals = self._bin_func(x_len, y_weight, bins)
+
+        elif data_elem.ndim == 2:
+            y_weight = np.clip(data_elem[b].flatten(), 0, None)
+            yvals = self._bin_func(x_len, y_weight, bins)
+
+        elif data_elem.ndim == 3:
+            yvals = np.array([self._bin_func(x_len, y_weight[b].flatten(), bins) for y_weight in data_elem])
+
+        return xvals, yvals
 
     def l_classify(self, data_name=''):
         """Classifies foci in STORM-type data by they x-position along the long axis.
@@ -161,6 +225,8 @@ class Cell(object):
                 yvals (:class:`~numpy.ndarray`) Array of in bin heights
         """
 
+        #todo this nest of if else's needs some cleanup, the xlim clause appears thrice!
+
         bins = np.arange(0, stop+step, step)
         xvals = bins + 0.5 * step  # xval is the middle of the bin
         if not data_name:
@@ -202,6 +268,8 @@ class Cell(object):
             if xlim:
                 if xlim == 'full':
                     b = (self.coords.xc > self.coords.xl) * (self.coords.xc < self.coords.xr).astype(bool)
+                elif xlim == 'poles':
+                    b = ((self.coords.xc <= self.coords.xl) * (self.coords.xc >= self.coords.xr)).astype(bool)
                 else:
                     mid_x = (self.coords.xl + self.coords.xr)/2
                     b = (self.coords.xc > mid_x - xlim)*(self.coords.xc < mid_x + xlim).astype(bool)
@@ -215,10 +283,21 @@ class Cell(object):
             yvals = self._bin_func(bin_r, y_weight, bins)
 
         elif data_elem.ndim == 3:  # todo check if this still works
+            if xlim:
+                if xlim == 'full':
+                    b = (self.coords.xc > self.coords.xl) * (self.coords.xc < self.coords.xr).astype(bool)
+                elif xlim == 'poles':
+                    b = ((self.coords.xc <= self.coords.xl) * (self.coords.xc >= self.coords.xr)).astype(bool)
+                else:
+                    mid_x = (self.coords.xl + self.coords.xr)/2
+                    b = (self.coords.xc > mid_x - xlim)*(self.coords.xc < mid_x + xlim).astype(bool)
+            else:
+                b = True
+
             r = self.coords.rc / self.coords.r if norm_x else self.coords.rc
-            yvals = np.vstack([self._bin_func(r.flatten(), d.flatten(), bins) for d in data_elem])
+            yvals = np.vstack([self._bin_func(r[b].flatten(), d[b].flatten(), bins) for d in data_elem])
         else:
-            raise ValueError('Invalid fluorescence image dimensions')
+            raise ValueError('Invalid data element dimensions')
         return xvals, yvals
 
     def measure_r(self, data_name='brightfield', in_place=True):
@@ -764,7 +843,7 @@ class CellList(object):
                 xvals (:class:`~numpy.ndarray`) Array of distances from the cell midline, values are the middle of the bins
                 out_arr (:class:`~numpy.ndarray`) Matrix of in bin heights
         """
-
+        #todo might be a good idea to warm the user when attempting this on a  list of 3D data
         numpoints = len(np.arange(0, stop+step, step))
         out_arr = np.zeros((len(self), numpoints))
         for i, c in enumerate(self):
@@ -773,8 +852,15 @@ class CellList(object):
 
         return xvals, out_arr
 
-    def l_dist(self, stop, step, data_name='', norm_x=False, storm_weight='points'):
-        raise NotImplementedError()
+    def l_dist(self, nbins, data_name='', norm_x=False, r_max=None, storm_weight=False):
+        y_arr = np.zeros((len(self), nbins))
+        x_arr = np.zeros((len(self), nbins))
+        for i, c in enumerate(self):
+            xvals, yvals = c.l_dist(nbins, data_name=data_name, norm_x=norm_x, r_max=r_max, storm_weight=storm_weight)
+            x_arr[i] = xvals
+            y_arr[i] = yvals
+
+        return x_arr, y_arr
 
     def l_classify(self, data_name=''):
         """Classifies foci in STORM-type data by they x-position along the long axis.
@@ -785,7 +871,7 @@ class CellList(object):
             'poles'
 
         Args:
-            data_name (:obj:`str`): Name of the STORM-type data element to classifty. When its not specified the first
+            data_name (:obj:`str`): Name of the STORM-type data element to classify. When its not specified the first
                 STORM data element is used.
 
         Returns:
@@ -888,3 +974,13 @@ def _solve_len(x, xl, l, coeff):
     )
 
     return l0 - l
+
+
+def _calc_len(xl, xr, coeff):
+    a0, a1, a2 = coeff
+    l = (1 / (4 * a2)) * (
+            ((a1 + 2 * a2 * xr) * np.sqrt(1 + (a1 + 2 * a2 * xr) ** 2) + np.arcsinh((a1 + 2 * a2 * xr))) -
+            ((a1 + 2 * a2 * xl) * np.sqrt(1 + (a1 + 2 * a2 * xl) ** 2) + np.arcsinh((a1 + 2 * a2 * xl)))
+    )
+
+    return l
