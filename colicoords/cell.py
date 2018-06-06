@@ -307,7 +307,7 @@ class Cell(object):
 
         Args:
             data_name (:obj:`str`): Name of the data element to use.
-            in_place (:obj:`bool`): If `True` the found value of `r` is directly substituded in the cell's coordinate
+            in_place (:obj:`bool`): If `True` the found value of `r` is directly substituted in the cell's coordinate
                 system, otherwise the value is returned.
 
         Returns:
@@ -315,7 +315,12 @@ class Cell(object):
         """
         x, y = self.r_dist(15, 1, data_name=data_name) # todo again need sensible default for stop
         mid_val = (np.min(y) + np.max(y)) / 2
-        r = np.interp(mid_val, y, x)
+
+        imin = np.argmin(y)
+        imax = np.argmax(y)
+
+        r = np.interp(mid_val, y[imin:imax], x[imin:imax])
+        print(r)
 
         if in_place:
             self.coords.r = r
@@ -894,10 +899,28 @@ class CellList(object):
             data_name (:obj:`str`): The name of the image data element to get the intensity values from.
 
         Returns:
-            :class:`~numpy.ndarray` Array of mean fluorescence pixel values
+            :class:`~numpy.ndarray`: Array of mean fluorescence pixel values
 
         """
         return np.array([c.get_intensity(mask=mask, data_name=data_name) for c in self])
+
+    def measure_r(self, data_name='brightfield', in_place=True):
+        """
+        Measure the radius of the cell by finding the intensity-midpoint of the radial distribution derived from
+        brightfield (default) or another data element.
+
+        Args:
+            data_name (:obj:`str`): Name of the data element to use.
+            in_place (:obj:`bool`): If `True` the found value of `r` is directly substituted in the cell's coordinate
+                system, otherwise the value is returned.
+
+        Returns:
+            :class:`~numpy.ndarray`: The measured radius `r` values if `in_place` is `False`, otherwise `None`.
+        """
+
+        r = [c.measure_r(data_name=data_name, in_place=in_place) for c in self]
+        if in_place:
+            return np.array(r)
 
     def copy(self):
         """
