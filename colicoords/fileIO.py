@@ -46,8 +46,13 @@ def save(file_path, cell_obj):
                 file_path += '.cc'
 
         with h5py.File(file_path, 'w') as f:
-            for c in cell_obj:
-                name = 'None' if c.name is None else c.name
+            names = np.array([c.name for c in cell_obj])
+            if np.all(names == None):
+                names = ['cell_' + str(i).zfill(int(np.ceil(np.log10(len(cell_obj))))) for i in range(len(cell_obj))]
+                print('Cell names not defined, assigned default values')
+            elif np.any(names == None):
+                raise ValueError('Invalidly named cell, either all cells must have a valid name, or none to auto-assign')
+            for name, c in zip(names, cell_obj):
                 cell_grp = f.create_group(name)
                 _write_cell(cell_grp, c)
 
@@ -64,6 +69,7 @@ def _write_cell(cell_grp, cell_obj):
     attr_grp.attrs.create('coeff', cell_obj.coords.coeff)
 
     attr_grp.attrs.create('name', np.string_(cell_obj.name))
+    #attr_grp.attrs.create('index', cell_obj.index)
 
     data_grp = cell_grp.create_group('data')
     for k, v in cell_obj.data.data_dict.items():
@@ -92,6 +98,7 @@ def _load_cell(cell_grp):
 
     name = attr_dict.get('name').decode('UTF-8')
     c.name = name if name is not 'None' else None
+    #c.index = attr_dict.get('index')
 
     return c
 
@@ -126,7 +133,6 @@ def load_thunderstorm(file_path, pixelsize=None):
         delimiter = '\t'
     else:
         raise ValueError('Invalid data file')
-
 
     with open(file_path, 'r') as f:
         line = f.readline()
