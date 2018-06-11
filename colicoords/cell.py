@@ -23,9 +23,10 @@ class Cell(object):
         data (:class:`Data`): Holds all data describing this single cell.
         coords (:class:`Coordinates`): Calculates and optimizes the cell's coordinate system.
         name (:obj:`str`): Name identifying the cell (optional)
+        index (:obj:`int`) Index of the cell in a cell list (for maintaining order upon load/save)
     """
 
-    def __init__(self, data_object, name=None):
+    def __init__(self, data_object, name=None, **kwargs):
         """
         Args:
             data_object (:class:`Data`): Data class holding all data which describes this single cell
@@ -36,6 +37,7 @@ class Cell(object):
         self.data = data_object
         self.coords = Coordinates(self.data)
         self.name = name
+        self.index = kwargs.pop('index', None)
 
     def optimize(self, data_name='binary', objective=None, **kwargs):
         # todo find out if callable is a thing
@@ -189,16 +191,18 @@ class Cell(object):
             assert data_elem.dclass == 'storm'
 
         x, y = data_elem['x'], data_elem['y']
-        xs = self.coords.calc_xc(x, y)
+        lc = self.coords.calc_lc(x, y)
+        lq1 = self.length / 4
+        lq3 = 3*lq1
 
-        xq1 = fsolve(_solve_len, self.coords.xl + self.length/4,
-                     args=(self.coords.xl, self.length/4, self.coords.coeff))
-        xq3 = fsolve(_solve_len, self.coords.xl + 3*(self.length/4),
-                     args=(self.coords.xl, 3*(self.length/4), self.coords.coeff))
+        poles = np.sum(lc <= 0) + np.sum(lc >= self.length)
+        between = np.sum(np.logical_and(lc > 0, lc < lq1)) + np.sum(np.logical_and(lc < self.length, lc > lq3))
+        mid = np.sum(np.logical_and(lc >= lq1, lc <= lq3))
 
-        poles = np.sum(xs < self.coords.xl) + np.sum(xs > self.coords.xr)
-        between = np.sum(np.logical_and(xs >= self.coords.xl, xs < xq1)) + np.sum(np.logical_and(xs <= self.coords.xr, xs > xq3))
-        mid = np.sum(np.logical_and(xs >= xq1, xs <= xq3))
+        try:
+            assert len(x) == (poles + between + mid)
+        except AssertionError:
+            raise ValueError("Invalid number of points")
 
         return poles, between, mid
 
@@ -313,19 +317,20 @@ class Cell(object):
         Returns:
             The measured radius `r` if `in_place` is `False`, otherwise `None`.
         """
-        x, y = self.r_dist(15, 1, data_name=data_name) # todo again need sensible default for stop
+        x, y = self.r_dist(15, 1, data_name=data_name)  # todo again need sensible default for stop
         mid_val = (np.min(y) + np.max(y)) / 2
 
         imin = np.argmin(y)
         imax = np.argmax(y)
+        try:
+            r = np.interp(mid_val, y[imin:imax], x[imin:imax])
+            if in_place:
+                self.coords.r = r
+            else:
+                return r
 
-        r = np.interp(mid_val, y[imin:imax], x[imin:imax])
-        print(r)
-
-        if in_place:
-            self.coords.r = r
-        else:
-            return r
+        except ValueError:
+            print('r value not found')
 
     def reconstruct_cell(self, data_name, norm_x=False, r_scale=1, **kwargs):
         #todo stop and step defaults when norm_x=True?
@@ -601,8 +606,19 @@ class Coordinates(object):
         a0, a1, a2 = self.coeff
         return np.sqrt((xc - xp)**2 + (a0 + xc*(a1 + a2*xc) - yp)**2)
 
+    def calc_lc(self, xp, yp):
+        xc = self.calc_xc(xp, yp)
+        op = operator.lt if self.p_dx(self.xl) > 0 else operator.gt
+        xc[op(yp, self.q(xc, self.xl))] = self.xl
+
+        # Area right of perpendicular line at xr:
+        op = operator.gt if self.p_dx(self.xr) > 0 else operator.lt
+        xc[op(yp, self.q(xc, self.xr))] = self.xr
+
+        return _calc_len(self.xl, xc, self.coeff)
+
     def calc_psi(self, xp, yp):
-        return
+        raise NotImplementedError()
 
     @property
     def x_coords(self):
@@ -631,6 +647,10 @@ class Coordinates(object):
     @property
     def rc(self):
         return self.calc_rc(self.x_coords, self.y_coords)
+
+    @property
+    def lc(self):
+        return self.calc_lc(self.x_coords, self.y_coords)
 
     @property
     def psi(self):
@@ -826,7 +846,7 @@ class CellList(object):
     def append(self, cell_obj):
         """Append Cell object `cell_obj` to the list of cells."""
         assert isinstance(cell_obj, Cell)
-        np.append(self.cell_list, cell_obj)
+        self.cell_list = np.append(self.cell_list, cell_obj)
 
     def r_dist(self, stop, step, data_name='', norm_x=False, storm_weight=False, xlim=None):
         """ Calculates the radial distribution of a given data element for all cells in the `CellList`.
@@ -919,7 +939,7 @@ class CellList(object):
         """
 
         r = [c.measure_r(data_name=data_name, in_place=in_place) for c in self]
-        if in_place:
+        if not in_place:
             return np.array(r)
 
     def copy(self):
