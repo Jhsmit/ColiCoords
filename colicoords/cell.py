@@ -585,6 +585,11 @@ class Coordinates(object):
 
         return x_c
 
+    def calc_xc_masked(self, xp, yp):
+        pass
+
+    def calc_xc_mask(self, xp, yp):
+
     def calc_rc(self, xp, yp):
         #todo 1d array? maybe it work siwth any shape like xc (it better)
         """
@@ -594,14 +599,14 @@ class Coordinates(object):
         :return: 1D array of distances r from (x, y) to (xc, p(xc))
         """
         xc = self.calc_xc(xp, yp)
-
+        yc = self.p(xc)
         # Area left of perpendicular line at xl:
         op = operator.lt if self.p_dx(self.xl) > 0 else operator.gt
-        xc[op(yp, self.q(xc, self.xl))] = self.xl
+        xc[op(yc, self.q(xc, self.xl))] = self.xl
 
         # Area right of perpendicular line at xr:
         op = operator.gt if self.p_dx(self.xr) > 0 else operator.lt
-        xc[op(yp, self.q(xc, self.xr))] = self.xr
+        xc[op(yc, self.q(xc, self.xr))] = self.xr
 
         a0, a1, a2 = self.coeff
         return np.sqrt((xc - xp)**2 + (a0 + xc*(a1 + a2*xc) - yp)**2)
@@ -618,7 +623,29 @@ class Coordinates(object):
         return _calc_len(self.xl, xc, self.coeff)
 
     def calc_psi(self, xp, yp):
-        raise NotImplementedError()
+        xc = self.calc_xc(xp, yp)
+        yc = self.p(xc)
+        # rc = self.calc_rc(np.array(xp), np.array(yp))
+
+        # Area left of perpendicular line at xl:
+        op = operator.lt if self.p_dx(self.xl) > 0 else operator.gt
+        xc[op(yc, self.q(xc, self.xl))] = self.xl
+
+        # Area right of perpendicular line at xr:
+        op = operator.gt if self.p_dx(self.xr) > 0 else operator.lt
+        xc[op(yc, self.q(xc, self.xr))] = self.xr
+
+
+        yc = self.p(xc)
+        rc = self.calc_rc(xp, yp)
+        psi_rad = np.arcsin(np.divide(yp - yc, rc))
+
+        #psi_rad = np.arcsin(np.divide(yc - yp, rc))
+        # psi_rad = np.arcsin(np.divide(yp - yc, rc))
+        #todo masking n shit
+        #psi_rad = np.arctan(np.divide(xp - xc, yc - yp))
+
+        return (psi_rad * (180/np.pi))
 
     @property
     def x_coords(self):
@@ -645,6 +672,41 @@ class Coordinates(object):
         return self.p(self.xc)
 
     @property
+    def xc_masked(self):
+        xc = self.xc.copy()
+        yp = self.yc
+
+        # Area left of perpendicular line at xl:
+        op = operator.lt if self.p_dx(self.xl) > 0 else operator.gt
+        idx_left = op(yp, self.q(xc, self.xl))
+
+        op = operator.gt if self.p_dx(self.xr) > 0 else operator.lt
+        idx_right = op(yp, self.q(xc, self.xr))
+
+        xc[idx_left] = self.xl
+        xc[idx_right] = self.xr
+
+        return xc
+
+    @property
+    def xc_mask(self):
+        xc = self.xc.copy()
+        yp = self.yc
+
+        # Area left of perpendicular line at xl:
+        op = operator.lt if self.p_dx(self.xl) > 0 else operator.gt
+        idx_left = op(yp, self.q(xc, self.xl))
+
+        op = operator.gt if self.p_dx(self.xr) > 0 else operator.lt
+        idx_right = op(yp, self.q(xc, self.xr))
+
+        xc[:] = 2
+        xc[idx_left] = 1
+        xc[idx_right] = 3
+
+        return xc
+
+    @property
     def rc(self):
         return self.calc_rc(self.x_coords, self.y_coords)
 
@@ -655,8 +717,9 @@ class Coordinates(object):
     @property
     def psi(self):
         #todo test
-        psi_rad = np.arcsin(np.divide(self.y_coords - self.yc, self.rc))
-        return psi_rad * (180/np.pi)
+
+        return self.calc_psi(self.x_coords, self.y_coords)
+        #return 90 + psi_rad * (180/np.pi)
 
     def p(self, x_arr):
         """
