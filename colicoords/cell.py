@@ -658,6 +658,25 @@ class Coordinates(object):
 
         return idx_left, idx_right, xc
 
+    @allow_scalars
+    def transform(self, xp, yp):
+        """ Transforms image coordinates (xp, yp) to cell coordinates (xc, lc, rc, psi)
+
+        Args:
+            xp (:`obj`:float: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
+            yp (:`obj`:float: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as xp
+
+        Returns:
+            :`obj`:tuple: Tuple of cellular coordinates xc, lc, rc, psi
+        """
+        
+        xc = self.calc_xc_masked(xp, yp)
+        lc = self.calc_lc(xp, yp)
+        rc = self.calc_rc(xp, yp)
+        psi = self.calc_psi(xp, yp)
+
+        return xc, lc, rc, psi
+
     @property
     def x_coords(self):
         """:class:`~numpy.ndarray``: Matrix of shape m x n equal to cell image with cartesian x-coordinates."""
