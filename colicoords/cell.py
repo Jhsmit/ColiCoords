@@ -5,7 +5,7 @@ import numpy as np
 import operator
 from functools import partial
 from colicoords.optimizers import Optimizer
-from colicoords.support import allow_scalar_input
+from colicoords.support import allow_scalars
 from scipy.integrate import quad
 from scipy.optimize import fsolve
 #import multiprocessing as mp
@@ -486,7 +486,7 @@ class Coordinates(object):
         for k, v in par_dict.items():
             setattr(self, k, v)
 
-    @allow_scalar_input
+    @allow_scalars
     def calc_xc(self, xp, yp):
         """ Calculates the coordinate xc on p(x) closest to xp, yp
         
@@ -526,7 +526,7 @@ class Coordinates(object):
 
         return x_c
 
-    @allow_scalar_input
+    @allow_scalars
     def calc_xc_mask(self, xp, yp):
         """ Calculated whether point (xp, yp) is in either the left or right polar areas, or in between.
 
@@ -547,7 +547,7 @@ class Coordinates(object):
 
         return mask
 
-    @allow_scalar_input
+    @allow_scalars
     def calc_xc_masked(self, xp, yp):
         """ Calculates the coordinate xc on p(x) closest to (xp, yp), where xl < xc < xr
 
@@ -564,7 +564,7 @@ class Coordinates(object):
 
         return xc
 
-    @allow_scalar_input
+    @allow_scalars
     def calc_rc(self, xp, yp):
         """ Calculates the distance of (xp, yp) to (xc, p(xc)).
 
@@ -582,7 +582,7 @@ class Coordinates(object):
         a0, a1, a2 = self.coeff
         return np.sqrt((xc - xp)**2 + (a0 + xc*(a1 + a2*xc) - yp)**2)
 
-    @allow_scalar_input
+    @allow_scalars
     def calc_lc(self, xp, yp):
         """ Calculates distance of xc along the midline the cell corresponding to the points (xp, yp).
 
@@ -599,7 +599,7 @@ class Coordinates(object):
         xc = self.calc_xc_masked(xp, yp)
         return _calc_len(self.xl, xc, self.coeff)
 
-    @allow_scalar_input
+    @allow_scalars
     def calc_psi(self, xp, yp):
         """ Calculates the angle between the line perpendical to the cell midline and the line between (xp, yp) and (xc, p(xc).
 

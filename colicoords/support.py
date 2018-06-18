@@ -2,7 +2,7 @@ from functools import wraps
 import numpy as np
 
 
-def allow_scalar_input(f):
+def allow_scalars(f):
     @wraps(f)
     def wrapper(self, *args):
         if np.all([np.isscalar(a) for a in args]):
