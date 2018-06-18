@@ -493,11 +493,11 @@ class Coordinates(object):
         All coordinates are cartesian. Solutions are found by solving the cubic equation.
 
         Args:
-            xp: Input scalar or vector/matrix x-coordinate. Must be the same shape as yp 
-            yp: Input scalar or vector/matrix x-coordinate. Must be the same shape as xp
+            xp (:`obj`:float: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
+            yp (:`obj`:float: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as xp
 
         Returns:
-            Scalar or vector/matrix depending on input
+            :`obj`:float: or :class:`~numpy.ndarray`: Cellular x-coordinate for point(s) xp, yp
         """
 
         assert xp.shape == yp.shape
@@ -513,12 +513,12 @@ class Coordinates(object):
             raise ValueError('Discriminant equal to zero encountered. This has never happened before! What did you do?')
 
         if np.all(discr < 0):
-            x_c = solve_general(a, b, c, d)
+            x_c = _solve_general(a, b, c, d)
         else:
             x_c = np.zeros(xp.shape)
             mask = discr < 0
 
-            general_part = solve_general(a, b, c[mask], d[mask])
+            general_part = _solve_general(a, b, c[mask], d[mask])
             trig_part = solve_trig(a, b, c[~mask], d[~mask])
 
             x_c[mask] = general_part
@@ -528,7 +528,18 @@ class Coordinates(object):
 
     @allow_scalar_input
     def calc_xc_mask(self, xp, yp):
-        """this is the docstring"""
+        """ Calculated whether point (xp, yp) is in either the left or right polar areas, or in between.
+
+        Returned values are 1 for left pole, 2 for middle, 3 for right pole.
+
+        Args:
+            xp (:`obj`:float: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
+            yp (:`obj`:float: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as xp
+
+        Returns:
+            :`obj`:float: or :class:`~numpy.ndarray`: Array to mask different cellular regions.
+        """
+
         idx_left, idx_right, xc = self.get_idx_xc(xp, yp)
         mask = 2*np.ones_like(xp)
         xc[idx_left] = 1
@@ -538,6 +549,15 @@ class Coordinates(object):
 
     @allow_scalar_input
     def calc_xc_masked(self, xp, yp):
+        """ Calculates the coordinate xc on p(x) closest to (xp, yp), where xl < xc < xr
+
+        Args:
+            xp (:`obj`:float: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
+            yp (:`obj`:float: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as xp
+
+        Returns:
+            :`obj`:float: or :class:`~numpy.ndarray`: Cellular x-coordinate for point(s) xp, yp, where xl < xc < xr
+        """
         idx_left, idx_right, xc = self.get_idx_xc(xp, yp)
         xc[idx_left] = self.xl
         xc[idx_right] = self.xr
@@ -546,12 +566,16 @@ class Coordinates(object):
 
     @allow_scalar_input
     def calc_rc(self, xp, yp):
-        #todo 1d array? maybe it work siwth any shape like xc (it better)
-        """
-        Applies endcap limits xl and xr and calculates distance r to cell spine
-        :param xp: 1D array of x coordinates
-        :param yp: 1D array of y coordinates
-        :return: 1D array of distances r from (x, y) to (xc, p(xc))
+        """ Calculates the distance of (xp, yp) to (xc, p(xc)).
+
+        The returned value is the distance from the points (xp, yp) to the midline of the cell.
+
+        Args:
+            xp (:`obj`:float: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
+            yp (:`obj`:float: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as xp
+
+        Returns:
+            :`obj`:float: or :class:`~numpy.ndarray`: Distance to the midline of the cell.
         """
 
         xc = self.calc_xc_masked(xp, yp)
@@ -560,18 +584,45 @@ class Coordinates(object):
 
     @allow_scalar_input
     def calc_lc(self, xp, yp):
+        """ Calculates distance of xc along the midline the cell corresponding to the points (xp, yp).
+
+        The returned value is the distance from the points (xp, yp) to the midline of the cell.
+
+        Args:
+            xp (:`obj`:float: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
+            yp (:`obj`:float: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as xp
+
+        Returns:
+            :`obj`:float: or :class:`~numpy.ndarray`: Distance along the midline of the cell.
+        """
+
         xc = self.calc_xc_masked(xp, yp)
         return _calc_len(self.xl, xc, self.coeff)
 
     @allow_scalar_input
     def calc_psi(self, xp, yp):
+        """ Calculates the angle between the line perpendical to the cell midline and the line between (xp, yp) and (xc, p(xc).
+
+        The returned values are in degrees. The angle is defined to be 0 degrees for values in the upper half of the image
+        (yp < p(xp)), running from 180 to zero along the right polar region, 180 degrees in the lower half and running back to
+        0 degrees along the left polar region.
+
+        Args:
+            xp (:`obj`:float: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
+            yp (:`obj`:float: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as xp
+
+        Returns:
+            :`obj`:float: or :class:`~numpy.ndarray`: Angle psi for (xp, yp).
+        """
+
         idx_left, idx_right, xc = self.get_idx_xc(xp, yp)
         xc[idx_left] = self.xl
         xc[idx_right] = self.xr
         yc = self.p(xc)
 
         psi = np.empty(xp.shape)
-        top = self.y_coords < self.p(self.x_coords)
+        #todo this no worky probably
+        top = yp < self.p(xp)
         psi[top] = 0
         psi[~top] = np.pi
 
@@ -584,6 +635,17 @@ class Coordinates(object):
         return psi*(180/np.pi)
 
     def get_idx_xc(self, xp, yp):
+        """ Finds the indices of the arrays xp an yp where they either belong to the left or right polar regins, as well as
+            coordinates xc
+
+        Args:
+            xp (:`obj`:float: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
+            yp (:`obj`:float: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as xp
+
+        Returns:
+            :`obj`:float: or :class:`~numpy.ndarray`: Angle psi for (xp, yp).
+        """
+
         xc = self.calc_xc(xp, yp).copy()
         yp = self.p(xc)
 
@@ -622,22 +684,31 @@ class Coordinates(object):
 
     @property
     def xc_masked(self):
+        """:class:`~numpy.ndarray`: Matrix of shape m x n equal to cell image with x coordinates on p(x)
+            where xl < xc < xr.
+        """
         return self.calc_xc_masked(self.x_coords, self.y_coords)
 
     @property
     def xc_mask(self):
+        """:class:`~numpy.ndarray`: Matrix of shape m x n equal to cell image where elements have values 1, 2, 3 for
+            left pole, middle and right pole, respectively.
+        """
         return self.calc_xc_mask(self.x_coords, self.y_coords)
 
     @property
     def rc(self):
+        """:class:`~numpy.ndarray`: Matrix of shape m x n equal to cell with distance r to the cell midline."""
         return self.calc_rc(self.x_coords, self.y_coords)
 
     @property
     def lc(self):
+        """:class:`~numpy.ndarray`: Matrix of shape m x n equal to cell with distance l along the cell mideline."""
         return self.calc_lc(self.x_coords, self.y_coords)
 
     @property
     def psi(self):
+        """:class:`~numpy.ndarray`: Matrix of shape m x n equal to cell with angle psi relative to the cell midline."""
         return self.calc_psi(self.x_coords, self.y_coords)
 
     def p(self, x_arr):
@@ -990,7 +1061,7 @@ class CellList(object):
         return self.cell_list.__contains__(item)
 
 
-def solve_general(a, b, c, d):
+def _solve_general(a, b, c, d):
     """
     Solve cubic polynomial in the form a*x^3 + b*x^2 + c*x + d
     Only works if polynomial discriminant < 0, then there is only one real root which is the one that is returned.
