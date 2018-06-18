@@ -509,66 +509,6 @@ class Coordinates(object):
         #a: float, b: float, c: array, d: array
         discr = 18*a*b*c*d - 4*b**3*d + b**2*c**2 - 4*a*c**3 - 27*a**2*d**2
 
-        def solve_general_bak(a, b, c, d):
-            """
-            Solve cubic polynomial in the form a*x^3 + b*x^2 + c*x + d
-            Only works if polynomial discriminant < 0, then there is only one real root which is the one that is returned.
-            https://en.wikipedia.org/wiki/Cubic_function#General_formula
-            :return (float): Only real root
-            """
-
-            d0 = (b ** 2 - 3 * a * c)
-            d1 = (2 * b ** 3 - 9 * a * b * c + 27 * a ** 2 * d)
-
-            dc = ((d1 + (d1 ** 2 - 4 * d0 ** 3)**(1/2)) / 2)**(1/3)
-
-            return -(1 / (3 * a)) * (b + dc + (d0 / dc))
-
-        def solve_general(a, b, c, d):
-            """
-            Solve cubic polynomial in the form a*x^3 + b*x^2 + c*x + d
-            Only works if polynomial discriminant < 0, then there is only one real root which is the one that is returned.
-            https://en.wikipedia.org/wiki/Cubic_function#General_formula
-            :return (float): Only real root
-            """
-
-            #todo check type for performance gain?
-            # 16 16: 5.03 s
-            # 32 32: 3.969 s
-            # 64 64: 5.804 s
-            # 8 8:
-            d0 = b ** 2. - 3. * a * c
-            d1 = 2. * b ** 3. - 9. * a * b * c + 27. * a ** 2. * d
-
-            r0 = np.square(d1) - 4. * d0 ** 3.
-            r1 = (d1 + np.sqrt(r0)) / 2
-            dc = np.cbrt(r1)  # power (1/3) gives nan's for coeffs [1.98537881e+01, 1.44894594e-02, 2.38096700e+00]01, 1.44894594e-02, 2.38096700e+00]
-            return -(1. / (3. * a)) * (b + dc + (d0 / dc))
-            #todo hit a runtimewaring divide by zero on line above once
-
-        def solve_trig(a, b, c, d):
-            """
-            Solve cubic polynomial in the form a*x^3 + b*x^2 + c*x + d
-            https://en.wikipedia.org/wiki/Cubic_function#Trigonometric_solution_for_three_real_roots
-            Only works if polynomial discriminant > 0, the polynomial has three real roots
-            :return (float): 1st real root
-            """
-
-            p = (3. * a * c - b ** 2.) / (3. * a ** 2.)
-            q = (2. * b ** 3. - 9. * a * b * c + 27. * a ** 2. * d) / (27. * a ** 3.)
-            assert(np.all(p < 0))
-            k = 0.
-            t_k = 2. * np.sqrt(-p/3.) * np.cos((1 / 3.) * np.arccos(((3.*q)/(2.*p)) * np.sqrt(-3./p)) - (2*np.pi*k)/3.)
-            x_r = t_k - (b/(3*a))
-            try:
-                assert(np.all(x_r > 0)) # dont know if this is guaranteed otherwise boundaries need to be passed and choosing from 3 slns
-            except AssertionError:
-                print(x_r)
-                #todo find out of this is bad or not
-                print('warning!')
-                #raise ValueError
-            return x_r
-
         if np.any(discr == 0):
             raise ValueError('Discriminant equal to zero encountered. This has never happened before! What did you do?')
 
@@ -1048,6 +988,53 @@ class CellList(object):
 
     def __contains__(self, item):
         return self.cell_list.__contains__(item)
+
+
+def solve_general(a, b, c, d):
+    """
+    Solve cubic polynomial in the form a*x^3 + b*x^2 + c*x + d
+    Only works if polynomial discriminant < 0, then there is only one real root which is the one that is returned.
+    https://en.wikipedia.org/wiki/Cubic_function#General_formula
+    :return (float): Only real root
+    """
+
+    #todo check type for performance gain?
+    # 16 16: 5.03 s
+    # 32 32: 3.969 s
+    # 64 64: 5.804 s
+    # 8 8:
+    d0 = b ** 2. - 3. * a * c
+    d1 = 2. * b ** 3. - 9. * a * b * c + 27. * a ** 2. * d
+
+    r0 = np.square(d1) - 4. * d0 ** 3.
+    r1 = (d1 + np.sqrt(r0)) / 2
+    dc = np.cbrt(r1)  # power (1/3) gives nan's for coeffs [1.98537881e+01, 1.44894594e-02, 2.38096700e+00]01, 1.44894594e-02, 2.38096700e+00]
+    return -(1. / (3. * a)) * (b + dc + (d0 / dc))
+    #todo hit a runtimewaring divide by zero on line above once
+
+
+def solve_trig(a, b, c, d):
+    """
+    Solve cubic polynomial in the form a*x^3 + b*x^2 + c*x + d
+    https://en.wikipedia.org/wiki/Cubic_function#Trigonometric_solution_for_three_real_roots
+    Only works if polynomial discriminant > 0, the polynomial has three real roots
+    :return (float): 1st real root
+    """
+
+    p = (3. * a * c - b ** 2.) / (3. * a ** 2.)
+    q = (2. * b ** 3. - 9. * a * b * c + 27. * a ** 2. * d) / (27. * a ** 3.)
+    assert(np.all(p < 0))
+    k = 0.
+    t_k = 2. * np.sqrt(-p/3.) * np.cos((1 / 3.) * np.arccos(((3.*q)/(2.*p)) * np.sqrt(-3./p)) - (2*np.pi*k)/3.)
+    x_r = t_k - (b/(3*a))
+    try:
+        assert(np.all(x_r > 0)) # dont know if this is guaranteed otherwise boundaries need to be passed and choosing from 3 slns
+    except AssertionError:
+        print(x_r)
+        #todo find out of this is bad or not
+        print('warning!')
+        #raise ValueError
+    return x_r
 
 
 def _solve_len(x, xl, l, coeff):
