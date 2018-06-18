@@ -5,6 +5,7 @@ import numpy as np
 import operator
 from functools import partial
 from colicoords.optimizers import Optimizer
+from colicoords.support import allow_scalar_input
 from scipy.integrate import quad
 from scipy.optimize import fsolve
 #import multiprocessing as mp
@@ -469,7 +470,6 @@ class Coordinates(object):
     @property
     def a2(self):
         """float: Polynomial p(x) 2nd degree coefficient"""
-
         return self.coeff[2]
 
     @a2.setter
@@ -486,8 +486,8 @@ class Coordinates(object):
         for k, v in par_dict.items():
             setattr(self, k, v)
 
+    @allow_scalar_input
     def calc_xc(self, xp, yp):
-        #todo test if this even works with scalars
         """ Calculates the coordinate xc on p(x) closest to xp, yp
         
         All coordinates are cartesian. Solutions are found by solving the cubic equation.
@@ -500,6 +500,7 @@ class Coordinates(object):
             Scalar or vector/matrix depending on input
         """
 
+        assert xp.shape == yp.shape
         #https://en.wikipedia.org/wiki/Cubic_function#Algebraic_solution
         a0, a1, a2 = self.coeff
         #xp, yp = xp.astype('float32'), yp.astype('float32')
@@ -585,11 +586,25 @@ class Coordinates(object):
 
         return x_c
 
-    def calc_xc_masked(self, xp, yp):
-        pass
-
+    @allow_scalar_input
     def calc_xc_mask(self, xp, yp):
+        """this is the docstring"""
+        idx_left, idx_right, xc = self.get_idx_xc(xp, yp)
+        mask = 2*np.ones_like(xp)
+        xc[idx_left] = 1
+        xc[idx_right] = 3
 
+        return mask
+
+    @allow_scalar_input
+    def calc_xc_masked(self, xp, yp):
+        idx_left, idx_right, xc = self.get_idx_xc(xp, yp)
+        xc[idx_left] = self.xl
+        xc[idx_right] = self.xr
+
+        return xc
+
+    @allow_scalar_input
     def calc_rc(self, xp, yp):
         #todo 1d array? maybe it work siwth any shape like xc (it better)
         """
@@ -598,54 +613,48 @@ class Coordinates(object):
         :param yp: 1D array of y coordinates
         :return: 1D array of distances r from (x, y) to (xc, p(xc))
         """
-        xc = self.calc_xc(xp, yp)
-        yc = self.p(xc)
-        # Area left of perpendicular line at xl:
-        op = operator.lt if self.p_dx(self.xl) > 0 else operator.gt
-        xc[op(yc, self.q(xc, self.xl))] = self.xl
 
-        # Area right of perpendicular line at xr:
-        op = operator.gt if self.p_dx(self.xr) > 0 else operator.lt
-        xc[op(yc, self.q(xc, self.xr))] = self.xr
-
+        xc = self.calc_xc_masked(xp, yp)
         a0, a1, a2 = self.coeff
         return np.sqrt((xc - xp)**2 + (a0 + xc*(a1 + a2*xc) - yp)**2)
 
+    @allow_scalar_input
     def calc_lc(self, xp, yp):
-        xc = self.calc_xc(xp, yp)
-        op = operator.lt if self.p_dx(self.xl) > 0 else operator.gt
-        xc[op(yp, self.q(xc, self.xl))] = self.xl
-
-        # Area right of perpendicular line at xr:
-        op = operator.gt if self.p_dx(self.xr) > 0 else operator.lt
-        xc[op(yp, self.q(xc, self.xr))] = self.xr
-
+        xc = self.calc_xc_masked(xp, yp)
         return _calc_len(self.xl, xc, self.coeff)
 
+    @allow_scalar_input
     def calc_psi(self, xp, yp):
-        xc = self.calc_xc(xp, yp)
+        idx_left, idx_right, xc = self.get_idx_xc(xp, yp)
+        xc[idx_left] = self.xl
+        xc[idx_right] = self.xr
         yc = self.p(xc)
-        # rc = self.calc_rc(np.array(xp), np.array(yp))
+
+        psi = np.empty(xp.shape)
+        top = self.y_coords < self.p(self.x_coords)
+        psi[top] = 0
+        psi[~top] = np.pi
+
+        th1 = np.arctan2(yp - yc, xc - xp)
+        th2 = np.arctan(self.p_dx(xc))
+        thetha = th1 + th2 + np.pi / 2
+        psi[idx_right] = (np.pi - thetha[idx_right]) % np.pi
+        psi[idx_left] = thetha[idx_left]
+
+        return psi*(180/np.pi)
+
+    def get_idx_xc(self, xp, yp):
+        xc = self.calc_xc(xp, yp).copy()
+        yp = self.p(xc)
 
         # Area left of perpendicular line at xl:
         op = operator.lt if self.p_dx(self.xl) > 0 else operator.gt
-        xc[op(yc, self.q(xc, self.xl))] = self.xl
+        idx_left = op(yp, self.q(xc, self.xl))
 
-        # Area right of perpendicular line at xr:
         op = operator.gt if self.p_dx(self.xr) > 0 else operator.lt
-        xc[op(yc, self.q(xc, self.xr))] = self.xr
+        idx_right = op(yp, self.q(xc, self.xr))
 
-
-        yc = self.p(xc)
-        rc = self.calc_rc(xp, yp)
-        psi_rad = np.arcsin(np.divide(yp - yc, rc))
-
-        #psi_rad = np.arcsin(np.divide(yc - yp, rc))
-        # psi_rad = np.arcsin(np.divide(yp - yc, rc))
-        #todo masking n shit
-        #psi_rad = np.arctan(np.divide(xp - xc, yc - yp))
-
-        return (psi_rad * (180/np.pi))
+        return idx_left, idx_right, xc
 
     @property
     def x_coords(self):
@@ -673,38 +682,11 @@ class Coordinates(object):
 
     @property
     def xc_masked(self):
-        xc = self.xc.copy()
-        yp = self.yc
-
-        # Area left of perpendicular line at xl:
-        op = operator.lt if self.p_dx(self.xl) > 0 else operator.gt
-        idx_left = op(yp, self.q(xc, self.xl))
-
-        op = operator.gt if self.p_dx(self.xr) > 0 else operator.lt
-        idx_right = op(yp, self.q(xc, self.xr))
-
-        xc[idx_left] = self.xl
-        xc[idx_right] = self.xr
-
-        return xc
+        return self.calc_xc_masked(self.x_coords, self.y_coords)
 
     @property
     def xc_mask(self):
-        xc = self.xc.copy()
-        yp = self.yc
-
-        # Area left of perpendicular line at xl:
-        op = operator.lt if self.p_dx(self.xl) > 0 else operator.gt
-        idx_left = op(yp, self.q(xc, self.xl))
-
-        op = operator.gt if self.p_dx(self.xr) > 0 else operator.lt
-        idx_right = op(yp, self.q(xc, self.xr))
-
-        xc[:] = 2
-        xc[idx_left] = 1
-        xc[idx_right] = 3
-
-        return xc
+        return self.calc_xc_mask(self.x_coords, self.y_coords)
 
     @property
     def rc(self):
@@ -716,10 +698,7 @@ class Coordinates(object):
 
     @property
     def psi(self):
-        #todo test
-
         return self.calc_psi(self.x_coords, self.y_coords)
-        #return 90 + psi_rad * (180/np.pi)
 
     def p(self, x_arr):
         """
