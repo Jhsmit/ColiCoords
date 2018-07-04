@@ -265,6 +265,7 @@ class Cell(object):
                 bin_r = r.flatten()
                 b = np.ones_like(x).astype(bool)
 
+
             y_weight = data_elem['intensity'][b] if storm_weight else None
             yvals = self._bin_func(bin_r, y_weight, bins)
 
@@ -356,7 +357,7 @@ class Cell(object):
 
         return interp
 
-    def get_intensity(self, mask='binary', data_name=''):
+    def get_intensity(self, mask='binary', data_name='', func=np.mean):
         """ Returns the mean fluorescence intensity in the region masked by either the binary image or synthetic
             binary image derived from the cell's coordinate system
 
@@ -384,7 +385,7 @@ class Cell(object):
             except KeyError:
                 raise ValueError('Chosen data not found')
 
-        return data_elem[m].mean()
+        return func(data_elem[m])
 
     @staticmethod
     def _bin_func(xvals, y_weight, bins):
@@ -600,7 +601,7 @@ class Coordinates(object):
         return _calc_len(self.xl, xc, self.coeff)
 
     @allow_scalars
-    def calc_psi(self, xp, yp):
+    def calc_phi(self, xp, yp):
         """ Calculates the angle between the line perpendical to the cell midline and the line between (xp, yp) and (xc, p(xc).
 
         The returned values are in degrees. The angle is defined to be 0 degrees for values in the upper half of the image
@@ -612,7 +613,7 @@ class Coordinates(object):
             yp (:`obj`:float: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as xp
 
         Returns:
-            :`obj`:float: or :class:`~numpy.ndarray`: Angle psi for (xp, yp).
+            :`obj`:float: or :class:`~numpy.ndarray`: Angle phi for (xp, yp).
         """
 
         idx_left, idx_right, xc = self.get_idx_xc(xp, yp)
@@ -620,19 +621,18 @@ class Coordinates(object):
         xc[idx_right] = self.xr
         yc = self.p(xc)
 
-        psi = np.empty(xp.shape)
-        #todo this no worky probably
+        phi = np.empty(xp.shape)
         top = yp < self.p(xp)
-        psi[top] = 0
-        psi[~top] = np.pi
+        phi[top] = 0
+        phi[~top] = np.pi
 
         th1 = np.arctan2(yp - yc, xc - xp)
         th2 = np.arctan(self.p_dx(xc))
         thetha = th1 + th2 + np.pi / 2
-        psi[idx_right] = (np.pi - thetha[idx_right]) % np.pi
-        psi[idx_left] = thetha[idx_left]
+        phi[idx_right] = (np.pi - thetha[idx_right]) % np.pi
+        phi[idx_left] = thetha[idx_left]
 
-        return psi*(180/np.pi)
+        return phi*(180/np.pi)
 
     def get_idx_xc(self, xp, yp):
         """ Finds the indices of the arrays xp an yp where they either belong to the left or right polar regins, as well as
@@ -669,11 +669,11 @@ class Coordinates(object):
         Returns:
             :`obj`:tuple: Tuple of cellular coordinates xc, lc, rc, psi
         """
-        
+
         xc = self.calc_xc_masked(xp, yp)
         lc = self.calc_lc(xp, yp)
         rc = self.calc_rc(xp, yp)
-        psi = self.calc_psi(xp, yp)
+        psi = self.calc_phi(xp, yp)
 
         return xc, lc, rc, psi
 
@@ -726,9 +726,9 @@ class Coordinates(object):
         return self.calc_lc(self.x_coords, self.y_coords)
 
     @property
-    def psi(self):
+    def phi(self):
         """:class:`~numpy.ndarray`: Matrix of shape m x n equal to cell with angle psi relative to the cell midline."""
-        return self.calc_psi(self.x_coords, self.y_coords)
+        return self.calc_phi(self.x_coords, self.y_coords)
 
     def p(self, x_arr):
         """
@@ -1120,9 +1120,8 @@ def solve_trig(a, b, c, d):
     try:
         assert(np.all(x_r > 0)) # dont know if this is guaranteed otherwise boundaries need to be passed and choosing from 3 slns
     except AssertionError:
-        print(x_r)
-        #todo find out of this is bad or not
-        print('warning!')
+        pass
+        #todo find out if this is bad or not
         #raise ValueError
     return x_r
 
@@ -1139,6 +1138,7 @@ def _solve_len(x, xl, l, coeff):
 
 
 def _calc_len(xl, xr, coeff):
+    #make public
     a0, a1, a2 = coeff
     l = (1 / (4 * a2)) * (
             ((a1 + 2 * a2 * xr) * np.sqrt(1 + (a1 + 2 * a2 * xr) ** 2) + np.arcsinh((a1 + 2 * a2 * xr))) -
