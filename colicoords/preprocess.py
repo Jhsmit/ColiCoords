@@ -3,11 +3,12 @@ import numpy as np
 from colicoords.cell import Cell, CellList
 
 
-def data_to_cells(input_data, pad_width=2, cell_frac=0.5, rotate='binary', verbose=True):
+def data_to_cells(input_data, pad_width=3, cell_frac=0.5, rotate='binary', verbose=True):
     assert 'binary' in input_data.dclasses
 
     vprint = print if verbose else lambda *a, **k: None
     cell_list = []
+    i_fill = int(np.ceil(np.log10(len(input_data))))
     for i, data in enumerate(input_data):
         binary = data.binary_img
         if (binary > 0).mean() > cell_frac or binary.mean() == 0.:
@@ -15,6 +16,7 @@ def data_to_cells(input_data, pad_width=2, cell_frac=0.5, rotate='binary', verbo
             continue
 
         # Iterate over all cells in the image
+        l_fill = int(np.ceil(np.log10(len(np.unique(binary)))))
         for l in np.unique(binary)[1:]:
             selected_binary = (binary == l).astype('int')
             min1, max1, min2, max2 = mh.bbox(selected_binary)
@@ -43,7 +45,7 @@ def data_to_cells(input_data, pad_width=2, cell_frac=0.5, rotate='binary', verbo
             #todo change cell initation and data adding interface
             c = Cell(rotated_data)
 
-            c.name = 'img{}c{}'.format(str(i).zfill(3), str(l).zfill(3))
+            c.name = 'img{}c{}'.format(str(i).zfill(i_fill), str(l).zfill(l_fill))
             cell_list.append(c)
 
     return CellList(cell_list)

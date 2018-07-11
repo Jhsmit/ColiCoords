@@ -7,7 +7,7 @@ from functools import partial
 from colicoords.optimizers import Optimizer
 from colicoords.support import allow_scalars
 from scipy.integrate import quad
-from scipy.optimize import fsolve
+from scipy.optimize import fsolve, brentq
 #import multiprocessing as mp
 import multiprocess as mp
 from tqdm import tqdm
@@ -60,6 +60,7 @@ class Cell(object):
 
     @property
     def length(self):
+        #todo coords.length
         """:obj:`float`: Length of the cell in pixels. Obtained by integration of the spine arc length from `xl` to `xr`"""
         a0, a1, a2 = self.coords.coeff
         xl, xr = self.coords.xl, self.coords.xr
@@ -543,8 +544,8 @@ class Coordinates(object):
 
         idx_left, idx_right, xc = self.get_idx_xc(xp, yp)
         mask = 2*np.ones_like(xp)
-        xc[idx_left] = 1
-        xc[idx_right] = 3
+        mask[idx_left] = 1
+        mask[idx_right] = 3
 
         return mask
 
@@ -615,7 +616,6 @@ class Coordinates(object):
         Returns:
             :`obj`:float: or :class:`~numpy.ndarray`: Angle phi for (xp, yp).
         """
-
         idx_left, idx_right, xc = self.get_idx_xc(xp, yp)
         xc[idx_left] = self.xl
         xc[idx_right] = self.xr
@@ -643,10 +643,10 @@ class Coordinates(object):
             yp (:`obj`:float: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as xp
 
         Returns:
-            :`obj`:float: or :class:`~numpy.ndarray`: Angle psi for (xp, yp).
+            :`obj`:tuple: Angle psi for (xp, yp).
         """
 
-        xc = self.calc_xc(xp, yp).copy()
+        xc = np.array(self.calc_xc(xp, yp).copy())
         yp = self.p(xc)
 
         # Area left of perpendicular line at xl:
@@ -659,6 +659,7 @@ class Coordinates(object):
         return idx_left, idx_right, xc
 
     @allow_scalars
+    #todo scalar input wont work because of sqeeeeeze?
     def transform(self, xp, yp):
         """ Transforms image coordinates (xp, yp) to cell coordinates (xc, lc, rc, psi)
 
@@ -676,6 +677,71 @@ class Coordinates(object):
         psi = self.calc_phi(xp, yp)
 
         return xc, lc, rc, psi
+
+    @allow_scalars
+    def rev_transform(self, lc, rc, phi, l_norm=True):
+
+        assert lc.min() >= 0
+        if l_norm:
+            assert lc.max() <=1
+            lc *= self.length
+
+        else:
+            assert lc.max() <= self.length
+
+        b_left = lc <= 0
+        b_right = lc >= self.length
+        b_mid = np.logical_and(~b_left, ~b_right)
+
+        xp, yp = np.empty_like(lc, dtype=float), np.empty_like(lc, dtype=float)
+
+        #left:
+        xc = self.xl
+        yc = self.p(xc)
+
+        th2 = np.arctan(self.p_dx(xc)) * (180 / np.pi)
+        theta = 180 - (-th2 + phi[b_left])
+
+        dx = -rc[b_left]*np.sin(theta * (np.pi / 180))
+        dy = rc[b_left]*np.cos(theta * (np.pi / 180))
+
+        xp[b_left] = xc + dx
+        yp[b_left] = yc + dy
+
+        #middle:
+        #brute force fsolve xc form lc
+        sign = (phi[b_mid] / -90) + 1  # top or bottom of the cell
+        #xc = np.array([fsolve(solve_length, l_guess, args=(self.xl, self.coeff, l_guess)).squeeze() for l_guess in lc[b_mid]])
+        xc = np.array([brentq(solve_length, self.xl, self.xr, args=(self.xl, self.coeff, l_guess)) for l_guess in lc[b_mid]])
+
+        #lc_mid = lc[b_mid].copy()
+        #xc = fsolve(solve_length, lc_mid, args=(self.xl, self.coeff, lc_mid)).squeeze()
+
+        print(xc.shape)
+
+        yc = self.p(xc)
+
+        p_dx_sq = self.p_dx(xc)**2
+        dy = (-rc[b_mid] / np.sqrt(1 + p_dx_sq))*sign
+        dx = (rc[b_mid] / np.sqrt(1 + (1 / p_dx_sq)))*sign*np.sign(self.p_dx(xc))
+
+        xp[b_mid] = xc + dx
+        yp[b_mid] = yc + dy
+
+        #right
+        xc = self.xr
+        yc = self.p(xc)
+
+        th2 = np.arctan(self.p_dx(self.xr)) * (180 / np.pi)
+        theta = 180 - (th2 + phi[b_right])
+
+        dx = rc[b_right]*np.sin(theta * (np.pi / 180))
+        dy = rc[b_right]*np.cos(theta * (np.pi / 180))
+
+        xp[b_right] = xc + dx
+        yp[b_right] = yc + dy
+
+        return xp, yp
 
     @property
     def x_coords(self):
@@ -729,6 +795,18 @@ class Coordinates(object):
     def phi(self):
         """:class:`~numpy.ndarray`: Matrix of shape m x n equal to cell with angle psi relative to the cell midline."""
         return self.calc_phi(self.x_coords, self.y_coords)
+
+    @property
+    def length(self):
+        """:obj:`float`: Length of the cell in pixels. Obtained by integration of the spine arc length from `xl` to `xr`"""
+        a0, a1, a2 = self.coeff
+        xl, xr = self.xl, self.xr
+        l = (1 / (4 * a2)) * (
+            ((a1 + 2 * a2 * xr) * np.sqrt(1 + (a1 + 2 * a2 * xr) ** 2) + np.arcsinh((a1 + 2 * a2 * xr))) -
+            ((a1 + 2 * a2 * xl) * np.sqrt(1 + (a1 + 2 * a2 * xl) ** 2) + np.arcsinh((a1 + 2 * a2 * xl)))
+        )
+
+        return l
 
     def p(self, x_arr):
         """
@@ -1126,7 +1204,8 @@ def solve_trig(a, b, c, d):
     return x_r
 
 
-def _solve_len(x, xl, l, coeff):
+def _solve_len_dep(x, xl, l, coeff):
+    raise DeprecationWarning('this shouldnt be used')
     a0, a1, a2 = coeff
 
     l0 = (1 / (4 * a2)) * (
@@ -1146,3 +1225,37 @@ def _calc_len(xl, xr, coeff):
     )
 
     return l
+
+
+def solve_length(xr, xl, coeff, length):
+    """
+    Function used to find cellular x coordinate xr where the arc length from xl to xr is equal to length given a coordinate
+        system with coeff as coefficients.
+
+    Args:
+        xr (:obj:`float`): Right boundary x coordinate of calculated arc length.
+        xl (:obj:`float`): Left boundary x coordinate of calculated arc length.
+        coeff (:obj:`list` or :class:`~numpy.ndarray`:): Coefficients a0, a1, a2 describing the coordinate system
+        length (:obj:`float`): Target length
+
+    Returns:
+        :obj`float`: Difference between calculated length and specified length.
+
+    """
+    a0, a1, a2 = coeff
+    calculated = (1 / (4 * a2)) * (
+            ((a1 + 2 * a2 * xr) * np.sqrt(1 + (a1 + 2 * a2 * xr) ** 2) + np.arcsinh((a1 + 2 * a2 * xr))) -
+            ((a1 + 2 * a2 * xl) * np.sqrt(1 + (a1 + 2 * a2 * xl) ** 2) + np.arcsinh((a1 + 2 * a2 * xl)))
+    )
+
+    return length - calculated
+
+
+def calc_length(xr, xl, a2, length):
+    a1 = -a2 * (xr + xl)
+    l = (1 / (4 * a2)) * (
+            ((a1 + 2 * a2 * xr) * np.sqrt(1 + (a1 + 2 * a2 * xr) ** 2) + np.arcsinh((a1 + 2 * a2 * xr))) -
+            ((a1 + 2 * a2 * xl) * np.sqrt(1 + (a1 + 2 * a2 * xl) ** 2) + np.arcsinh((a1 + 2 * a2 * xl)))
+    )
+
+    return length-l

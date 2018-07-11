@@ -4,6 +4,7 @@ import math
 from scipy.ndimage.interpolation import rotate as scipy_rotate
 from collections import OrderedDict
 from colicoords.config import cfg
+import tifffile
 
 
 # https://stackoverflow.com/questions/26598109/preserve-custom-attributes-when-pickling-subclass-of-numpy-array
@@ -303,7 +304,7 @@ class Data(object):
 
     @property
     def dclasses(self):
-        return np.unique([d.dclass for d in self.data_dict.values()])
+        return [d.dclass for d in self.data_dict.values()]
 
     @property
     def names(self):

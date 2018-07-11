@@ -4,6 +4,7 @@ from colicoords.config import cfg
 from functools import partial
 from abc import ABCMeta, abstractmethod
 
+
 class Parameter(object):
     def __init__(self, name, value=1., min=1.e-10, max=None):
         """
@@ -120,7 +121,7 @@ class BaseFit(metaclass=ABCMeta):
         return res_dict, result.fun
 
     def execute(self, bounds=True, constraint=True, solver='normal'):
-        self.fit_parameters(self.model.parameters, bounds=bounds, constraint=constraint, solver=vsolver)
+        res, v = self.fit_parameters(self.model.parameters, bounds=bounds, constraint=constraint, solver=vsolver)
         return res, v
 
     @staticmethod
@@ -156,7 +157,6 @@ class LinearModelFit(BaseFit):
         self._x = x
         self._y = y
         super(LinearModelFit, self).__init__()
-
 
     @property
     def objective(self):
@@ -294,6 +294,7 @@ class AbstractFit(BaseFit):
     """General class for fitting of a model with a set of parameters to a dataset with x- and y data"""
 
     def __init__(self, model, x, y):
+        super(AbstractFit, self).__init__()
         self._model = model
         self._x = x
         self._y = y
@@ -308,8 +309,6 @@ class AbstractFit(BaseFit):
 
             return np.sum(yn*((y - y_model)**2))
         return _objective
-
-
 
 
     def __fit_stepwise(self, bounds=None, **kwargs):
@@ -376,8 +375,8 @@ class Optimizer(object):
         self.xr = Parameter('xr', value=cell_obj.coords.xr,
                             min=cell_obj.coords.xr - cfg.ENDCAP_RANGE / 2, max=cell_obj.coords.xr + cfg.ENDCAP_RANGE / 2)
         self.a0 = Parameter('a0', value=cell_obj.coords.coeff[0], min=0, max=cell_obj.data.shape[0]*1.5)
-        self.a1 = Parameter('a1', value=cell_obj.coords.coeff[1], min=-5, max=5)
-        self.a2 = Parameter('a2', value=cell_obj.coords.coeff[2], min=-0.5, max=0.5)
+        self.a1 = Parameter('a1', value=cell_obj.coords.coeff[1], min=-15, max=15)
+        self.a2 = Parameter('a2', value=cell_obj.coords.coeff[2], min=-0.05, max=0.05)
 
     @property
     def data_elem(self):
@@ -405,7 +404,6 @@ class Optimizer(object):
             return bounds
 
     def optimize_parameters(self, parameters, solver='normal', bounds=None, obj_kwargs=None, solver_kwargs=None, **kwargs):
-
         solver_kwargs = {} if solver_kwargs is None else solver_kwargs
         fun = partial(self.objective, **obj_kwargs) if obj_kwargs else self.objective
         bounds = True if solver == 'DE' else bounds
@@ -567,6 +565,7 @@ def minimize_binary_xor(par_values, par_names, cell_obj, data_name):
     cell_obj.coords.sub_par(par_dict)
     binary = cell_obj.coords.rc < cell_obj.coords.r
 
+    #todo squared!?
     return np.sum(np.logical_xor(cell_obj.data.data_dict[data_name], binary))
 
 

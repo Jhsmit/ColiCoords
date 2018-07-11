@@ -130,6 +130,7 @@ class CellPlot(object):
         numpoints = 500
         t = np.linspace(self.cell_obj.coords.xl, self.cell_obj.coords.xr, num=numpoints)
         a0, a1, a2 = self.cell_obj.coords.coeff
+
         x_top = t + self.cell_obj.coords.r * ((a1 + 2 * a2 * t) / np.sqrt(1 + (a1 + 2 * a2 * t) ** 2))
         y_top = a0 + a1*t + a2*(t**2) - self.cell_obj.coords.r * (1 / np.sqrt(1 + (a1 + 2*a2*t)**2))
 
@@ -212,6 +213,7 @@ class CellPlot(object):
         return ax
 
     def plot_l_dist(self, ax=None, data_name='', r_max=None, norm_x=False, norm_y=False, storm_weight=False, **kwargs):
+        #todo refactor to actual l dist! not xc
         """Plots the longitudinal distribution of a given data element.
 
         Args:
@@ -229,7 +231,6 @@ class CellPlot(object):
         """
         nbins = kwargs.pop('nbins', cfg.L_DIST_NBINS)
         x, y = self.cell_obj.l_dist(nbins, data_name=data_name, norm_x=norm_x, r_max=r_max, storm_weight=storm_weight)
-        print(x.max())
         if norm_y:
             y /= y.max()
 
@@ -419,11 +420,12 @@ class CellPlot(object):
         ymax = self.cell_obj.data.shape[0]
 
         extent = kwargs.pop('extent', [0, xmax, ymax, 0])
-        interpolation = kwargs.pop('interpolation', 'nearest')
+        interpolation = kwargs.pop('interpolation', 'none')
         cmap = kwargs.pop('cmap', 'viridis')
 
         ax = plt.gca() if ax is None else ax
-        ax.imshow(img, extent=extent, interpolation=interpolation, cmap=cmap)
+        axes_image = ax.imshow(img, extent=extent, interpolation=interpolation, cmap=cmap, **kwargs)
+        return axes_image
 
     @staticmethod
     def figure():
@@ -500,7 +502,8 @@ class CellListPlot(object):
             raise ValueError('Invalid target')
 
         ax = plt.gca() if ax is None else ax
-        ax.hist(values, **kwargs)
+        bins = kwargs.pop('bins', 'fd')
+        ax.hist(values, bins=bins, **kwargs)
 
         ax.set_title(title)
         ax.set_xlabel(xlabel)
@@ -526,7 +529,8 @@ class CellListPlot(object):
         values = self.cell_list.get_intensity(mask=mask, data_name=data_name)
 
         ax = plt.gca() if ax is None else ax
-        ax.hist(values, **kwargs)
+        bins = kwargs.pop('bins', 'fd')
+        ax.hist(values, bins=bins, **kwargs)
         ax.set_title('Cell mean fluorescence intensity')
         ax.set_xlabel('Mean fluorescence (a.u.)')
         ax.set_ylabel('Cell count')

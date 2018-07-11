@@ -1,9 +1,9 @@
 class cfg(object):
 
     #Pixel sizes are in nm, displayed units are um
-    STORM_PIXELSIZE = 16
+    STORM_PIXELSIZE = 16 # deprecated
     IMG_PIXELSIZE = 80
-    PAD_WIDTH = 2
+    PAD_WIDTH = 3
     CELL_FRACTION = 0.5
 
 
