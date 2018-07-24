@@ -166,7 +166,8 @@ class CellPlot(object):
 
         return ax
 
-    def plot_r_dist(self, ax=None, data_name='', norm_x=False, norm_y=False, storm_weight=False, xlim=None, **kwargs):
+    def plot_r_dist(self, ax=None, data_name='', norm_x=False, norm_y=False, storm_weight=False, limit_l=None,
+                    method='gauss', **kwargs):
         """Plots the radial distribution of a given data element.
 
         Args:
@@ -175,7 +176,7 @@ class CellPlot(object):
             norm_x (:obj:`bool`): If *True* the output distribution will be normalized along the length axis.
             norm_y: (:obj:`bool`): If *True* the output data will be normalized in the y (intensity).
             storm_weight (:obj:`bool`): If *True* the datapoints of the specified STORM-type data will be weighted by their intensity.
-            xlim (:obj:`str`): If `None`, all datapoints are taking into account. This can be limited by providing the
+            limit_l (:obj:`str`): If `None`, all datapoints are taking into account. This can be limited by providing the
                 value `full` (omit poles only), 'poles' (include only poles), or a float value which will limit the data
                 points with around the midline where xmid - xlim < x < xmid + xlim.
             **kwargs: Optional kwargs passed to ax.plot().
@@ -188,13 +189,17 @@ class CellPlot(object):
         if norm_x:
             stop = cfg.R_DIST_NORM_STOP
             step = cfg.R_DIST_NORM_STEP
+            sigma = cfg.R_DIST_NORM_SIGMA
         else:
             stop = cfg.R_DIST_STOP
             step = cfg.R_DIST_STEP
+            sigma = cfg.R_DIST_SIGMA
 
         stop = kwargs.pop('stop', stop)
         step = kwargs.pop('step', step)
-        x, y = self.cell_obj.r_dist(stop, step, data_name=data_name, norm_x=norm_x, storm_weight=storm_weight, xlim=xlim)
+        sigma = kwargs.pop('sigma', sigma)
+        x, y = self.cell_obj.r_dist(stop, step, data_name=data_name, norm_x=norm_x, storm_weight=storm_weight,
+                                    limit_l=limit_l, method=method, sigma=sigma)
 
         if norm_y:
             y /= y.max()
@@ -537,7 +542,9 @@ class CellListPlot(object):
 
         return ax
 
-    def plot_r_dist(self, ax=None, data_name='', norm_y=False, norm_x=False, storm_weight=False, xlim=None, band_func=np.std, **kwargs):
+    #todo put r_dist call kwargs in dedicated dict?
+    def plot_r_dist(self, ax=None, data_name='', norm_y=False, norm_x=False, storm_weight=False, limit_l=None,
+                    method='gauss', band_func=np.std, **kwargs):
         """Plots the radial distribution of a given data element.
 
         Args:
@@ -560,13 +567,17 @@ class CellListPlot(object):
         if norm_x:
             stop = cfg.R_DIST_NORM_STOP
             step = cfg.R_DIST_NORM_STEP
+            sigma = cfg.R_DIST_NORM_STEP
         else:
             stop = cfg.R_DIST_STOP
             step = cfg.R_DIST_STEP
+            sigma = cfg.R_DIST_STEP
 
         stop = kwargs.pop('stop', stop)
         step = kwargs.pop('step', step)
-        x, out_arr = self.cell_list.r_dist(stop, step, data_name=data_name, norm_x=norm_x, storm_weight=storm_weight, xlim=xlim)
+        sigma = kwargs.pop('sigma', sigma)
+        x, out_arr = self.cell_list.r_dist(stop, step, data_name=data_name, norm_x=norm_x, storm_weight=storm_weight,
+                                           limit_l=limit_l, method=method, sigma=sigma)
         out_arr = np.nan_to_num(out_arr)
 
         if norm_y:

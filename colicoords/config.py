@@ -15,8 +15,10 @@ class cfg(object):
     #Distribution plotting binsizes
     R_DIST_STOP = 30
     R_DIST_STEP = 0.5
+    R_DIST_SIGMA = 0.3
     R_DIST_NORM_STOP = 2
-    R_DIST_NORM_STEP = 0.1
+    R_DIST_NORM_STEP = 0.05
+    R_DIST_NORM_SIGMA = 0.05
     L_DIST_NBINS = 20
     #alpha dist?
     ALHPA_DIST_STOP = 180

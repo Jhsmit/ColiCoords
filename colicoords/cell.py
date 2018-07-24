@@ -5,7 +5,7 @@ import numpy as np
 import operator
 from functools import partial
 from colicoords.optimizers import Optimizer
-from colicoords.support import allow_scalars
+from colicoords.support import allow_scalars, box_mean, running_mean
 from scipy.integrate import quad
 from scipy.optimize import fsolve, brentq
 #import multiprocessing as mp
@@ -208,7 +208,191 @@ class Cell(object):
 
         return poles, between, mid
 
-    def r_dist(self, stop, step, data_name='', norm_x=False, xlim=None, storm_weight=False):
+    def r_dist(self, stop, step, data_name='', norm_x=False, limit_l=None, storm_weight=False, method='gauss', sigma=0.5):
+        """ Calculates the radial distribution of a given data element.
+
+        Args:
+            stop (:obj:`float`): Until how far from the cell spine the radial distribution should be calculated
+            step (:obj:`float`): The binsize of the returned radial distribution
+            data_name (:obj:`str`): The name of the data element on which to calculate the radial distribution
+            norm_x (:obj:`bool`): If `True` the returned distribution will be normalized with the cell's radius set to 1.
+            limit_l (:obj:`str`): If `None`, all datapoints are used. This can be limited by providing the
+                value `full` (omit poles only), 'poles' (include only poles), or a float value between 0 and 1 which will
+                limit the data points by longitudinal coordinate around the midpoint of the cell.
+            storm_weight (:obj:`bool`): Only applicable for analyzing STORM-type data elements. If `True` the returned
+                histogram is weighted with the number of photons measured.
+
+        Returns:
+            :obj:`tuple`: tuple containing:
+
+                xvals (:class:`~numpy.ndarray`) Array of distances from the cell midline, values are the middle of the bins
+
+                yvals (:class:`~numpy.ndarray`) Array of in bin heights
+        """
+
+        bins = np.arange(0, stop + step, step)
+        if method == 'gauss':
+            bin_func = running_mean
+            bin_kwargs = {'sigma': sigma}
+            xvals = bins
+        elif method == 'box':
+            bin_func = box_mean
+            bin_kwargs = {}
+            bins = np.arange(0, stop + step, step)
+            xvals = bins + 0.5 * step  # xval is the middle of the bin
+        else:
+            raise ValueError('Invalid method')
+
+        if not data_name:
+            data_elem = list(self.data.flu_dict.values())[0]  # yuck
+        else:
+            try:
+                data_elem = self.data.data_dict[data_name]
+            except KeyError:
+                raise ValueError('Chosen data not found')
+
+        if data_elem.ndim == 1:
+            assert data_elem.dclass == 'storm'
+            x = data_elem['x']
+            y = data_elem['y']
+            xc = self.coords.calc_xc(x, y)
+
+            r = self.coords.calc_rc(x, y)
+            r = r / self.coords.r if norm_x else r
+            y_weight = data_elem['intensity'] if storm_weight else None
+
+        elif data_elem.ndim == 2 or data_elem.ndim == 3:
+            r = (self.coords.rc / self.coords.r if norm_x else self.coords.rc)
+            xc = self.coords.xc
+            x = self.coords.x_coords
+            y = self.coords.y_coords
+            y_weight = data_elem
+
+        else:
+            raise ValueError("Invalid data dimensions")
+
+        if limit_l:
+            if limit_l == 'full':
+                b = (xc > self.coords.xl) * (xc < self.coords.xr).astype(bool)
+            elif limit_l == 'poles':
+                b = ((xc <= self.coords.xl) * (xc >= self.coords.xr)).astype(bool)
+            else:
+                assert 0 < limit_l < 1
+                mid_l = self.length / 2
+                lc = self.coords.calc_lc(x, y)
+                limit = limit_l * self.length
+
+                b = ((lc > mid_l - limit/2) * (lc < mid_l + limit/2)).astype(bool)
+        else:
+            b = True
+
+        if data_elem.ndim <= 2:
+            yvals = bin_func(r[b].flatten(), y_weight[b].flatten(), bins, **bin_kwargs)
+        else:
+            yvals = np.vstack([bin_func(r[b].flatten(), d[b].flatten(), bins) for d in data_elem])
+
+        return xvals, yvals
+
+    def r_dist_bak(self, stop, step, data_name='', norm_x=False, xlim=None, storm_weight=False):
+        #todo test xlim!
+        """ Calculates the radial distribution of a given data element.
+
+        Args:
+            stop (:obj:`float`): Until how far from the cell spine the radial distribution should be calculated
+            step (:obj:`float`): The binsize of the returned radial distribution
+            data_name (:obj:`str`): The name of the data element on which to calculate the radial distribution
+            norm_x (:obj:`bool`): If `True` the returned distribution will be normalized with the cell's radius set to 1.
+            xlim (:obj:`str`): If `None`, all datapoints are taking into account. This can be limited by providing the
+                value `full` (omit poles only), 'poles' (include only poles), or a float value which will limit the data
+                points with around the midline where xmid - xlim < x < xmid + xlim.
+            storm_weight (:obj:`bool`): Only applicable for analyzing STORM-type data elements. If `True` the returned
+                histogram is weighted with the number of photons measured.
+
+        Returns:
+            :obj:`tuple`: tuple containing:
+
+                xvals (:class:`~numpy.ndarray`) Array of distances from the cell midline, values are the middle of the bins
+
+                yvals (:class:`~numpy.ndarray`) Array of in bin heights
+        """
+
+        #todo this nest of if else's needs some cleanup, the xlim clause appears thrice!
+
+        bins = np.arange(0, stop+step, step)
+        xvals = bins + 0.5 * step  # xval is the middle of the bin
+        if not data_name:
+            data_elem = list(self.data.flu_dict.values())[0] #yuck
+        else:
+            try:
+                data_elem = self.data.data_dict[data_name]
+            except KeyError:
+                raise ValueError('Chosen data not found')
+
+        if data_elem.ndim == 1:
+            assert data_elem.dclass == 'storm'
+            x = data_elem['x']
+            y = data_elem['y']
+
+            r = self.coords.calc_rc(x, y)
+            r = r / self.coords.r if norm_x else r
+
+            if xlim:
+                xc = self.coords.calc_xc(x, y)
+                if xlim == 'full':
+                    b = ((xc > self.coords.xl) * (xc < self.coords.xr)).astype(bool)
+                elif xlim == 'poles':
+                    b = ((xc <= self.coords.xl) * (xc >= self.coords.xr)).astype(bool)
+                else:
+                    mid_x = (self.coords.xl + self.coords.xr) / 2
+                    b = (xc > mid_x - xlim) * (xc < mid_x + xlim).astype(bool)
+
+                bin_r = r[b].flatten()
+            else:
+                bin_r = r.flatten()
+                b = np.ones_like(x).astype(bool)
+
+
+            y_weight = data_elem['intensity'][b] if storm_weight else None
+            yvals = self._bin_func(bin_r, y_weight, bins)
+
+        elif data_elem.ndim == 2:
+            r = self.coords.rc / self.coords.r if norm_x else self.coords.rc
+            if xlim:
+                if xlim == 'full':
+                    b = (self.coords.xc > self.coords.xl) * (self.coords.xc < self.coords.xr).astype(bool)
+                elif xlim == 'poles':
+                    b = ((self.coords.xc <= self.coords.xl) * (self.coords.xc >= self.coords.xr)).astype(bool)
+                else:
+                    mid_x = (self.coords.xl + self.coords.xr)/2
+                    b = (self.coords.xc > mid_x - xlim)*(self.coords.xc < mid_x + xlim).astype(bool)
+
+                bin_r = r[b].flatten()
+                y_weight = data_elem[b].flatten()
+            else:
+                bin_r = r.flatten()
+                y_weight = data_elem.flatten()
+
+            yvals = self._bin_func(bin_r, y_weight, bins)
+
+        elif data_elem.ndim == 3:  # todo check if this still works
+            if xlim:
+                if xlim == 'full':
+                    b = (self.coords.xc > self.coords.xl) * (self.coords.xc < self.coords.xr).astype(bool)
+                elif xlim == 'poles':
+                    b = ((self.coords.xc <= self.coords.xl) * (self.coords.xc >= self.coords.xr)).astype(bool)
+                else:
+                    mid_x = (self.coords.xl + self.coords.xr)/2
+                    b = (self.coords.xc > mid_x - xlim)*(self.coords.xc < mid_x + xlim).astype(bool)
+            else:
+                b = True
+
+            r = self.coords.rc / self.coords.r if norm_x else self.coords.rc
+            yvals = np.vstack([self._bin_func(r[b].flatten(), d[b].flatten(), bins) for d in data_elem])
+        else:
+            raise ValueError('Invalid data element dimensions')
+        return xvals, yvals
+
+    def r_dist_1(self, stop, step, data_name='', norm_x=False, xlim=None, storm_weight=False):
         #todo test xlim!
         """ Calculates the radial distribution of a given data element.
 
@@ -998,7 +1182,7 @@ class CellList(object):
         assert isinstance(cell_obj, Cell)
         self.cell_list = np.append(self.cell_list, cell_obj)
 
-    def r_dist(self, stop, step, data_name='', norm_x=False, storm_weight=False, xlim=None):
+    def r_dist(self, stop, step, data_name='', norm_x=False, storm_weight=False, limit_l=None, method='gauss', sigma=0.5):
         """ Calculates the radial distribution of a given data element for all cells in the `CellList`.
 
         Args:
@@ -1022,7 +1206,8 @@ class CellList(object):
         numpoints = len(np.arange(0, stop+step, step))
         out_arr = np.zeros((len(self), numpoints))
         for i, c in enumerate(self):
-            xvals, yvals = c.r_dist(stop, step, data_name=data_name, norm_x=norm_x, storm_weight=storm_weight, xlim=xlim)
+            xvals, yvals = c.r_dist(stop, step, data_name=data_name, norm_x=norm_x, storm_weight=storm_weight, limit_l=limit_l,
+                                    method=method, sigma=sigma)
             out_arr[i] = yvals
 
         return xvals, out_arr
