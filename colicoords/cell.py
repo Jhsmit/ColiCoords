@@ -104,7 +104,7 @@ class Cell(object):
     def a_dist(self):
         raise NotImplementedError()
 
-    def l_dist(self, nbins, data_name='', norm_x=False, r_max=None, storm_weight=False):
+    def l_dist(self, nbins, data_name='', norm_x=False, r_max=None, storm_weight=False, method='gauss', sigma=0.5):
         """Calculated the longitudinal distribution of a given data element.
 
         Args:
@@ -119,11 +119,27 @@ class Cell(object):
             :obj:`tuple`: tuple containing:
 
                 xvals (:class:`~numpy.ndarray`) Array of distances along the cell midline, values are the middle of the bins
-
                 yvals (:class:`~numpy.ndarray`) Array of in bin heights
 
         """
-        #todo check the bins
+
+        r_max = r_max if r_max else self.coords.r
+        print(r_max)
+        stop = 1 if norm_x else self.length
+
+        if method == 'gauss':
+            bin_func = running_mean
+            bin_kwargs = {'sigma': sigma}
+            bins = np.linspace(0, stop, num=nbins, endpoint=True)
+            xvals = bins
+        elif method == 'box':
+            bin_func = box_mean
+            bin_kwargs = {}
+            bins = np.linspace(0, stop, num=nbins, endpoint=False)
+            xvals = bins + 0.5 * np.diff(bins)[0]
+        else:
+            raise ValueError('Invalid method')
+
         if not data_name:
             data_elem = list(self.data.flu_dict.values())[0] #yuck
         else:
@@ -132,10 +148,7 @@ class Cell(object):
             except KeyError:
                 raise ValueError('Chosen data not found')
 
-        r_max = r_max if r_max else self.coords.r
-        stop = 1 if norm_x else self.length
-        bins = np.linspace(0, stop, num=nbins, endpoint=False)
-        xvals = bins + 0.5 * np.diff(bins)[0]  # xval is the middle of the bin
+  # xval is the middle of the bin
 
         if data_elem.ndim == 1:
             assert data_elem.dclass == 'storm'
@@ -160,14 +173,14 @@ class Cell(object):
 
         if data_elem.ndim == 1:
             y_weight = data_elem['intensity'][b] if storm_weight else None
-            yvals = self._bin_func(x_len, y_weight, bins)
+            yvals = bin_func(x_len, y_weight, bins, **bin_kwargs)
 
         elif data_elem.ndim == 2:
             y_weight = np.clip(data_elem[b].flatten(), 0, None)
-            yvals = self._bin_func(x_len, y_weight, bins)
+            yvals = bin_func(x_len, y_weight, bins,  **bin_kwargs)
 
         elif data_elem.ndim == 3:
-            yvals = np.array([self._bin_func(x_len, y_weight[b].flatten(), bins) for y_weight in data_elem])
+            yvals = np.array([bin_func(x_len, y_weight[b].flatten(), bins, **bin_kwargs) for y_weight in data_elem])
 
         return xvals, yvals
 
@@ -208,7 +221,7 @@ class Cell(object):
 
         return poles, between, mid
 
-    def r_dist(self, stop, step, data_name='', norm_x=False, limit_l=None, storm_weight=False, method='gauss', sigma=0.5):
+    def r_dist(self, stop, step, data_name='', norm_x=False, limit_l=None, storm_weight=False, method='gauss', sigma=0.3):
         """ Calculates the radial distribution of a given data element.
 
         Args:
@@ -291,204 +304,6 @@ class Cell(object):
         else:
             yvals = np.vstack([bin_func(r[b].flatten(), d[b].flatten(), bins) for d in data_elem])
 
-        return xvals, yvals
-
-    def r_dist_bak(self, stop, step, data_name='', norm_x=False, xlim=None, storm_weight=False):
-        #todo test xlim!
-        """ Calculates the radial distribution of a given data element.
-
-        Args:
-            stop (:obj:`float`): Until how far from the cell spine the radial distribution should be calculated
-            step (:obj:`float`): The binsize of the returned radial distribution
-            data_name (:obj:`str`): The name of the data element on which to calculate the radial distribution
-            norm_x (:obj:`bool`): If `True` the returned distribution will be normalized with the cell's radius set to 1.
-            xlim (:obj:`str`): If `None`, all datapoints are taking into account. This can be limited by providing the
-                value `full` (omit poles only), 'poles' (include only poles), or a float value which will limit the data
-                points with around the midline where xmid - xlim < x < xmid + xlim.
-            storm_weight (:obj:`bool`): Only applicable for analyzing STORM-type data elements. If `True` the returned
-                histogram is weighted with the number of photons measured.
-
-        Returns:
-            :obj:`tuple`: tuple containing:
-
-                xvals (:class:`~numpy.ndarray`) Array of distances from the cell midline, values are the middle of the bins
-
-                yvals (:class:`~numpy.ndarray`) Array of in bin heights
-        """
-
-        #todo this nest of if else's needs some cleanup, the xlim clause appears thrice!
-
-        bins = np.arange(0, stop+step, step)
-        xvals = bins + 0.5 * step  # xval is the middle of the bin
-        if not data_name:
-            data_elem = list(self.data.flu_dict.values())[0] #yuck
-        else:
-            try:
-                data_elem = self.data.data_dict[data_name]
-            except KeyError:
-                raise ValueError('Chosen data not found')
-
-        if data_elem.ndim == 1:
-            assert data_elem.dclass == 'storm'
-            x = data_elem['x']
-            y = data_elem['y']
-
-            r = self.coords.calc_rc(x, y)
-            r = r / self.coords.r if norm_x else r
-
-            if xlim:
-                xc = self.coords.calc_xc(x, y)
-                if xlim == 'full':
-                    b = ((xc > self.coords.xl) * (xc < self.coords.xr)).astype(bool)
-                elif xlim == 'poles':
-                    b = ((xc <= self.coords.xl) * (xc >= self.coords.xr)).astype(bool)
-                else:
-                    mid_x = (self.coords.xl + self.coords.xr) / 2
-                    b = (xc > mid_x - xlim) * (xc < mid_x + xlim).astype(bool)
-
-                bin_r = r[b].flatten()
-            else:
-                bin_r = r.flatten()
-                b = np.ones_like(x).astype(bool)
-
-
-            y_weight = data_elem['intensity'][b] if storm_weight else None
-            yvals = self._bin_func(bin_r, y_weight, bins)
-
-        elif data_elem.ndim == 2:
-            r = self.coords.rc / self.coords.r if norm_x else self.coords.rc
-            if xlim:
-                if xlim == 'full':
-                    b = (self.coords.xc > self.coords.xl) * (self.coords.xc < self.coords.xr).astype(bool)
-                elif xlim == 'poles':
-                    b = ((self.coords.xc <= self.coords.xl) * (self.coords.xc >= self.coords.xr)).astype(bool)
-                else:
-                    mid_x = (self.coords.xl + self.coords.xr)/2
-                    b = (self.coords.xc > mid_x - xlim)*(self.coords.xc < mid_x + xlim).astype(bool)
-
-                bin_r = r[b].flatten()
-                y_weight = data_elem[b].flatten()
-            else:
-                bin_r = r.flatten()
-                y_weight = data_elem.flatten()
-
-            yvals = self._bin_func(bin_r, y_weight, bins)
-
-        elif data_elem.ndim == 3:  # todo check if this still works
-            if xlim:
-                if xlim == 'full':
-                    b = (self.coords.xc > self.coords.xl) * (self.coords.xc < self.coords.xr).astype(bool)
-                elif xlim == 'poles':
-                    b = ((self.coords.xc <= self.coords.xl) * (self.coords.xc >= self.coords.xr)).astype(bool)
-                else:
-                    mid_x = (self.coords.xl + self.coords.xr)/2
-                    b = (self.coords.xc > mid_x - xlim)*(self.coords.xc < mid_x + xlim).astype(bool)
-            else:
-                b = True
-
-            r = self.coords.rc / self.coords.r if norm_x else self.coords.rc
-            yvals = np.vstack([self._bin_func(r[b].flatten(), d[b].flatten(), bins) for d in data_elem])
-        else:
-            raise ValueError('Invalid data element dimensions')
-        return xvals, yvals
-
-    def r_dist_1(self, stop, step, data_name='', norm_x=False, xlim=None, storm_weight=False):
-        #todo test xlim!
-        """ Calculates the radial distribution of a given data element.
-
-        Args:
-            stop (:obj:`float`): Until how far from the cell spine the radial distribution should be calculated
-            step (:obj:`float`): The binsize of the returned radial distribution
-            data_name (:obj:`str`): The name of the data element on which to calculate the radial distribution
-            norm_x (:obj:`bool`): If `True` the returned distribution will be normalized with the cell's radius set to 1.
-            xlim (:obj:`str`): If `None`, all datapoints are taking into account. This can be limited by providing the
-                value `full` (omit poles only), 'poles' (include only poles), or a float value which will limit the data
-                points with around the midline where xmid - xlim < x < xmid + xlim.
-            storm_weight (:obj:`bool`): Only applicable for analyzing STORM-type data elements. If `True` the returned
-                histogram is weighted with the number of photons measured.
-
-        Returns:
-            :obj:`tuple`: tuple containing:
-
-                xvals (:class:`~numpy.ndarray`) Array of distances from the cell midline, values are the middle of the bins
-
-                yvals (:class:`~numpy.ndarray`) Array of in bin heights
-        """
-
-        #todo this nest of if else's needs some cleanup, the xlim clause appears thrice!
-
-        bins = np.arange(0, stop+step, step)
-        xvals = bins + 0.5 * step  # xval is the middle of the bin
-        if not data_name:
-            data_elem = list(self.data.flu_dict.values())[0] #yuck
-        else:
-            try:
-                data_elem = self.data.data_dict[data_name]
-            except KeyError:
-                raise ValueError('Chosen data not found')
-
-        if data_elem.ndim == 1:
-            assert data_elem.dclass == 'storm'
-            x = data_elem['x']
-            y = data_elem['y']
-
-            r = self.coords.calc_rc(x, y)
-            r = r / self.coords.r if norm_x else r
-
-            if xlim:
-                xc = self.coords.calc_xc(x, y)
-                if xlim == 'full':
-                    b = ((xc > self.coords.xl) * (xc < self.coords.xr)).astype(bool)
-                elif xlim == 'poles':
-                    b = ((xc <= self.coords.xl) * (xc >= self.coords.xr)).astype(bool)
-                else:
-                    mid_x = (self.coords.xl + self.coords.xr) / 2
-                    b = (xc > mid_x - xlim) * (xc < mid_x + xlim).astype(bool)
-
-                bin_r = r[b].flatten()
-            else:
-                bin_r = r.flatten()
-                b = np.ones_like(x).astype(bool)
-
-
-            y_weight = data_elem['intensity'][b] if storm_weight else None
-            yvals = self._bin_func(bin_r, y_weight, bins)
-
-        elif data_elem.ndim == 2:
-            r = self.coords.rc / self.coords.r if norm_x else self.coords.rc
-            if xlim:
-                if xlim == 'full':
-                    b = (self.coords.xc > self.coords.xl) * (self.coords.xc < self.coords.xr).astype(bool)
-                elif xlim == 'poles':
-                    b = ((self.coords.xc <= self.coords.xl) * (self.coords.xc >= self.coords.xr)).astype(bool)
-                else:
-                    mid_x = (self.coords.xl + self.coords.xr)/2
-                    b = (self.coords.xc > mid_x - xlim)*(self.coords.xc < mid_x + xlim).astype(bool)
-
-                bin_r = r[b].flatten()
-                y_weight = data_elem[b].flatten()
-            else:
-                bin_r = r.flatten()
-                y_weight = data_elem.flatten()
-
-            yvals = self._bin_func(bin_r, y_weight, bins)
-
-        elif data_elem.ndim == 3:  # todo check if this still works
-            if xlim:
-                if xlim == 'full':
-                    b = (self.coords.xc > self.coords.xl) * (self.coords.xc < self.coords.xr).astype(bool)
-                elif xlim == 'poles':
-                    b = ((self.coords.xc <= self.coords.xl) * (self.coords.xc >= self.coords.xr)).astype(bool)
-                else:
-                    mid_x = (self.coords.xl + self.coords.xr)/2
-                    b = (self.coords.xc > mid_x - xlim)*(self.coords.xc < mid_x + xlim).astype(bool)
-            else:
-                b = True
-
-            r = self.coords.rc / self.coords.r if norm_x else self.coords.rc
-            yvals = np.vstack([self._bin_func(r[b].flatten(), d[b].flatten(), bins) for d in data_elem])
-        else:
-            raise ValueError('Invalid data element dimensions')
         return xvals, yvals
 
     def measure_r(self, data_name='brightfield', in_place=True):

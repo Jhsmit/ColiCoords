@@ -217,7 +217,8 @@ class CellPlot(object):
 
         return ax
 
-    def plot_l_dist(self, ax=None, data_name='', r_max=None, norm_x=False, norm_y=False, storm_weight=False, **kwargs):
+    def plot_l_dist(self, ax=None, data_name='', r_max=None, norm_x=False, norm_y=False, storm_weight=False,
+                    method='gauss', **kwargs):
         #todo refactor to actual l dist! not xc
         """Plots the longitudinal distribution of a given data element.
 
@@ -235,7 +236,9 @@ class CellPlot(object):
 
         """
         nbins = kwargs.pop('nbins', cfg.L_DIST_NBINS)
-        x, y = self.cell_obj.l_dist(nbins, data_name=data_name, norm_x=norm_x, r_max=r_max, storm_weight=storm_weight)
+        sigma = kwargs.pop('sigma', cfg.L_DIST_SIGMA)
+        x, y = self.cell_obj.l_dist(nbins, data_name=data_name, norm_x=norm_x, r_max=r_max, storm_weight=storm_weight,
+                                    method=method, sigma=sigma)
         if norm_y:
             y /= y.max()
 
@@ -619,7 +622,8 @@ class CellListPlot(object):
 
         return ax
 
-    def plot_l_dist(self, ax=None, data_name='', r_max=None, norm_y=False, storm_weight=False, band_func=np.std, **kwargs):
+    def plot_l_dist(self, ax=None, data_name='', r_max=None, norm_y=False, storm_weight=False, band_func=np.std,
+                    method='gauss', **kwargs):
         """Plots the longitudinal distribution of a given data element.
 
         The data is normalized along the long axis so multiple cells can be combined.
@@ -639,7 +643,9 @@ class CellListPlot(object):
 
         """
         nbins = kwargs.pop('nbins', cfg.L_DIST_NBINS)
-        x_arr, out_arr = self.cell_list.l_dist(nbins, data_name=data_name, norm_x=True, r_max=r_max, storm_weight=storm_weight)
+        sigma = kwargs.pop('sigma', cfg.L_DIST_SIGMA)
+        x_arr, out_arr = self.cell_list.l_dist(nbins, data_name=data_name, norm_x=True, r_max=r_max,
+                                               storm_weight=storm_weight, method=method, sigma=sigma)
         x = x_arr[0]
 
         if norm_y:

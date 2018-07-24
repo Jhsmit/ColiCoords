@@ -19,7 +19,9 @@ class cfg(object):
     R_DIST_NORM_STOP = 2
     R_DIST_NORM_STEP = 0.05
     R_DIST_NORM_SIGMA = 0.05
+
     L_DIST_NBINS = 20
+    L_DIST_SIGMA = 0.5
     #alpha dist?
     ALHPA_DIST_STOP = 180
     ALPHA_DIST_STEP = 1
