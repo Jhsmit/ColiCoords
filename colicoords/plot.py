@@ -195,6 +195,15 @@ class CellPlot(object):
             step = cfg.R_DIST_STEP
             sigma = cfg.R_DIST_SIGMA
 
+        if not data_name:
+            try:
+                data_elem = list(self.cell_obj.data.flu_dict.values())[0]  # yuck
+            except IndexError:
+                try:
+                    data_elem = list(self.cell_obj.data.storm_dict.values())[0]
+                except IndexError:
+                    raise IndexError('No valid data element found')
+
         stop = kwargs.pop('stop', stop)
         step = kwargs.pop('step', step)
         sigma = kwargs.pop('sigma', sigma)
@@ -211,7 +220,15 @@ class CellPlot(object):
         ax = plt.gca() if ax is None else ax
         ax.plot(x, y, **kwargs)
         ax.set_xlabel('Distance ({})'.format(xunits))
-        ax.set_ylabel('Intensity ({})'.format(yunits))
+        if data_elem.dclass == 'storm':
+            if storm_weight:
+                ylabel = 'Total storm intensity (photons)'
+            else:
+                ylabel = 'Number of localizations'
+        else:
+            ylabel = 'Intensity ({})'.format(yunits)
+
+        ax.set_ylabel(ylabel)
         if norm_y:
             ax.set_ylim(0, 1.1)
 
