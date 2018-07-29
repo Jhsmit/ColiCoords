@@ -151,7 +151,7 @@ class Cell(object):
             xvals = bins
         elif method == 'box':
             bin_func = box_mean
-            bin_kwargs = {}
+            bin_kwargs = {'storm_weight': storm_weight}
             bins = np.linspace(0, stop, num=nbins, endpoint=False)
             xvals = bins + 0.5 * np.diff(bins)[0]
         else:
@@ -279,12 +279,11 @@ class Cell(object):
             xvals = bins
         elif method == 'box':
             bin_func = box_mean
-            bin_kwargs = {}
+            bin_kwargs = {'storm_weight': storm_weight}
             bins = np.arange(0, stop + step, step)
             xvals = bins + 0.5 * step  # xval is the middle of the bin
         else:
             raise ValueError('Invalid method')
-
 
         if data_elem.ndim == 1:
             assert data_elem.dclass == 'storm'
@@ -322,7 +321,7 @@ class Cell(object):
             b = True
 
         if data_elem.ndim <= 2:
-            y_wt = y_weight[b].flatten() if y_weight else None
+            y_wt = y_weight[b].flatten() if y_weight is not None else None
             yvals = bin_func(r[b].flatten(), y_wt, bins, **bin_kwargs)
         else:
             yvals = np.vstack([bin_func(r[b].flatten(), d[b].flatten(), bins) for d in data_elem])
