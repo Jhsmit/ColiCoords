@@ -141,7 +141,13 @@ class Cell(object):
             raise ValueError('Invalid method')
 
         if not data_name:
-            data_elem = list(self.data.flu_dict.values())[0] #yuck
+            try:
+                data_elem = list(self.data.flu_dict.values())[0]  # yuck
+            except IndexError:
+                try:
+                    data_elem = list(self.data.storm_dict.values())[0]
+                except IndexError:
+                    raise IndexError('No valid data element found')
         else:
             try:
                 data_elem = self.data.data_dict[data_name]
@@ -257,7 +263,13 @@ class Cell(object):
             raise ValueError('Invalid method')
 
         if not data_name:
-            data_elem = list(self.data.flu_dict.values())[0]  # yuck
+            try:
+                data_elem = list(self.data.flu_dict.values())[0]  # yuck
+            except IndexError:
+                try:
+                    data_elem = list(self.data.storm_dict.values())[0]
+                except IndexError:
+                    raise IndexError('No valid data element found')
         else:
             try:
                 data_elem = self.data.data_dict[data_name]
