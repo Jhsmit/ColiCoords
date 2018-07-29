@@ -124,21 +124,7 @@ class Cell(object):
         """
 
         r_max = r_max if r_max else self.coords.r
-        print(r_max)
         stop = 1 if norm_x else self.length
-
-        if method == 'gauss':
-            bin_func = running_mean
-            bin_kwargs = {'sigma': sigma}
-            bins = np.linspace(0, stop, num=nbins, endpoint=True)
-            xvals = bins
-        elif method == 'box':
-            bin_func = box_mean
-            bin_kwargs = {}
-            bins = np.linspace(0, stop, num=nbins, endpoint=False)
-            xvals = bins + 0.5 * np.diff(bins)[0]
-        else:
-            raise ValueError('Invalid method')
 
         if not data_name:
             try:
@@ -153,6 +139,25 @@ class Cell(object):
                 data_elem = self.data.data_dict[data_name]
             except KeyError:
                 raise ValueError('Chosen data not found')
+
+        if method == 'gauss' and data_elem.dclass == 'storm':
+            print("Warning: method 'gauss' is not a storm-compatible method, method was set to 'box'")
+            method = 'box'
+
+        if method == 'gauss':
+            bin_func = running_mean
+            bin_kwargs = {'sigma': sigma}
+            bins = np.linspace(0, stop, num=nbins, endpoint=True)
+            xvals = bins
+        elif method == 'box':
+            bin_func = box_mean
+            bin_kwargs = {}
+            bins = np.linspace(0, stop, num=nbins, endpoint=False)
+            xvals = bins + 0.5 * np.diff(bins)[0]
+        else:
+            raise ValueError('Invalid method')
+
+
 
   # xval is the middle of the bin
 
@@ -249,19 +254,6 @@ class Cell(object):
                 yvals (:class:`~numpy.ndarray`) Array of in bin heights
         """
 
-        bins = np.arange(0, stop + step, step)
-        if method == 'gauss':
-            bin_func = running_mean
-            bin_kwargs = {'sigma': sigma}
-            xvals = bins
-        elif method == 'box':
-            bin_func = box_mean
-            bin_kwargs = {}
-            bins = np.arange(0, stop + step, step)
-            xvals = bins + 0.5 * step  # xval is the middle of the bin
-        else:
-            raise ValueError('Invalid method')
-
         if not data_name:
             try:
                 data_elem = list(self.data.flu_dict.values())[0]  # yuck
@@ -275,6 +267,24 @@ class Cell(object):
                 data_elem = self.data.data_dict[data_name]
             except KeyError:
                 raise ValueError('Chosen data not found')
+
+        if method == 'gauss' and data_elem.dclass == 'storm':
+            print("Warning: method 'gauss' is not a storm-compatible method, method was set to 'box'")
+            method = 'box'
+
+        bins = np.arange(0, stop + step, step)
+        if method == 'gauss':
+            bin_func = running_mean
+            bin_kwargs = {'sigma': sigma}
+            xvals = bins
+        elif method == 'box':
+            bin_func = box_mean
+            bin_kwargs = {}
+            bins = np.arange(0, stop + step, step)
+            xvals = bins + 0.5 * step  # xval is the middle of the bin
+        else:
+            raise ValueError('Invalid method')
+
 
         if data_elem.ndim == 1:
             assert data_elem.dclass == 'storm'
@@ -312,7 +322,8 @@ class Cell(object):
             b = True
 
         if data_elem.ndim <= 2:
-            yvals = bin_func(r[b].flatten(), y_weight[b].flatten(), bins, **bin_kwargs)
+            y_wt = y_weight[b].flatten() if y_weight else None
+            yvals = bin_func(r[b].flatten(), y_wt, bins, **bin_kwargs)
         else:
             yvals = np.vstack([bin_func(r[b].flatten(), d[b].flatten(), bins) for d in data_elem])
 
