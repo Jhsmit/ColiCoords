@@ -222,7 +222,7 @@ class CellPlot(object):
         ax.set_xlabel('Distance ({})'.format(xunits))
         if data_elem.dclass == 'storm':
             if storm_weight:
-                ylabel = 'Total storm intensity (photons)'
+                ylabel = 'Total STORM intensity (photons)'
             else:
                 ylabel = 'Number of localizations'
         else:
@@ -252,6 +252,15 @@ class CellPlot(object):
             (:class:`matplotlib.axes.Axes`:): The created or specified with `ax` matplotlib axes.
 
         """
+        if not data_name:
+            try:
+                data_elem = list(self.cell_obj.data.flu_dict.values())[0]  # yuck
+            except IndexError:
+                try:
+                    data_elem = list(self.cell_obj.data.storm_dict.values())[0]
+                except IndexError:
+                    raise IndexError('No valid data element found')
+
         nbins = kwargs.pop('nbins', cfg.L_DIST_NBINS)
         sigma = kwargs.pop('sigma', cfg.L_DIST_SIGMA)
         x, y = self.cell_obj.l_dist(nbins, data_name=data_name, norm_x=norm_x, r_max=r_max, storm_weight=storm_weight,
@@ -270,7 +279,14 @@ class CellPlot(object):
         ax = plt.gca() if ax is None else ax
         ax.plot(x, y, **kwargs)
         ax.set_xlabel('Distance ({})'.format(xunits))
-        ax.set_ylabel('Intensity ({})'.format(yunits))
+        if data_elem.dclass == 'storm':
+            if storm_weight:
+                ylabel = 'Total STORM intensity (photons)'
+            else:
+                ylabel = 'Number of localizations'
+        else:
+            ylabel = 'Intensity ({})'.format(yunits)
+        ax.set_ylabel(ylabel)
         if norm_y:
             ax.set_ylim(0, 1.1)
         else:
