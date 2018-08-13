@@ -295,7 +295,7 @@ class CellPlot(object):
 
         return ax
 
-    def plot_storm(self, data_name='', ax=None, method='plot', bw_method=0.05, upscale=2, alpha_cutoff=None, **kwargs):
+    def plot_storm(self, data_name='', ax=None, method='plot', upscale=2, alpha_cutoff=None, storm_weight=True, sigma=0.25, **kwargs):
         """Graphically represent STORM data
 
         Args:
@@ -335,6 +335,9 @@ class CellPlot(object):
 
         h, xedges, yedges = np.histogram2d(x, y, bins=[x_bins, y_bins])
 
+        extent = kwargs.pop('extent',[0, xmax, ymax, 0])
+        interpolation = kwargs.pop('interpolation', 'nearest')
+
         ax = plt.gca() if ax is None else ax
         if method == 'plot':
             color = kwargs.pop('color', 'r')
@@ -347,28 +350,45 @@ class CellPlot(object):
             cmap = cm if not 'cmap' in kwargs else kwargs.pop('cmap')
 
             img = h.T
-            ax.imshow(img, interpolation='nearest', cmap=cmap, extent=[0, xmax, ymax, 0], **kwargs)
-        elif method == 'kde':
-            # https://jakevdp.github.io/PythonDataScienceHandbook/05.13-kernel-density-estimation.html
-            #todo check the mgrid describes the coords correctly
-            X, Y = np.mgrid[0:xmax:xmax*upscale*1j, ymax:0:ymax*upscale*1j]
-            positions = np.vstack([X.ravel(), Y.ravel()])
-            values = np.vstack([x, y])
-            k = stats.gaussian_kde(values, bw_method=bw_method)
-            Z = np.reshape(k(positions).T, X.shape)
-            img = np.rot90(Z)
+            ax.imshow(img, interpolation=interpolation, cmap=cmap, extent=extent, **kwargs)
+        elif method == 'gauss':
+            xmax = self.cell_obj.data.shape[1]
+            ymax = self.cell_obj.data.shape[0]
 
+            step = 1 / upscale
+            xi = np.arange(step / 2, xmax, step)
+            yi = np.arange(step / 2, ymax, step)
+
+            xcoords = np.repeat(xi, len(yi)).reshape(len(xi), len(yi)).T
+            ycoords = np.repeat(yi, len(xi)).reshape(len(yi), len(xi))
+
+            mx_i, mx_o = np.meshgrid(x, xcoords.flatten())
+            my_i, my_o = np.meshgrid(y, ycoords.flatten())
+
+            #todo normalization like this or not? (doesnt really matter in the end)
+            res = 1 / (np.sqrt((2 * np.pi)) * sigma ** 2) * np.exp(
+                - (((mx_i - mx_o) ** 2 / (2 * sigma ** 2)) + ((my_i - my_o) ** 2 / (2 * sigma ** 2))))
+
+            if storm_weight:
+                res = res*storm_table['intensity'][np.newaxis, :]
+
+            s = np.sum(res, axis=1)
+            img = s.reshape(xcoords.shape)
             img_norm = img / img.max()
+
+#            np.ma.masked_where(img_norm < alpha_cutoff, img)
+
             alphas = np.ones(img.shape)
             if alpha_cutoff:
-                alphas[img_norm < 0.3] = img_norm[img_norm < 0.3] / 0.3
+                alphas[img_norm < alpha_cutoff] = img_norm[img_norm <alpha_cutoff] / alpha_cutoff
 
-            cmap = sns.light_palette("green", as_cmap=True) if not 'cmap' in kwargs else kwargs.pop('cmap')
+            cmap = sns.light_palette("green", as_cmap=True) if not 'cmap' in kwargs else plt.cm.get_cmap(kwargs.pop('cmap'))
             normed = Normalize()(img)
             colors = cmap(normed)
             colors[..., -1] = alphas
 
-            ax.imshow(colors, cmap=cmap, extent=[0, xmax, ymax, 0], interpolation='nearest', **kwargs)
+            ax.imshow(colors, cmap=cmap, extent=extent, interpolation=interpolation, **kwargs)
+
         else:
             raise ValueError('Invalid plotting method')
 
@@ -433,7 +453,7 @@ class CellPlot(object):
             if alpha_cutoff:
                 alphas[img_norm < 0.3] = img_norm[img_norm < 0.3] / 0.3
 
-            cmap = sns.light_palette("green", as_cmap=True) if not 'cmap' in kwargs else kwargs.pop('cmap')
+            cmap = sns.light_palette("green", as_cmap=True) if not 'cmap' in kwargs else plt.cm.get_cmap(kwargs.pop('cmap'))
             normed = Normalize()(img)
             colors = cmap(normed)
             colors[..., -1] = alphas
