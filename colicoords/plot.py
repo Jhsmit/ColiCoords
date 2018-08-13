@@ -301,14 +301,18 @@ class CellPlot(object):
         Args:
             data_name (:obj:`str`): Name of the data element to plot. Must have the data class 'storm'.
             ax (:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting.
-            method: (:obj:`str`):  Method of visualization. Options are 'plot', 'hist', or 'kde' just plotting points,
-                histogram plot or kernel density estimator plot.
-            bw_method (:obj:`float`): The method used to calculate the estimator bandwidth. Passed to
-                scipy.stats.gaussian_kde.
+            method: (:obj:`str`):  Method of visualization. Options are 'plot', 'hist', or 'gauss' just plotting points,
+                histogram plot or gaussian kernel plot.
             upscale: Upscale factor for the output image. Number of pixels is increased wrt data.shape with a factor
                 upscale**2
-            alpha_cutoff:
-            **kwargs: Optional kwargs passed to ax.plot()
+            alpha_cutoff (:obj:`float`): Values (normalized) below `alpha_cutoff` are transparent, where the alpha is
+                linearly scaled between 0 and `alpha_cutoff`
+            storm_weight (:obj:`bool`): If *True* the STORM data points are weighted by their intensity.
+            sigma (:obj:`float` or :obj:`string` or :class:`~numpy.ndarray`:): Only for method 'gauss'. The value
+                is the sigma which describes the gaussian kernel. If `sigma` is a scalar, the same sigma value is used
+                for all data points. If `sigma` is a string it is interpreted as the name of the field in the STORM
+                array to use. Otherwise, sigma can be an array with equal length to the number of datapoints.
+            **kwargs: Optional kwargs passed to ax.plot() or ax.imshow()
 
         Returns:
             (:class:`matplotlib.axes.Axes`:): The created or specified with `ax` matplotlib axes
@@ -365,9 +369,21 @@ class CellPlot(object):
             mx_i, mx_o = np.meshgrid(x, xcoords.flatten())
             my_i, my_o = np.meshgrid(y, ycoords.flatten())
 
+            if type(sigma) == str:
+                sigma_arr = storm_table(sigma)
+                sigma = sigma_arr[np.newaxis, :]
+            elif isinstance(sigma, np.ndarray):
+                assert sigma.shape == x.shape
+                sigma = sigma[np.newaxis, :]
+            elif np.isscalar(sigma):
+                pass
+            else:
+                raise ValueError('Invalid sigma')
+
             #todo normalization like this or not? (doesnt really matter in the end)
-            res = 1 / (np.sqrt((2 * np.pi)) * sigma ** 2) * np.exp(
-                - (((mx_i - mx_o) ** 2 / (2 * sigma ** 2)) + ((my_i - my_o) ** 2 / (2 * sigma ** 2))))
+            # res = 1 / (np.sqrt((2 * np.pi)) * sigma ** 2) * np.exp(
+            #     - (((mx_i - mx_o) ** 2 / (2 * sigma ** 2)) + ((my_i - my_o) ** 2 / (2 * sigma ** 2)))
+            res = np.exp(-(((mx_i - mx_o) ** 2 / (2 * sigma ** 2)) + ((my_i - my_o) ** 2 / (2 * sigma ** 2))))
 
             if storm_weight:
                 res = res*storm_table['intensity'][np.newaxis, :]
