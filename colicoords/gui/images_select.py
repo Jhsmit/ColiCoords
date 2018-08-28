@@ -1,6 +1,8 @@
 from PyQt5 import QtGui
-from PyQt5.QtWidgets import QPushButton, QMainWindow, QLineEdit, QHBoxLayout, QCheckBox, QVBoxLayout, QWidget, QSizePolicy
+from PyQt5.QtWidgets import QPushButton, QMainWindow, QLineEdit, QHBoxLayout, QCheckBox, QVBoxLayout, QWidget, \
+    QSizePolicy, QRadioButton, QFormLayout, QLabel, QGraphicsEllipseItem
 from PyQt5 import QtCore
+
 import pyqtgraph as pg
 import matplotlib
 matplotlib.use('Qt5Agg')
@@ -10,24 +12,25 @@ import numpy as np
 pg.setConfigOptions(imageAxisOrder='row-major')
 from colicoords.plot import CellPlot
 
-DCLASS_ORDER = {'binary': 0, 'brightfield': 1, 'fluorescence': 2, 'STOROM': 3}
+DCLASS_ORDER = {'binary': 0, 'brightfield': 1, 'fluorescence': 2, 'STORM': 3}
 
 
 class CellMplCanvas(FigureCanvas):
     def __init__(self, cell_list, parent=None, width=5, height=4):
         self.cell_list = cell_list
         no_axes = len(cell_list[0].data.data_dict)
-        rows = int(np.floor(np.sqrt(no_axes)))
         cols = int(np.ceil(np.sqrt(no_axes)))
-        fig, self.axes = plt.subplots(rows, cols, figsize=(width, height))
+        rows = int(np.ceil(no_axes / cols))
+        self.fig, self.axes = plt.subplots(rows, cols, figsize=(width, height))
         #todo what if no_figures == 1
 
         dclasses = cell_list[0].data.dclasses
         dnames = np.array(cell_list[0].data.names)
         order = np.argsort([DCLASS_ORDER[dclass] for dclass in dclasses])
+
         self.axes_dict = {name: ax for name, ax in zip(dnames[order], self.axes.flatten())}
 
-        FigureCanvas.__init__(self, fig)
+        FigureCanvas.__init__(self, self.fig)
         self.setParent(parent)
 
         self.update_figure(0)
@@ -44,8 +47,9 @@ class CellMplCanvas(FigureCanvas):
             cp.imshow(str(name), ax=ax)
             cp.plot_outline(ax=ax)
 
-        plt.tight_layout()
+        self.fig.tight_layout()
         self.draw()
+        plt.tight_layout()
 
 
 class MPLWindow(QMainWindow):
@@ -56,6 +60,123 @@ class MPLWindow(QMainWindow):
 
     def update_figure(self, i):
         self.mpl_canvas.update_figure(i)
+
+
+class DragImageItem(pg.ImageItem):
+    sigMouseDrag = QtCore.pyqtSignal(object)
+    drag_enabled = True
+
+    def __init__(self, *args, **kwargs):
+        super(DragImageItem, self).__init__(*args, **kwargs)
+
+    def mouseDragEvent(self, ev):
+        if self.drag_enabled:
+            self.sigMouseDrag.emit(ev)
+            return True
+        else:
+            super(DragImageItem, self).mouseDragEvent(ev)
+
+
+class PaintOptionsWindow(QMainWindow):
+    keypress = QtCore.pyqtSignal(QtGui.QKeyEvent)
+
+    def __init__(self, *args, parent=None, title='PaintOptions', **kwargs):
+        super(PaintOptionsWindow, self).__init__(parent, *args, **kwargs)
+        self.setWindowTitle(title)
+        self.brush_size_edit = QLineEdit()
+        self.brush_size_edit.setValidator(QtGui.QIntValidator())
+
+        vb = QVBoxLayout()
+        self.paint_rb = QRadioButton('Paint')
+        self.paint_rb.setChecked(True)
+        self.zoom_rb = QRadioButton('Zoom')
+        vb.addWidget(self.paint_rb)
+        vb.addWidget(self.zoom_rb)
+
+        form = QFormLayout()
+        form.addRow(QLabel('Brush size'), self.brush_size_edit)
+        form.addRow(QLabel('Mouse mode'), vb)
+
+        w = QWidget()
+        w.setLayout(form)
+        self.setCentralWidget(w)
+
+    def keyPressEvent(self, event):
+        self.keypress.emit(event)
+
+
+class OverlayImageWindow(QMainWindow):  #todo mixin with ImageWindow
+    alpha = 0.5
+    keypress = QtCore.pyqtSignal(QtGui.QKeyEvent)
+
+    def __init__(self, img_arr, binary_arr, parent=None, title='ImageWindow'):
+        super(OverlayImageWindow, self).__init__(parent)
+        self.setWindowTitle(title)
+        self.img_arr = img_arr
+        self.binary_arr = binary_arr
+
+        win = pg.GraphicsLayoutWidget()
+        self.vb = pg.ViewBox(enableMouse=False, enableMenu=False)
+
+        self.img_item = DragImageItem(img_arr[0])
+
+        pos = np.array([0., 1.])
+        color = np.array([[0., 0., 0., 0.], [1., 0., 0., self.alpha]])
+        cm = pg.ColorMap(pos, color)
+        lut = cm.getLookupTable(0., 1.)
+
+        self.overlay_item = pg.ImageItem(binary_arr[0])
+        self.overlay_item.setLookupTable(lut)
+        self.vb.addItem(self.img_item)
+        self.vb.addItem(self.overlay_item)
+        self.vb.setAspectLocked()
+        win.addItem(self.vb)
+        #
+        # self.circle = QGraphicsEllipseItem(30., 30., 0., 0.)
+        # self.circle.setBrush(QtGui.QBrush(QtCore.Qt.yellow))
+        self.vb.addItem(self.circle)
+
+        hist = pg.HistogramLUTItem()
+        hist.setImageItem(self.img_item)
+        win.addItem(hist)
+
+        win.setStyleSheet("background-color:black;")
+        self.setCentralWidget(win)
+
+        #self.img_item.scene().sigMouseMoved.connect(self.mouseMoved)
+        #
+        #self.img_item.sigMouseDrag.connect(self.mouseDrag)
+        #proxy = pg.SignalProxy(vb.scene().sigMouseMoved, rateLimit=60, slot=self.mouseMoved)
+
+    # def mouseDrag(self, ev):
+    #     if ev.isStart():
+    #         pos = ev.buttonDownPos()
+    #         print(pos)
+    #         row, col = int(pos.y()), int(pos.x())
+    #
+    #         self.binary_arr[0][row, col] = 1
+    #
+    #     im = self.binary_to_rgb(self.binary_arr[0])
+    #     self.overlay_item.setImage(im)
+    #
+    #     ev.accept()
+
+    def keyPressEvent(self, event):
+        self.keypress.emit(event)
+
+    # def mouseMoved(self, evt):
+    #
+    #     # print(evt)
+    #     #
+    #     # print(self.img_item.mapFromScene(evt))
+    #     scenePos = self.img_item.mapFromScene(evt)
+    #     self.circle.setRect(scenePos.x() - 30/2, scenePos.y() - 30/2, 30, 30)
+    #     # row, col = int(scenePos.y()), int(scenePos.x())
+    #     # print(row, col)
+
+    def set_frame(self, i):
+        self.img_item.setImage(self.img_arr[i])
+        self.overlay_item.setImage(self.binary_arr[i])
 
 
 class ImageWindow(QMainWindow):
@@ -136,3 +257,14 @@ class NavigationWindow(QMainWindow):
         super(NavigationWindow, self).keyPressEvent(event)
         self.keyPressed.emit(event)
 
+
+
+if __name__ == '__main__':
+    import numpy as np
+
+
+    bf = np.random.random((10, 512, 512))
+    binary = np.zeros_like(bf)
+    ow = OverlayImageWindow(bf, binary)
+
+    print(ow)

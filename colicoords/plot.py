@@ -167,7 +167,8 @@ class CellPlot(object):
         return ax
 
     def plot_r_dist(self, ax=None, data_name='', norm_x=False, norm_y=False, storm_weight=False, limit_l=None,
-                    method='gauss', **kwargs):
+                    method='gauss', dist_kwargs=None, **kwargs):
+
         """Plots the radial distribution of a given data element.
 
         Args:
@@ -186,14 +187,25 @@ class CellPlot(object):
 
         """
 
-        if norm_x:
-            stop = cfg.R_DIST_NORM_STOP
-            step = cfg.R_DIST_NORM_STEP
-            sigma = cfg.R_DIST_NORM_SIGMA
-        else:
-            stop = cfg.R_DIST_STOP
-            step = cfg.R_DIST_STEP
-            sigma = cfg.R_DIST_SIGMA
+        # if norm_x:
+        #     stop = cfg.R_DIST_NORM_STOP
+        #     step = cfg.R_DIST_NORM_STEP
+        #     sigma = cfg.R_DIST_NORM_SIGMA
+        # else:
+        #     stop = cfg.R_DIST_STOP
+        #     step = cfg.R_DIST_STEP
+        #     sigma = cfg.R_DIST_SIGMA
+        #
+        #
+        #
+        # stop = kwargs.pop('stop', stop)
+        # step = kwargs.pop('step', step)
+        # sigma = kwargs.pop('sigma', sigma)
+        # x, y = self.cell_obj.r_dist(stop, step, data_name=data_name, norm_x=norm_x, storm_weight=storm_weight,
+        #                             limit_l=limit_l, method=method, sigma=sigma)
+        dist_kwargs = dist_kwargs if dist_kwargs is not None else {}
+        x, y = self.get_r_dist(norm_x=norm_x, data_name=data_name, limit_l=limit_l,
+                               method=method, storm_weight=storm_weight, **dist_kwargs)
 
         if not data_name:
             try:
@@ -203,12 +215,8 @@ class CellPlot(object):
                     data_elem = list(self.cell_obj.data.storm_dict.values())[0]
                 except IndexError:
                     raise IndexError('No valid data element found')
-
-        stop = kwargs.pop('stop', stop)
-        step = kwargs.pop('step', step)
-        sigma = kwargs.pop('sigma', sigma)
-        x, y = self.cell_obj.r_dist(stop, step, data_name=data_name, norm_x=norm_x, storm_weight=storm_weight,
-                                    limit_l=limit_l, method=method, sigma=sigma)
+        else:
+            data_elem = self.cell_obj.data.data_dict[data_name]
 
         if norm_y:
             y /= y.max()
@@ -233,6 +241,24 @@ class CellPlot(object):
             ax.set_ylim(0, 1.1)
 
         return ax
+
+    def get_r_dist(self, norm_x=False, data_name='', limit_l=None, method='gauss', storm_weight=False, **kwargs):
+        if norm_x:
+            stop = cfg.R_DIST_NORM_STOP
+            step = cfg.R_DIST_NORM_STEP
+            sigma = cfg.R_DIST_NORM_SIGMA
+        else:
+            stop = cfg.R_DIST_STOP
+            step = cfg.R_DIST_STEP
+            sigma = cfg.R_DIST_SIGMA
+
+        stop = kwargs.pop('stop', stop)
+        step = kwargs.pop('step', step)
+        sigma = kwargs.pop('sigma', sigma)
+        x, y = self.cell_obj.r_dist(stop, step, data_name=data_name, norm_x=norm_x, storm_weight=storm_weight,
+                                    limit_l=limit_l, method=method, sigma=sigma)
+
+        return x, y
 
     def plot_l_dist(self, ax=None, data_name='', r_max=None, norm_x=False, norm_y=False, storm_weight=False,
                     method='gauss', **kwargs):
@@ -260,9 +286,12 @@ class CellPlot(object):
                     data_elem = list(self.cell_obj.data.storm_dict.values())[0]
                 except IndexError:
                     raise IndexError('No valid data element found')
+        else:
+            data_elem = self.cell_obj.data.data_dict[data_name]
 
         nbins = kwargs.pop('nbins', cfg.L_DIST_NBINS)
         sigma = kwargs.pop('sigma', cfg.L_DIST_SIGMA)
+
         x, y = self.cell_obj.l_dist(nbins, data_name=data_name, norm_x=norm_x, r_max=r_max, storm_weight=storm_weight,
                                     method=method, sigma=sigma)
         if norm_y:
@@ -279,6 +308,7 @@ class CellPlot(object):
         ax = plt.gca() if ax is None else ax
         ax.plot(x, y, **kwargs)
         ax.set_xlabel('Distance ({})'.format(xunits))
+
         if data_elem.dclass == 'storm':
             if storm_weight:
                 ylabel = 'Total STORM intensity (photons)'
@@ -295,7 +325,7 @@ class CellPlot(object):
 
         return ax
 
-    def plot_storm(self, data_name='', ax=None, method='plot', upscale=2, alpha_cutoff=None, storm_weight=True, sigma=0.25, **kwargs):
+    def plot_storm(self, data_name='', ax=None, method='plot', upscale=5, alpha_cutoff=None, storm_weight=True, sigma=0.25, **kwargs):
         """Graphically represent STORM data
 
         Args:
@@ -396,9 +426,11 @@ class CellPlot(object):
 
             alphas = np.ones(img.shape)
             if alpha_cutoff:
-                alphas[img_norm < alpha_cutoff] = img_norm[img_norm <alpha_cutoff] / alpha_cutoff
+                alphas[img_norm < alpha_cutoff] = img_norm[img_norm < alpha_cutoff] / alpha_cutoff
 
-            cmap = sns.light_palette("green", as_cmap=True) if not 'cmap' in kwargs else plt.cm.get_cmap(kwargs.pop('cmap'))
+            cmap = kwargs.pop('cmap', 'viridis')
+            cmap = plt.cm.get_cmap(cmap) if type(cmap) == str else cmap
+
             normed = Normalize()(img)
             colors = cmap(normed)
             colors[..., -1] = alphas
@@ -475,6 +507,63 @@ class CellPlot(object):
             colors[..., -1] = alphas
 
             ax.imshow(colors, cmap=cmap, extent=[0, xmax, ymax, 0], interpolation='nearest', **kwargs)
+
+    def plot_kymograph(self, mode='r', data_name='', ax=None, time_factor=1, time_unit='frames', dist_kwargs=None,
+                       norm=True, aspect=1, **kwargs):
+        if not data_name:
+            try:
+                data_elem = list(self.cell_obj.data.flu_dict.values())[0]  # yuck
+            except IndexError:
+                try:
+                    data_elem = list(self.cell_obj.data.storm_dict.values())[0]
+                except IndexError:
+                    raise IndexError('No valid data element found')
+        else:
+            data_elem = self.cell_obj.data.data_dict[data_name]
+        assert data_elem.ndim == 3
+
+        dist_kwargs = dist_kwargs if dist_kwargs is not None else {}
+
+        if mode == 'r':
+            x, arr = self.get_r_dist(data_name=data_name, **dist_kwargs)
+        self.kymograph(x, arr, ax=ax, time_factor=time_factor, time_unit=time_unit, norm=norm, aspect=aspect)
+
+    def kymograph(self, x, arr, ax=None, time_factor=1, time_unit='frames', norm=True, aspect=1):
+        # Mirror array to show symmetrical left and right sides
+        combined = np.concatenate((arr[:, :0:-1], arr), axis=1)
+
+        if norm:
+            maxes = np.max(combined, axis=1)
+            mins = np.min(combined, axis=1)
+            norm = (combined - mins[:, np.newaxis]) / (maxes - mins)[:, np.newaxis]
+        else:
+            norm = combined
+
+        # mirror x array
+        x_full = np.concatenate((-x[:0:-1], x))
+
+        # x array with datapoints equal to y axis
+        x_new = np.linspace(np.min(x_full), np.max(x_full), num=norm.shape[0], endpoint=True)
+
+        # interpolate values for new x array
+        img = np.empty((norm.shape[0], norm.shape[0]))
+        for i, row in enumerate(norm):
+            img[i] = np.interp(x_new, x_full, row)
+
+        # Change x units
+        x_full *= cfg.IMG_PIXELSIZE / 1000
+
+        # Change y units
+        y_max = img.shape[0] * time_factor
+
+        x_range = x_full.max() - x_full.min()
+        aspect_c = y_max / x_range
+
+        ax = plt.gca() if ax is None else ax
+        ax.imshow(img, aspect=aspect * (1 / aspect_c), interpolation='spline16', cmap='viridis', origin='lower_left',
+                  extent=[x_full.min(), x_full.max(), 0, y_max])
+        ax.set_xlabel('Distance ($\mu$m)')
+        ax.set_ylabel('Time ({})'.format(time_unit))
 
     def imshow(self, img, ax=None, **kwargs):
         """Equivalent to matplotlib's imshow but with default extent kwargs to assure proper overlay of pixel and

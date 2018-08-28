@@ -104,7 +104,7 @@ class Cell(object):
     def a_dist(self):
         raise NotImplementedError()
 
-    def l_dist(self, nbins, data_name='', norm_x=False, r_max=None, storm_weight=False, method='gauss', sigma=0.5):
+    def l_dist(self, nbins, start=None, stop=None, data_name='', norm_x=False, r_max=None, storm_weight=False, method='gauss', sigma=0.5):
         """Calculated the longitudinal distribution of a given data element.
 
         Args:
@@ -125,6 +125,7 @@ class Cell(object):
 
         r_max = r_max if r_max else self.coords.r
         stop = 1 if norm_x else self.length
+        start, stop = -0.5, 1.5
 
         if not data_name:
             try:
@@ -140,6 +141,8 @@ class Cell(object):
             except KeyError:
                 raise ValueError('Chosen data not found')
 
+        bins = np.linspace(start, stop, num=nbins, endpoint=True)
+
         if method == 'gauss' and data_elem.dclass == 'storm':
             print("Warning: method 'gauss' is not a storm-compatible method, method was set to 'box'")
             method = 'box'
@@ -147,51 +150,45 @@ class Cell(object):
         if method == 'gauss':
             bin_func = running_mean
             bin_kwargs = {'sigma': sigma}
-            bins = np.linspace(0, stop, num=nbins, endpoint=True)
             xvals = bins
         elif method == 'box':
             bin_func = box_mean
             bin_kwargs = {'storm_weight': storm_weight}
-            bins = np.linspace(0, stop, num=nbins, endpoint=False)
             xvals = bins + 0.5 * np.diff(bins)[0]
         else:
             raise ValueError('Invalid method')
 
-
-
-  # xval is the middle of the bin
-
         if data_elem.ndim == 1:
             assert data_elem.dclass == 'storm'
-            x = data_elem['x']
-            y = data_elem['y']
+            xp = data_elem['x']
+            yp = data_elem['y']
 
-            r = self.coords.calc_rc(x, y)
-            xc = self.coords.calc_xc(x, y)
+            idx_left, idx_right, xc = self.coords.get_idx_xc(xp, yp)
 
         elif data_elem.ndim == 2 or data_elem.ndim == 3:  # image data
-            r = self.coords.rc
-            xc = self.coords.xc
+            xp, yp = self.coords.x_coords, self.coords.y_coords
+            idx_left, idx_right, xc = self.coords.get_idx_xc(xp, yp)
 
         else:
             raise ValueError('Invalid data element dimensions')
 
-        b1 = r < r_max
-        b2 = np.logical_and(xc >= self.coords.xl, xc <= self.coords.xr)
-        b = np.logical_and(b1, b2)
-        x_len = _calc_len(self.coords.xl, xc[b].flatten(), self.coords.coeff)
+        r = self.coords.calc_rc(xp, yp)
+        bools = r < r_max
+
+        #todo update to calc_lc
+        x_len = _calc_len(self.coords.xl, xc[bools].flatten(), self.coords.coeff)
         x_len = x_len / self.length if norm_x else x_len
 
         if data_elem.ndim == 1:
-            y_weight = data_elem['intensity'][b] if storm_weight else None
+            y_weight = data_elem['intensity'][bools] if storm_weight else None
             yvals = bin_func(x_len, y_weight, bins, **bin_kwargs)
 
         elif data_elem.ndim == 2:
-            y_weight = np.clip(data_elem[b].flatten(), 0, None)
+            y_weight = np.clip(data_elem[bools].flatten(), 0, None)
             yvals = bin_func(x_len, y_weight, bins,  **bin_kwargs)
 
         elif data_elem.ndim == 3:
-            yvals = np.array([bin_func(x_len, y_weight[b].flatten(), bins, **bin_kwargs) for y_weight in data_elem])
+            yvals = np.array([bin_func(x_len, y_weight[bools].flatten(), bins, **bin_kwargs) for y_weight in data_elem])
 
         return xvals, yvals
 
@@ -737,8 +734,6 @@ class Coordinates(object):
 
         #lc_mid = lc[b_mid].copy()
         #xc = fsolve(solve_length, lc_mid, args=(self.xl, self.coeff, lc_mid)).squeeze()
-
-        print(xc.shape)
 
         yc = self.p(xc)
 
