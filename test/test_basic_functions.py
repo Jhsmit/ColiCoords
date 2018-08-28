@@ -1,20 +1,18 @@
 from colicoords.fileIO import load, save
 from colicoords.cell import Cell, CellList
-from testcase import ArrayTestCase
-from test_functions import generate_testdata
+from test import testcase
+from test.test_functions import load_testdata
 import hashlib
-from colicoords.gui.controller import CellObjectController
 from colicoords.preprocess import data_to_cells
 import unittest
-import tifffile
-import numpy as np
 
 
-class DataTest(ArrayTestCase):
+class DataTest(testcase.ArrayTestCase):
     def setUp(self):
-        self.data = generate_testdata('ds1')
+        self.data = load_testdata('ds1')
 
     def test_data_slicing(self):
+        print(self.data.shape)
         sl1 = self.data[2:5, :, :]
         self.assertEqual(sl1.shape, (3, 512, 512))
 
@@ -31,10 +29,11 @@ class DataTest(ArrayTestCase):
         self.assertEqual(data_copy.binary_img.mean(), m0 + 20)
 
     def _test_cell_list(self):
+        #todo check order
         print(hashlib.md5(self.data).hexdigest())
-        cell_list = data_to_cells(self.data, pad_width=2, cell_frac=0.5, rotate='binary')
+        cell_list = data_to_cells(self.data, initial_pad=2, cell_frac=0.5, rotate='binary')
         print(hashlib.md5(self.data).hexdigest())
-        cell_list = data_to_cells(self.data, pad_width=2, cell_frac=0.5, rotate='binary')
+        cell_list = data_to_cells(self.data, initial_pad=2, cell_frac=0.5, rotate='binary')
         print(hashlib.md5(self.data).hexdigest())
 
         d = self.data.copy()
@@ -55,15 +54,14 @@ class DataTest(ArrayTestCase):
         self.assertEqual(len(vol), 48)
 
 
-class CellListTest(ArrayTestCase):
+class CellListTest(testcase.ArrayTestCase):
     def setUp(self):
-        data = generate_testdata('ds1')
+        data = load_testdata('ds1')
         self.cell_list = data_to_cells(data)
 
     def test_slicing(self):
         sliced = self.cell_list[:5]
         self.assertIsInstance(sliced, CellList)
-
 
 
 if __name__ == '__main__':

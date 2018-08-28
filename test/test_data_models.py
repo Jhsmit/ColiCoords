@@ -1,8 +1,9 @@
 from colicoords.data_models import BinaryImage, BrightFieldImage, FluorescenceImage, STORMTable, Data
 from colicoords.fileIO import load_thunderstorm
-from test_functions import load_testdata
-from testcase import ArrayTestCase
+from test.testcase import ArrayTestCase
+from test.test_functions import load_testdata
 from scipy.ndimage.interpolation import rotate as scipy_rotate
+import os
 import numpy as np
 import unittest
 
@@ -38,7 +39,8 @@ class TestDataElements(ArrayTestCase):
         self.assertTrue(sl_fl.name == 'test1234')
 
     def test_data_class_storm(self):
-        storm_data = load_thunderstorm('test_data/ds5/storm_table.csv')
+        f_path = os.path.dirname(os.path.realpath(__file__))
+        storm_data = load_thunderstorm(os.path.join(f_path, 'test_data/ds5/storm_table.csv'))
         storm_table = STORMTable(storm_data, name='test1234', metadata={'no_entries:': 123})
         storm_sl = storm_table[5: 20]
         self.assertTrue(storm_table.dclass == 'storm')

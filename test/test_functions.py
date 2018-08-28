@@ -9,10 +9,6 @@ import os
 def listdir_fullpath(d):
     return [os.path.join(d, f) for f in os.listdir(d)]
 
-# bin_files = listdir_fullpath(r'test_data/ds1/binary')
-# bf_files = listdir_fullpath(r'test_data/ds1/brightfield')
-# flu_files = listdir_fullpath(r'test_data/ds1/fluorescence')
-
 
 def load_data(dataset):
     dclasses = ['binary', 'brightfield', 'fluorescence']
@@ -71,7 +67,8 @@ def generate_stormdata():
     storm_data['y'] = y
     storm_data['frame'] = frame
 
-    binary_img = tifffile.imread('test_data/ds6/binary_1.tif')
+    f_path = os.path.dirname(os.path.realpath(__file__))
+    binary_img = tifffile.imread(os.path.join(f_path, r'test_data/ds6/binary_1.tif'))
 
     data = Data()
     data.add_data(binary_img, 'binary')

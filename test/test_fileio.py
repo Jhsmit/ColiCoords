@@ -1,9 +1,10 @@
 from colicoords.fileIO import load, save
 from colicoords.cell import Cell
 from colicoords.preprocess import data_to_cells
-from testcase import ArrayTestCase
-from test_functions import load_testdata
+from test.testcase import ArrayTestCase
+from test.test_functions import load_testdata
 import unittest
+import os
 import tifffile
 import numpy as np
 
@@ -11,13 +12,14 @@ import numpy as np
 class FileIOTest(ArrayTestCase):
     def setUp(self):
         self.data = load_testdata('ds3')
-        self.cell_list = data_to_cells(self.data, pad_width=2, cell_frac=0.5, rotate='binary')
+        self.cell_list = data_to_cells(self.data, initial_pad=2, cell_frac=0.5, rotate='binary')
         self.cell_obj = self.cell_list[0]
         self.cell_obj.optimize()
 
     def test_save_load_cells(self):
         save('temp_save.cc', self.cell_obj)
         cell_obj_load = load('temp_save.cc')
+        os.remove('temp_save.cc')
 
         for item in ['r', 'xl', 'xr']:
             self.assertEqual(getattr(self.cell_obj.coords, item), getattr(cell_obj_load.coords, item))
@@ -33,6 +35,7 @@ class FileIOTest(ArrayTestCase):
     def test_save_load_cell_list(self):
         save('temp_save_celllist.cc', self.cell_list)
         cell_list_load = load('temp_save_celllist.cc')
+        os.remove('temp_save_celllist.cc')
 
         self.assertEqual(len(self.cell_list), len(cell_list_load))
 
