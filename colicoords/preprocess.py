@@ -3,7 +3,7 @@ import numpy as np
 from colicoords.cell import Cell, CellList
 
 
-def data_to_cells(input_data, initial_pad=3, final_pad = 5, cell_frac=0.5, rotate='binary', verbose=True):
+def data_to_cells(input_data, initial_pad=5, final_pad = 7, cell_frac=0.5, rotate='binary', verbose=True):
     assert 'binary' in input_data.dclasses
     assert input_data.ndim == 3
 
@@ -11,8 +11,6 @@ def data_to_cells(input_data, initial_pad=3, final_pad = 5, cell_frac=0.5, rotat
     cell_list = []
     i_fill = int(np.ceil(np.log10(len(input_data))))
     for i, data in enumerate(input_data):
-        print(i)
-        print(data.shape)
         binary = data.binary_img
         if (binary > 0).mean() > cell_frac or binary.mean() == 0.:
             vprint('Image {} {}: Too many or no cells'.format(binary.name, i))
