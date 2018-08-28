@@ -1,0 +1,9 @@
+numpy
+matplotlib
+seaborn
+mahotas
+scipy
+h5py
+tifffile
+multiprocess
+tqdm
