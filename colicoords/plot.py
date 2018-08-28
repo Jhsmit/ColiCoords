@@ -168,7 +168,6 @@ class CellPlot(object):
 
     def plot_r_dist(self, ax=None, data_name='', norm_x=False, norm_y=False, storm_weight=False, limit_l=None,
                     method='gauss', dist_kwargs=None, **kwargs):
-
         """Plots the radial distribution of a given data element.
 
         Args:
@@ -180,6 +179,8 @@ class CellPlot(object):
             limit_l (:obj:`str`): If `None`, all datapoints are taking into account. This can be limited by providing the
                 value `full` (omit poles only), 'poles' (include only poles), or a float value which will limit the data
                 points with around the midline where xmid - xlim < x < xmid + xlim.
+            method (:obj:`str`): Method of averaging datapoints to calculate the final distribution curve.
+            dist_kwargs (:obj:`dict`): Additional kwargs to be passed to *Cell.r_dist()*
             **kwargs: Optional kwargs passed to ax.plot().
 
         Returns:
@@ -261,7 +262,8 @@ class CellPlot(object):
         return x, y
 
     def plot_l_dist(self, ax=None, data_name='', r_max=None, norm_x=False, norm_y=False, storm_weight=False,
-                    method='gauss', **kwargs):
+                    method='gauss', dist_kwargs=None, **kwargs):
+
         #todo refactor to actual l dist! not xc
         """Plots the longitudinal distribution of a given data element.
 
@@ -273,7 +275,9 @@ class CellPlot(object):
             norm_x (:obj:`bool`): If *True* the output distribution will be normalized along the length axis.
             norm_y: (:obj:`bool`): If *True* the output data will be normalized in the y (intensity).
             storm_weight: If *True* the datapoints of the specified STORM-type data will be weighted by their intensity.
-
+            method (:obj:`str`): Passed to *Cell.l_dist*, method of averaging datapoints to calculate the final
+            distribution curve.
+            dist_kwargs (:obj:`dict`): Additional kwargs to be passed to *Cell.l_dist*
         Returns:
             (:class:`matplotlib.axes.Axes`:): The created or specified with `ax` matplotlib axes.
 
@@ -290,10 +294,13 @@ class CellPlot(object):
             data_elem = self.cell_obj.data.data_dict[data_name]
 
         nbins = kwargs.pop('nbins', cfg.L_DIST_NBINS)
-        sigma = kwargs.pop('sigma', cfg.L_DIST_SIGMA)
+        scf = self.cell_obj.length if norm_x else 1
+        sigma = kwargs.pop('sigma', cfg.L_DIST_SIGMA / scf)
 
+
+        dist_kwargs = dist_kwargs if dist_kwargs is not None else {}
         x, y = self.cell_obj.l_dist(nbins, data_name=data_name, norm_x=norm_x, r_max=r_max, storm_weight=storm_weight,
-                                    method=method, sigma=sigma)
+                                    method=method, sigma=sigma, **dist_kwargs)
         if norm_y:
             y /= y.max()
 
