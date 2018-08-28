@@ -408,7 +408,9 @@ class Data(object):
                 data.add_data(table_out, v.dclass, name=v.name, metadata=v.metadata)
 
             else:
-                key = (slice(None), *key) if v.ndim == 3 and type(key) == tuple else key #todo this needs maaaasive testing
+                #key = (slice(None), *key) if v.ndim == 3 and type(key) == tuple else key
+
+                #print(key)#todo this needs maaaasive testing
                 data.add_data(v[key], v.dclass, name=v.name, metadata=v.metadata)
         return data
 
