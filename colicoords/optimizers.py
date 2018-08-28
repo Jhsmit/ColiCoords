@@ -85,6 +85,8 @@ class BaseFit(metaclass=ABCMeta):
 
         # todo use mystic for constraints: https://github.com/uqfoundation/mystic/blob/master/mystic/differential_evolution.py
         if solver == 'DE':
+            if constraints:
+                print('Warning: Constraints are currently not implemented for Differential Evolution fitting')
             result = differential_evolution(self.objective, bounds,
                                             args=(parameters.split(' '), self.model, self.x, self.y),
                                             **solver_kwargs
@@ -121,7 +123,7 @@ class BaseFit(metaclass=ABCMeta):
         return res_dict, result.fun
 
     def execute(self, bounds=True, constraint=True, solver='normal'):
-        res, v = self.fit_parameters(self.model.parameters, bounds=bounds, constraint=constraint, solver=vsolver)
+        res, v = self.fit_parameters(self.model.parameters, bounds=bounds, constraint=constraint, solver=solver)
         return res, v
 
     @staticmethod
@@ -190,7 +192,7 @@ class LinearModelFit(BaseFit):
         """ Fit the current model and data optimizing given (global) *parameters*.
 
         Args:
-            parameters (:obj:`str`): Parameters to fit. Format is a single string where paramers are separated by a space
+            parameters (:obj:`str`): Parameters to fit. Format is a single string where parameters are separated by a space
             bounds: If *True* the model's :meth:`get_bounds` is called to determine the bounds. Otherwise, specify a sequence or
                 :class:`scipy.optimize.Bounds` class as specified in :meth:`scipy.optimize.minimize`.
             constraint: If *True* the model's :meth:`get_constraints` is called to set constraints.
@@ -212,82 +214,13 @@ class LinearModelFit(BaseFit):
         res_dict['a1'], res_dict['a2'] = solve_linear_system(y1, y2, self.y)
         return res_dict, val
 
-    def fit_parameters_bak(self, parameters, bounds=None, constraint=True, solver='DE', solver_kwargs=None, **kwargs):
-        """ Fit the current model and data optimizing given (global) *parameters*.
+    def execute(self, bounds=None, constraint=None, solver='DE'):
+        par = set(self.model.parameters.split(' '))
+        linear_par = set(self.model.linear_parameters.split(' '))
+        parameters = ' '.join(list(par - linear_par))
 
-        Args:
-            parameters (:obj:`str`): Parameters to fit. Format is a single string where paramers are separated by a space
-            bounds: If *True* the model's :meth:`get_bounds` is called to determine the bounds. Otherwise, specify a sequence or
-                :class:`scipy.optimize.Bounds` class as specified in :meth:`scipy.optimize.minimize`.
-            constraint: If *True* the model's :meth:`get_constraints` is called to set constraints.
-            solver (:obj:`str`): Either 'DE', 'basin_hop' or 'normal' to use :meth:scipy.optimize.differential_evolution`,
-                :meth:scipy.optimize.basin_hop` or :meth:scip.optimize.minimize:, respectively.
-            solver_kwargs: Optional kwargs to pass to the solver when using either differential evolution or basin_hop.
-            **kwargs: Optional kwargs to pass to :meth:`scipy.optimize.minimize`.
-
-        Returns:
-            :`obj`:dict: Dictionary with fitting results. The entries are the global fit parameters as well as the amplitudes.
-        """
-
-
-        bounds = self.model.get_bounds(parameters, parameters if type(bounds) == bool else bounds) if bounds else None
-        method = kwargs.pop('method', None)
-        verbose = kwargs.pop('verbose', False)
-        par_values = np.array([getattr(self.model, par).value for par in parameters.split(' ')])
-        constraints = self.model.get_constraints(parameters) if constraint else None
-
-        solver_kwargs = {} if solver_kwargs is None else solver_kwargs
-
-        #todo this needs some checking if not all parameters are bounded
-        def _accept_test(bounds, **kwargs):
-            par_values = kwargs['x_new']
-            bools = [(-np.inf if pmin is None else pmin) <= val <= (np.inf if pmax is None else pmax)
-                     for (pmin, pmax), val in zip(bounds, par_values)]
-
-            return np.all(bools)
-
-        accept_test = partial(_accept_test, bounds)
-
-        #todo use mystic for constraints: https://github.com/uqfoundation/mystic/blob/master/mystic/differential_evolution.py
-        if solver == 'DE':
-            result = differential_evolution(objective, bounds,
-                                            args=(parameters.split(' '), self.model, self.x, self.y_arr),
-                                            **solver_kwargs
-                                            )
-        elif solver == 'basin_hop':
-            stepsize = solver_kwargs.pop('stepsize', 1)
-            niter = solver_kwargs.pop('niter', 200)
-            result = basinhopping(objective, par_values,
-                                  minimizer_kwargs={
-                                      'args': (parameters.split(' '), self.model, self.x, self.y_arr),
-                                      'bounds': bounds,
-                                      'method': method,
-                                      'constraints': constraints,
-                                      'options': {'disp': verbose},
-                                      **kwargs},
-                                  stepsize=stepsize,
-                                  niter=niter,
-                                  accept_test=accept_test,
-                                  **solver_kwargs
-                                  )
-        elif solver == 'normal':
-            result = minimize(objective, par_values, args=(parameters.split(' '), self.model, self.x, self.y_arr),
-                              bounds=bounds, method=method, constraints=constraints, options={'disp': verbose}, **kwargs)
-        else:
-            raise ValueError("Value for 'solver' must be either 'DE', 'basin_hop' or 'normal'")
-
-        try:
-            res_dict = {key: val for key, val in zip(parameters.split(' '), result.x)}
-        except TypeError:
-            res_dict = {key: val for key, val in zip(parameters.split(' '), [result.x])}
-
-        y1 = self.model(self.x, **{'a1': 1, 'a2': 0}, **res_dict)
-        y2 = self.model(self.x, **{'a1': 0, 'a2': 1}, **res_dict)
-
-        res_dict['a1'], res_dict['a2'] = solve_linear_system(y1, y2, self.y_arr)
-
-        self.val = result.fun
-        return res_dict, result.fun
+        res, v = self.fit_parameters(parameters, bounds=bounds, constraint=constraint, solver=solver)
+        return res, v
 
 
 class AbstractFit(BaseFit):
@@ -309,34 +242,6 @@ class AbstractFit(BaseFit):
 
             return np.sum(yn*((y - y_model)**2))
         return _objective
-
-
-    def __fit_stepwise(self, bounds=None, **kwargs):
-        i = 0
-        j = 0
-        prev_val = 0
-
-        imax = kwargs.get('imax', 3)
-        jmax = kwargs.get('jmax', 20)
-
-        assert imax > 0
-        assert jmax > 0
-
-        if bounds:
-            assert type(bounds) == bool
-        while i < imax and j < jmax:
-            j += 1
-            res, val = self.fit_parameters('r1 r2', bounds=bounds, **kwargs)
-            print(res, val)
-            res, val = self.fit_parameters('a1 a2', bounds=bounds, **kwargs)
-            print(res, val)
-            print('Current minimize value: {}'.format(val))
-            if prev_val == val:
-                i += 1
-            prev_val = val
-
-        self.val = val
-        return res, val
 
 
 class Optimizer(object):
@@ -576,13 +481,15 @@ def minimize_sim_cell(par_values, par_names, cell_obj, data_name):
 
     cell_obj.coords.sub_par(par_dict)
     #todo check and make sure that the r_dist isnt calculated to far out which can give some strange results
-    simulated = cell_obj.reconstruct_cell(data_name, r_scale=r)
+
+    stop = np.max(cell_obj.data.shape) / 2
+    step = 1
+
+    #todo some way to access these kwargs
+    xp, fp = cell_obj.r_dist(stop, step, data_name=data_name, method='box')
+    simulated = np.interp(r * cell_obj.coords.rc, xp, np.nan_to_num(fp))  # todo check nantonum cruciality
+
     real = cell_obj.data.data_dict[data_name]
-
-    #print('sim', simulated[:10, 0])
-
-    cost = np.sum((simulated - real) ** 2)
-    #print(par_values, cost)
 
     return np.sum((simulated - real)**2)
 
