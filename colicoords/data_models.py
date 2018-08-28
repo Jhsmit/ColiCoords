@@ -209,9 +209,6 @@ class Data(object):
         flu_dict (:obj:`dict`): Subset of `data_dict` with all Fluorescence data elements
         storm_dict (:obj:`dict`): Subset of `data_dict` with all STORM data elements
 
-        binary_img (:class:`BinaryImage`): Convenience attribute which refers to the unique BinaryImage data element
-        brightfield_img (:class:`BrightFieldImage`): Convenience attribute which refers to the unique BrightFieldImage
-            data element
     """
 
     def __init__(self):

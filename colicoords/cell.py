@@ -114,6 +114,7 @@ class Cell(object):
             r_max: (:obj:`float`): Datapoints within r_max from the cell midline will be included. If *None* the value
                 from the cell's coordinate system will be used.
             storm_weight: If *True* the datapoints of the specified STORM-type data will be weighted by their intensity.
+            method (:obj:`str`): Method of averaging datapoints to calculate the final distribution curve.
 
         Returns:
             :obj:`tuple`: tuple containing:
@@ -142,7 +143,6 @@ class Cell(object):
                 raise ValueError('Chosen data not found')
 
         bins = np.linspace(start, stop, num=nbins, endpoint=True)
-
         if method == 'gauss' and data_elem.dclass == 'storm':
             print("Warning: method 'gauss' is not a storm-compatible method, method was set to 'box'")
             method = 'box'
@@ -242,6 +242,7 @@ class Cell(object):
                 limit the data points by longitudinal coordinate around the midpoint of the cell.
             storm_weight (:obj:`bool`): Only applicable for analyzing STORM-type data elements. If `True` the returned
                 histogram is weighted with the number of photons measured.
+            method (:obj:`str`): Method of averaging datapoints to calculate the final distribution curve.
 
         Returns:
             :obj:`tuple`: tuple containing:
@@ -270,6 +271,7 @@ class Cell(object):
             method = 'box'
 
         bins = np.arange(0, stop + step, step)
+
         if method == 'gauss':
             bin_func = running_mean
             bin_kwargs = {'sigma': sigma}
@@ -1014,7 +1016,7 @@ class CellList(object):
         assert isinstance(cell_obj, Cell)
         self.cell_list = np.append(self.cell_list, cell_obj)
 
-    def r_dist(self, stop, step, data_name='', norm_x=False, storm_weight=False, limit_l=None, method='gauss', sigma=0.5):
+    def r_dist(self, stop, step, data_name='', norm_x=False, storm_weight=False, limit_l=None, method='gauss', sigma=None):
         """ Calculates the radial distribution of a given data element for all cells in the `CellList`.
 
         Args:
