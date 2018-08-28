@@ -3,7 +3,7 @@ from colicoords.support import gauss_2d
 from scipy.spatial import distance
 
 #todo r_norm?
-def get_coords(model_cell, data_cells, data_elem):
+def get_coords(model_cell, data_cells, data_elem, r_norm=True):
     dpts = np.sum([np.product(cell.data.shape) for cell in data_cells])
     x = np.empty(dpts, dtype=float)
     y = np.empty(dpts, dtype=float)
@@ -12,8 +12,10 @@ def get_coords(model_cell, data_cells, data_elem):
     curr_index = 0
     for cell in data_cells:
         curr_dpts = np.product(cell.data.shape)
-        _x, _y = model_cell.coords.rev_transform(cell.coords.lc / cell.length, cell.coords.rc, cell.coords.phi,
-                                                 l_norm=True)
+
+        lc = cell.coords.lc / cell.length
+        rc = cell.coords.rc * (model_cell.coords.r/cell.coords.r) if r_norm else cell.coords.rc
+        _x, _y = model_cell.coords.rev_transform(lc, rc, cell.coords.phi, l_norm=True)
         # _x, _y = rev_transform(cell.coords.lc / cell.length, cell.coords.rc, cell.coords.phi, l_norm=True)
 
         x[curr_index:curr_dpts + curr_index] = _x.flatten()
