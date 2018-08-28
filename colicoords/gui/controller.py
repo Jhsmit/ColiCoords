@@ -1,18 +1,9 @@
-from colicoords.gui.images_select import NavigationWindow, ImageWindow, MPLWindow, OverlayImageWindow, PaintOptionsWindow
+from colicoords.gui.images_select import NavigationWindow, MPLWindow, OverlayImageWindow, PaintOptionsWindow
 from PyQt5.QtCore import pyqtSlot
 from PyQt5 import QtCore
 import queue
-from PyQt5 import QtGui
 import mahotas as mh
 import numpy as np
-import time
-import os
-import math
-import seaborn as sns
-import os
-from scipy.ndimage.interpolation import rotate as scipy_rotate
-
-import matplotlib.pyplot as plt
 
 
 class NavigationMixin(object):
@@ -122,10 +113,7 @@ class GenerateBinaryController(NavigationMixin):
         self.draw_thread = DrawThread(self.binary_array, self.iw)
         self.draw_thread.start()
 
-
         self.iw.img_item.scene().sigMouseMoved.connect(self.mouse_moved)
-
-
 
         #Paint options window
         self.pw = PaintOptionsWindow()

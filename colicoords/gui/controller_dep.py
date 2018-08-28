@@ -227,7 +227,7 @@ class CellObjectController(object):
         rotate = self.cow.rotate_cbb.currentText()
 
         print('Creating cell objects...')
-        self.cell_list = data_to_cells(self.input_data, pad_width=pad_width, cell_frac=cell_frac, rotate=rotate)
+        self.cell_list = data_to_cells(self.input_data, initial_pad=pad_width, cell_frac=cell_frac, rotate=rotate)
         print('Found {} cells'.format(len(self.cell_list)))
         self.cell_list_plot = CellListPlot(self.cell_list)
 

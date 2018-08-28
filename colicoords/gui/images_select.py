@@ -132,8 +132,8 @@ class OverlayImageWindow(QMainWindow):  #todo mixin with ImageWindow
         self.vb.setAspectLocked()
         win.addItem(self.vb)
         #
-        # self.circle = QGraphicsEllipseItem(30., 30., 0., 0.)
-        # self.circle.setBrush(QtGui.QBrush(QtCore.Qt.yellow))
+        self.circle = QGraphicsEllipseItem(30., 30., 0., 0.)
+        self.circle.setBrush(QtGui.QBrush(QtCore.Qt.yellow))
         self.vb.addItem(self.circle)
 
         hist = pg.HistogramLUTItem()

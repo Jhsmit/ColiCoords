@@ -3,6 +3,7 @@ from ..config import cfg
 
 #todo data dict ->ordereddict?
 #todo make controller load defaults after initialization
+#DEPRATED
 class CellObjectWindow(QtGui.QMainWindow):
     def __init__(self, data, parent=None):
         super(CellObjectWindow, self).__init__(parent=parent)
