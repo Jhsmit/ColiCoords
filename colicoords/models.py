@@ -2,15 +2,20 @@ import numpy as np
 from colicoords.optimizers import Parameter
 from scipy.integrate import quad
 from joblib import Memory as JobMemory
+from colicoords.config import cfg
 
 
-class Memory(JobMemory):
-    def __init__(self, *args, **kwargs):
-        raise NotImplementedError()
-        print(args)
-        print(type(args))
-        args = ('_cache',) + args
-        super(Memory, self).__init__(*args, **kwargs)
+try:
+    from joblib import Memory as JobMemory
+
+
+    class Memory(JobMemory):
+        def __init__(self, *args, **kwargs):
+            args = (cfg.CACHE_DIR,) + args
+            super(Memory, self).__init__(*args, **kwargs)
+
+except ImportError:
+    'Package joblib not found, chached memory not available'
 
 
 class PSF(object):
@@ -62,7 +67,7 @@ class RDistModel(object):
             self.y1 = _y1
             self.y2 = _y2
 
-        self.i = 100
+        self.i = 10
 
     def __call__(self, x, **kwargs):
         r1 = kwargs.pop('r1', self.r1.value)
