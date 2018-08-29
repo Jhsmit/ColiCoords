@@ -33,19 +33,15 @@ class NavigationMixin(object):
         elif event.key() == QtCore.Qt.Key_D:
             self._next()
 
-    @pyqtSlot()
     def _first(self):
         self.set_frame(0)
 
-    @pyqtSlot()
     def _prev(self):
         self.set_frame(self.index - 1)
 
-    @pyqtSlot()
     def _next(self):
         self.set_frame(self.index + 1)
 
-    @pyqtSlot()
     def _last(self):
         self.set_frame(self.length - 1)
 
@@ -66,6 +62,7 @@ class NavigationMixin(object):
 
 class DrawThread(QtCore.QThread):
     brush_size = 10
+    brush_size_sq = 100
 
     def __init__(self, binary_array, image_window, *args, **kwargs):
         self.binary_array = binary_array
@@ -87,7 +84,7 @@ class DrawThread(QtCore.QThread):
             self.zero[int(y), int(x)] = False
             dmap = mh.distance(self.zero)
 
-            bools = dmap < self.brush_size**2
+            bools = dmap < self.brush_size_sq
             self.binary_array[idx][bools] = value
 
             self.iw.overlay_item.setImage(self.binary_array[idx])
@@ -120,10 +117,23 @@ class GenerateBinaryController(NavigationMixin):
         self.update_brush_size_edit()
         self.pw.brush_size_edit.editingFinished.connect(self._brush_size_text)
         self.pw.paint_rb.toggled.connect(self._paint_mode_rb)
+        self.pw.alpha_slider.setValue(self.iw.alpha * 100)
+        self.pw.alpha_slider.valueChanged.connect(self.alpha_slider)
         self.pw.keypress.connect(self.on_key_press)
+
+    def alpha_slider(self):
+        self.iw.alpha = self.pw.alpha_slider.value() / 100
+        lut = self.iw.make_lut()
+        self.iw.overlay_item.setLookupTable(lut)
 
     def update_brush_size_edit(self):
         self.pw.brush_size_edit.setText(str(self.draw_thread.brush_size))
+        self.draw_thread.brush_size_sq = int(self.draw_thread.brush_size**2)
+
+    def _brush_size_text(self):
+        brush_size = self.pw.brush_size_edit.text()
+        self.draw_thread.brush_size = int(brush_size)
+        self.draw_thread.brush_size_sq = int(self.draw_thread.brush_size**2)
 
     def mouse_moved(self, ev):
         scenePos = self.iw.img_item.mapFromScene(ev)
@@ -148,15 +158,10 @@ class GenerateBinaryController(NavigationMixin):
                 self.pw.paint_rb.toggle()
         elif event.key() == QtCore.Qt.Key_E:
             self.draw_thread.brush_size += 1
-            print(self.draw_thread.brush_size)
             self.update_brush_size_edit()
         elif event.key() == QtCore.Qt.Key_R:
             self.draw_thread.brush_size -= 1
             self.update_brush_size_edit()
-
-    def _brush_size_text(self):
-        brush_size = self.pw.brush_size_edit.text()
-        self.draw_thread.brush_size = int(brush_size)
 
     def _paint_mode_rb(self):
         bool = self.pw.paint_rb.isChecked()

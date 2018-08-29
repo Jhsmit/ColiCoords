@@ -1,6 +1,6 @@
 from PyQt5 import QtGui
 from PyQt5.QtWidgets import QPushButton, QMainWindow, QLineEdit, QHBoxLayout, QCheckBox, QVBoxLayout, QWidget, \
-    QSizePolicy, QRadioButton, QFormLayout, QLabel, QGraphicsEllipseItem
+    QSizePolicy, QRadioButton, QFormLayout, QLabel, QGraphicsEllipseItem, QSlider
 from PyQt5 import QtCore
 
 import pyqtgraph as pg
@@ -93,9 +93,15 @@ class PaintOptionsWindow(QMainWindow):
         vb.addWidget(self.paint_rb)
         vb.addWidget(self.zoom_rb)
 
+        self.alpha_slider = QSlider(QtCore.Qt.Horizontal)
+        self.alpha_slider.setMinimum(0)
+        self.alpha_slider.setMaximum(100)
+        self.alpha_slider.setTickInterval(100)
+
         form = QFormLayout()
         form.addRow(QLabel('Brush size'), self.brush_size_edit)
         form.addRow(QLabel('Mouse mode'), vb)
+        form.addRow(QLabel('Alpha'), self.alpha_slider)
 
         w = QWidget()
         w.setLayout(form)
@@ -142,6 +148,14 @@ class OverlayImageWindow(QMainWindow):  #todo mixin with ImageWindow
 
         win.setStyleSheet("background-color:black;")
         self.setCentralWidget(win)
+
+    def make_lut(self):
+        pos = np.array([0., 1.])
+        color = np.array([[0., 0., 0., 0.], [1., 0., 0., self.alpha]])
+        cm = pg.ColorMap(pos, color)
+        lut = cm.getLookupTable(0., 1.)
+
+        return lut
 
         #self.img_item.scene().sigMouseMoved.connect(self.mouseMoved)
         #
