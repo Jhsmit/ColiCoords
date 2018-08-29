@@ -133,7 +133,7 @@ class OverlayImageWindow(QMainWindow):  #todo mixin with ImageWindow
         win.addItem(self.vb)
         #
         self.circle = QGraphicsEllipseItem(30., 30., 0., 0.)
-        self.circle.setBrush(QtGui.QBrush(QtCore.Qt.yellow))
+        #self.circle.setBrush(QtGui.QBrush(QtCore.Qt.yellow))
         self.vb.addItem(self.circle)
 
         hist = pg.HistogramLUTItem()

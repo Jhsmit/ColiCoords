@@ -65,7 +65,7 @@ class NavigationMixin(object):
 
 
 class DrawThread(QtCore.QThread):
-    brush_size = 10**2
+    brush_size = 10
 
     def __init__(self, binary_array, image_window, *args, **kwargs):
         self.binary_array = binary_array
@@ -87,7 +87,7 @@ class DrawThread(QtCore.QThread):
             self.zero[int(y), int(x)] = False
             dmap = mh.distance(self.zero)
 
-            bools = dmap < self.brush_size
+            bools = dmap < self.brush_size**2
             self.binary_array[idx][bools] = value
 
             self.iw.overlay_item.setImage(self.binary_array[idx])
@@ -117,14 +117,17 @@ class GenerateBinaryController(NavigationMixin):
 
         #Paint options window
         self.pw = PaintOptionsWindow()
-        self.pw.brush_size_edit.setText(str(np.sqrt(self.draw_thread.brush_size)))
+        self.update_brush_size_edit()
         self.pw.brush_size_edit.editingFinished.connect(self._brush_size_text)
         self.pw.paint_rb.toggled.connect(self._paint_mode_rb)
         self.pw.keypress.connect(self.on_key_press)
 
+    def update_brush_size_edit(self):
+        self.pw.brush_size_edit.setText(str(self.draw_thread.brush_size))
+
     def mouse_moved(self, ev):
         scenePos = self.iw.img_item.mapFromScene(ev)
-        r = np.sqrt((self.draw_thread.brush_size))
+        r = self.draw_thread.brush_size
         self.iw.circle.setRect(scenePos.x() - r, scenePos.y() - r, 2*r, 2*r)
 
     def on_key_press(self, event):
@@ -143,10 +146,17 @@ class GenerateBinaryController(NavigationMixin):
                 self.pw.zoom_rb.toggle()
             else:
                 self.pw.paint_rb.toggle()
+        elif event.key() == QtCore.Qt.Key_E:
+            self.draw_thread.brush_size += 1
+            print(self.draw_thread.brush_size)
+            self.update_brush_size_edit()
+        elif event.key() == QtCore.Qt.Key_R:
+            self.draw_thread.brush_size -= 1
+            self.update_brush_size_edit()
 
     def _brush_size_text(self):
         brush_size = self.pw.brush_size_edit.text()
-        self.draw_thread.brush_size = int(brush_size)**2
+        self.draw_thread.brush_size = int(brush_size)
 
     def _paint_mode_rb(self):
         bool = self.pw.paint_rb.isChecked()
