@@ -1,3 +1,5 @@
+.. image:: https://travis-ci.com/Jhsmit/ColiCoords.svg?token=fHmeVP7wJAvRJCPqsnjv&branch=master
+    :target: https://travis-ci.com/Jhsmit/ColiCoords
 ==========
 ColiCoords
 ==========
