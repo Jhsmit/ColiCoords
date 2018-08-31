@@ -1,9 +1,6 @@
 import h5py
 import numpy as np
-import tifffile
 import os
-from xml.etree import cElementTree as etree
-import warnings
 from colicoords.cell import Cell, CellList
 from colicoords.config import cfg
 from colicoords.data_models import Data
@@ -28,23 +25,12 @@ def save(file_path, cell_obj):
     ext = os.path.splitext(file_path)[1]
 
     if isinstance(cell_obj, Cell):
-        if ext == '.cc' or '':
-            if ext == '':
-                file_path += '.cc'
-
             with h5py.File(file_path, 'w') as f:
                 name = '_cell' if cell_obj.name is None else cell_obj.name
                 cell_grp = f.create_group(name)
                 _write_cell(cell_grp, cell_obj)
 
-        elif ext == '.tif' or '.tiff':
-            raise NotImplementedError()
-
     elif isinstance(cell_obj, CellList):
-        if ext == 'cc' or '':
-            if ext == '':
-                file_path += '.cc'
-
         with h5py.File(file_path, 'w') as f:
             names = np.array([c.name for c in cell_obj])
             if np.all(names == None):
@@ -104,18 +90,13 @@ def _load_cell(cell_grp):
 
 
 def load(file_path):
-    ext = os.path.splitext(file_path)[1]
+    with h5py.File(file_path, 'r') as f:
+        cell_list = [_load_cell(f[key]) for key in f.keys()]
 
-    if ext == '.cc':
-        with h5py.File(file_path, 'r') as f:
-            cell_list = [_load_cell(f[key]) for key in f.keys()]
-
-            if len(cell_list) == 1:
-                return cell_list[0]
-            else:
-                return CellList(cell_list)
-    else:
-        raise ValueError('Invalid file type')
+        if len(cell_list) == 1:
+            return cell_list[0]
+        else:
+            return CellList(cell_list)
 
 
 def load_thunderstorm(file_path, pixelsize=None):
