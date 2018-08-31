@@ -15,7 +15,7 @@ try:
             super(Memory, self).__init__(*args, **kwargs)
 
 except ImportError:
-    'Package joblib not found, chached memory not available'
+    'Package joblib not found, cached memory not available'
 
 
 class PSF(object):

@@ -2,6 +2,7 @@ import numpy as np
 from colicoords.support import gauss_2d
 from scipy.spatial import distance
 
+
 #todo r_norm?
 def get_coords(model_cell, data_cells, data_elem, r_norm=True):
     dpts = np.sum([np.product(cell.data.shape) for cell in data_cells])

@@ -98,6 +98,8 @@ class PaintOptionsWindow(QMainWindow):
         self.alpha_slider.setMaximum(100)
         self.alpha_slider.setTickInterval(100)
 
+        self.autosave_cb = QCheckBox()
+
         form = QFormLayout()
         form.addRow(QLabel('Brush size'), self.brush_size_edit)
         form.addRow(QLabel('Mouse mode'), vb)

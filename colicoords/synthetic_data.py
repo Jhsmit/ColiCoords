@@ -130,7 +130,6 @@ class SynthCell(Cell):
         return img
 
 
-
 def calc_length(xr, xl, a2, length):
     a1 = -a2 * (xr + xl)
     l = (1 / (4 * a2)) * (

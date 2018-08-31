@@ -3,7 +3,7 @@ import numpy as np
 from colicoords.cell import Cell, CellList
 
 
-def data_to_cells(input_data, initial_pad=5, final_pad = 7, cell_frac=0.5, rotate='binary', verbose=True):
+def data_to_cells(input_data, initial_pad=5, final_pad=7, cell_frac=0.5, rotate='binary', verbose=True):
     assert 'binary' in input_data.dclasses
     assert input_data.ndim == 3
 

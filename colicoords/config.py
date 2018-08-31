@@ -22,14 +22,14 @@ class DefaultConfig(object):
 
     #plotting parameters
 
-    R_DIST_STOP = 30.
+    R_DIST_STOP = 20.
     R_DIST_STEP = 0.5
     R_DIST_SIGMA = 0.3
     R_DIST_NORM_STOP = 2
     R_DIST_NORM_STEP = 0.05
     R_DIST_NORM_SIGMA = 0.05
 
-    L_DIST_NBINS = 20
+    L_DIST_NBINS = 100
     L_DIST_SIGMA = 0.5
 
     ALHPA_DIST_STOP = 180.
@@ -78,6 +78,7 @@ def load_config(path=None):
     else:
         cfg = DefaultConfig
 
+
 load_config()
 
 
@@ -103,6 +104,3 @@ def create_config(path=None):
 
     with open(os.path.join(path, 'config.ini'), 'w') as configfile:
         config.write(configfile)
-
-
-create_config()

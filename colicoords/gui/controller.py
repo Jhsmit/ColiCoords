@@ -4,6 +4,7 @@ from PyQt5 import QtCore
 import queue
 import mahotas as mh
 import numpy as np
+import time
 
 
 class NavigationMixin(object):
@@ -60,13 +61,37 @@ class NavigationMixin(object):
         self.nw.current_frame_text.setText(str(self.index))
 
 
+class AutoSaveThread(QtCore.QThread):
+    interval = 10
+    terminate = False
+
+    def __init__(self, binary_array, draw_thread, *args, **kwargs):
+        self.binary_array = binary_array
+        self.draw_thread = draw_thread
+
+        super(AutoSaveThread, self).__init__(*args, **kwargs)
+
+    def run(self):
+        while not self.terminate:
+            time.sleep(self.interval)
+
+            self.draw_thread.queue.join()
+            np.save('autosave.npy', self.binary_array)
+            print('Autosaved')
+
+        self.terminate = False
+        return 0
+
+
 class DrawThread(QtCore.QThread):
     brush_size = 10
     brush_size_sq = 100
+    terminate = False
 
     def __init__(self, binary_array, image_window, *args, **kwargs):
         self.binary_array = binary_array
         self.iw = image_window
+        self.edited = np.any(self.binary_array, axis=(1, 2)).astype(bool)
 
         super(DrawThread, self).__init__(*args, **kwargs)
         self.queue = queue.Queue()
@@ -76,29 +101,55 @@ class DrawThread(QtCore.QThread):
         self.x_coords = np.repeat(np.arange(xmax), ymax).reshape(xmax, ymax).T + 0.5
         self.y_coords = np.repeat(np.arange(ymax), xmax).reshape(ymax, xmax) + 0.5
         self.zero = np.ones_like(binary_array[0], dtype=bool)
-        self.terminate = False
 
     def run(self):
         while not self.terminate:
             idx, x, y, value = self.queue.get()
             self.zero[int(y), int(x)] = False
             dmap = mh.distance(self.zero)
-
             bools = dmap < self.brush_size_sq
             self.binary_array[idx][bools] = value
+            self.edited[idx] = True
 
             self.iw.overlay_item.setImage(self.binary_array[idx])
             self.zero[int(y), int(x)] = True
 
             self.queue.task_done()
 
+        self.terminate = False
+        return 0
+
+
+class PropagateThread(QtCore.QThread):
+    terminate = False
+
+    def __init__(self, parent, *args, **kwargs):
+        self.parent = parent
+        super(PropagateThread, self).__init__(*args, **kwargs)
+        self.edited = np.any(self.parent.binary_array, axis=(1, 2))
+
+    def run(self):
+        #todo trigger with next?
+        while not self.terminate:
+            print('running')
+
+            binary = self.parent.binary_array[self.parent.index]
+            idx = np.where(self.parent.draw_thread.edited)[0]
+            try:
+                i_final = np.min(idx[idx > self.parent.index])
+            except ValueError:
+                i_final = len(self.parent.binary_array)
+
+            self.parent.binary_array[self.parent.index + 1:i_final, :, :] = binary[np.newaxis, :, :]
+            time.sleep(5)
+
 
 class GenerateBinaryController(NavigationMixin):
 
-    def __init__(self, grey_array, binary_array):
+    def __init__(self, grey_array, binary_array, propagate=False):
         assert grey_array.shape == binary_array.shape
         self.grey_array = grey_array[:, ::-1, :]
-        self.binary_array = binary_array[:, ::-1, :]
+        self.binary_array = binary_array[:, ::-1, :].astype(int)
         super(GenerateBinaryController, self).__init__(len(grey_array))
 
         self.shape = self.grey_array[0].shape
@@ -109,6 +160,13 @@ class GenerateBinaryController(NavigationMixin):
         self.iw.keypress.connect(self.on_key_press)
         self.draw_thread = DrawThread(self.binary_array, self.iw)
         self.draw_thread.start()
+
+        if propagate:
+            self.prop = PropagateThread(self)
+            self.prop.start()
+
+        #self.autosave = AutoSaveThread(self.binary_array, self.draw_thread)
+        #self.autosave.start()
 
         self.iw.img_item.scene().sigMouseMoved.connect(self.mouse_moved)
 
