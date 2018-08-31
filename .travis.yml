@@ -2,9 +2,13 @@ language: python
 python:
   - "3.6"
   
+#cache:
+#- pip
 # command to install dependencies
 install:
-  - python setup.py install
+- pip install --upgrade pip setuptools
+- pip install -r requirements.txt --prefer-binary
+  #- python setup.py install
   
  # command to run tests
 script:
