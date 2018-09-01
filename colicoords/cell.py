@@ -7,8 +7,7 @@ from functools import partial
 from colicoords.optimizers import Optimizer
 from colicoords.support import allow_scalars, box_mean, running_mean
 from scipy.integrate import quad
-from scipy.optimize import fsolve, brentq
-#import multiprocessing as mp
+from scipy.optimize import brentq
 import multiprocess as mp
 from tqdm import tqdm
 import sys
@@ -327,33 +326,49 @@ class Cell(object):
 
         return xvals, yvals
 
-    def measure_r(self, data_name='brightfield', in_place=True):
+    def measure_r(self, data_name='brightfield', mode='max', in_place=True, **kwargs):
         """
-        Measure the radius of the cell by finding the intensity-midpoint of the radial distribution derived from
+        Measure the radius of the cell by finding the intensity-mid/min/max-point of the radial distribution derived from
         brightfield (default) or another data element.
 
         Args:
             data_name (:obj:`str`): Name of the data element to use.
+            mode (:obj:`str`): Mode to find the radius. Can be either 'min', 'mid' or 'max' to use the minimum, middle
+                or maximum value of the radial distribution, respectively.
             in_place (:obj:`bool`): If `True` the found value of `r` is directly substituted in the cell's coordinate
                 system, otherwise the value is returned.
 
         Returns:
             The measured radius `r` if `in_place` is `False`, otherwise `None`.
         """
-        x, y = self.r_dist(15, 1, data_name=data_name)  # todo again need sensible default for stop
-        mid_val = (np.min(y) + np.max(y)) / 2
 
-        imin = np.argmin(y)
-        imax = np.argmax(y)
-        try:
-            r = np.interp(mid_val, y[imin:imax], x[imin:imax])
-            if in_place:
-                self.coords.r = r
-            else:
-                return r
+        step = kwargs.pop('step', 1)
+        stop = kwargs.pop('stop', int(self.data.shape[0] / 2))
+        x, y = self.r_dist(stop, step, data_name=data_name)  # todo again need sensible default for stop
 
-        except ValueError:
-            print('r value not found')
+        if mode == 'min':
+            imin = np.argmin(y)
+            r = x[imin]
+        elif mode == 'mid':
+            mid_val = (np.min(y) + np.max(y)) / 2
+            imin = np.argmin(y)
+            imax = np.argmax(y)
+            assert np.all(np.diff(y[imax:imin][::-1]) > 0)
+            try:
+                r = np.interp(mid_val, y[imax:imin][::-1], x[imax:imin][::-1])
+            except ValueError:
+                print("r value not found")
+                return
+        elif mode == 'max':
+            imax = np.argmax(y)
+            r = x[imax]
+        else:
+            ValueError('Invalid value for mode')
+
+        if in_place:
+            self.coords.r = r
+        else:
+            return r
 
     def reconstruct_cell(self, data_name, norm_x=False, r_scale=1, **kwargs):
         #todo stop and step defaults when norm_x=True?
