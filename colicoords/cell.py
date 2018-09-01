@@ -30,7 +30,7 @@ class Cell(object):
     def __init__(self, data_object, name=None, **kwargs):
         """
         Args:
-            data_object (:class:`Data`): Data class holding all data which describes this single cell
+            data_object (:class:`Data`): Data object holding all data which describes this single cell
             name (:obj:`str`): Name to identify this single cell.
                 #todo generate names when trying to save cell_list without names to disk
         """
@@ -555,8 +555,8 @@ class Coordinates(object):
         Returned values are 1 for left pole, 2 for middle, 3 for right pole.
 
         Args:
-            xp (:`obj`:float: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
-            yp (:`obj`:float: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as xp
+            xp (:`obj`:float: or :class:`~numpy.ndarray`): Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
+            yp (:`obj`:float: or :class:`~numpy.ndarray`): Input scalar or vector/matrix x-coordinate. Must be the same shape as xp
 
         Returns:
             :`obj`:float: or :class:`~numpy.ndarray`: Array to mask different cellular regions.
@@ -574,8 +574,8 @@ class Coordinates(object):
         """ Calculates the coordinate xc on p(x) closest to (xp, yp), where xl < xc < xr
 
         Args:
-            xp (:`obj`:float: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
-            yp (:`obj`:float: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as xp
+            xp (:obj:`float`: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
+            yp (:obj:`float`: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as xp
 
         Returns:
             :`obj`:float: or :class:`~numpy.ndarray`: Cellular x-coordinate for point(s) xp, yp, where xl < xc < xr
@@ -659,11 +659,11 @@ class Coordinates(object):
             coordinates xc
 
         Args:
-            xp (:`obj`:float: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
-            yp (:`obj`:float: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as xp
+            xp (:obj:`float` or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
+            yp (:obj:`float` or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as xp
 
         Returns:
-            :`obj`:tuple: Angle psi for (xp, yp).
+            :obj:`tuple`: Angle psi for (xp, yp).
         """
 
         xc = np.array(self.calc_xc(xp, yp).copy())

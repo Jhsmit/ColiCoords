@@ -22,7 +22,6 @@ TYPES = {
 
 #todo add colicoords' version to the files
 def save(file_path, cell_obj):
-    ext = os.path.splitext(file_path)[1]
 
     if isinstance(cell_obj, Cell):
             with h5py.File(file_path, 'w') as f:

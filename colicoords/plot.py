@@ -333,11 +333,11 @@ class CellPlot(object):
         return ax
 
     def plot_storm(self, data_name='', ax=None, method='plot', upscale=5, alpha_cutoff=None, storm_weight=True, sigma=0.25, **kwargs):
-        """Graphically represent STORM data
+        """ Graphically represent STORM data
 
         Args:
             data_name (:obj:`str`): Name of the data element to plot. Must have the data class 'storm'.
-            ax (:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting.
+            ax (:class:`matplotlib.axes.Axes`): Optional matplotlib axes to use for plotting.
             method: (:obj:`str`):  Method of visualization. Options are 'plot', 'hist', or 'gauss' just plotting points,
                 histogram plot or gaussian kernel plot.
             upscale: Upscale factor for the output image. Number of pixels is increased wrt data.shape with a factor

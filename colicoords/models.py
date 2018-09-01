@@ -7,14 +7,12 @@ from colicoords.config import cfg
 
 try:
     from joblib import Memory as JobMemory
-
-
     class Memory(JobMemory):
         def __init__(self, *args, **kwargs):
             args = (cfg.CACHE_DIR,) + args
             super(Memory, self).__init__(*args, **kwargs)
 
-except ImportError:
+except (ImportError, ModuleNotFoundError):
     'Package joblib not found, cached memory not available'
 
 
