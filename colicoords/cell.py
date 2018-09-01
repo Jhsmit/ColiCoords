@@ -1,5 +1,5 @@
 #https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.basinhopping.html#scipy.optimize.basinhopping
-
+import numbers
 import mahotas as mh
 import numpy as np
 import operator
@@ -1016,7 +1016,8 @@ class CellList(object):
         assert isinstance(cell_obj, Cell)
         self.cell_list = np.append(self.cell_list, cell_obj)
 
-    def r_dist(self, stop, step, data_name='', norm_x=False, storm_weight=False, limit_l=None, method='gauss', sigma=None):
+    def r_dist(self, stop, step, data_name='', norm_x=False, storm_weight=False, limit_l=None, method='gauss', sigma=0.3):
+        #todo refactor to get_r_dist?
         """ Calculates the radial distribution of a given data element for all cells in the `CellList`.
 
         Args:
@@ -1162,7 +1163,7 @@ class CellList(object):
         return self.cell_list.__iter__()
 
     def __getitem__(self, key):
-        if type(key) == int:
+        if isinstance(key, numbers.Integral):
             return self.cell_list.__getitem__(key)
         else:
             return CellList(self.cell_list.__getitem__(key))
