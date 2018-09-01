@@ -244,6 +244,7 @@ class CellPlot(object):
         return ax
 
     def get_r_dist(self, norm_x=False, data_name='', limit_l=None, method='gauss', storm_weight=False, **kwargs):
+        #todo copy of get_r_dist on CellListPlot, make baseclass?
         if norm_x:
             stop = cfg.R_DIST_NORM_STOP
             step = cfg.R_DIST_NORM_STEP
@@ -331,6 +332,8 @@ class CellPlot(object):
             ax.set_ylim(0, ymax)
 
         return ax
+
+
 
     def plot_storm(self, data_name='', ax=None, method='plot', upscale=5, alpha_cutoff=None, storm_weight=True, sigma=0.25, **kwargs):
         """ Graphically represent STORM data
@@ -517,60 +520,34 @@ class CellPlot(object):
 
     def plot_kymograph(self, mode='r', data_name='', ax=None, time_factor=1, time_unit='frames', dist_kwargs=None,
                        norm=True, aspect=1, **kwargs):
-        if not data_name:
-            try:
-                data_elem = list(self.cell_obj.data.flu_dict.values())[0]  # yuck
-            except IndexError:
-                try:
-                    data_elem = list(self.cell_obj.data.storm_dict.values())[0]
-                except IndexError:
-                    raise IndexError('No valid data element found')
-        else:
-            data_elem = self.cell_obj.data.data_dict[data_name]
-        assert data_elem.ndim == 3
+
+        # if not data_name:
+        #     try:
+        #         data_elem = list(self.cell_obj.data.flu_dict.values())[0]  # yuck
+        #     except IndexError:
+        #         try:
+        #             data_elem = list(self.cell_obj.data.storm_dict.values())[0]
+        #         except IndexError:
+        #             raise IndexError('No valid data element found')
+        # else:
+        #     data_elem = self.cell_obj.data.data_dict[data_name]
+        # assert data_elem.ndim == 3
 
         dist_kwargs = dist_kwargs if dist_kwargs is not None else {}
 
         if mode == 'r':
             x, arr = self.get_r_dist(data_name=data_name, **dist_kwargs)
-        self.kymograph(x, arr, ax=ax, time_factor=time_factor, time_unit=time_unit, norm=norm, aspect=aspect)
-
-    def kymograph(self, x, arr, ax=None, time_factor=1, time_unit='frames', norm=True, aspect=1):
-        # Mirror array to show symmetrical left and right sides
-        combined = np.concatenate((arr[:, :0:-1], arr), axis=1)
-
-        if norm:
-            maxes = np.max(combined, axis=1)
-            mins = np.min(combined, axis=1)
-            norm = (combined - mins[:, np.newaxis]) / (maxes - mins)[:, np.newaxis]
+            assert arr.ndim == 2
+        elif mode == 'l':
+            raise NotImplementedError()
+            x, arr = self.get_l_dist()
+        elif mode == 'a':
+            raise NotImplementedError()
         else:
-            norm = combined
+            raise ValueError('Invalid mode')
 
-        # mirror x array
-        x_full = np.concatenate((-x[:0:-1], x))
+        kymograph(x, arr, ax=ax, time_factor=time_factor, time_unit=time_unit, norm=norm, aspect=aspect, **kwargs)
 
-        # x array with datapoints equal to y axis
-        x_new = np.linspace(np.min(x_full), np.max(x_full), num=norm.shape[0], endpoint=True)
-
-        # interpolate values for new x array
-        img = np.empty((norm.shape[0], norm.shape[0]))
-        for i, row in enumerate(norm):
-            img[i] = np.interp(x_new, x_full, row)
-
-        # Change x units
-        x_full *= cfg.IMG_PIXELSIZE / 1000
-
-        # Change y units
-        y_max = img.shape[0] * time_factor
-
-        x_range = x_full.max() - x_full.min()
-        aspect_c = y_max / x_range
-
-        ax = plt.gca() if ax is None else ax
-        ax.imshow(img, aspect=aspect * (1 / aspect_c), interpolation='spline16', cmap='viridis', origin='lower_left',
-                  extent=[x_full.min(), x_full.max(), 0, y_max])
-        ax.set_xlabel('Distance ($\mu$m)')
-        ax.set_ylabel('Time ({})'.format(time_unit))
 
     def imshow(self, img, ax=None, **kwargs):
         """Equivalent to matplotlib's imshow but with default extent kwargs to assure proper overlay of pixel and
@@ -787,6 +764,24 @@ class CellListPlot(object):
 
         return ax
 
+    def get_r_dist(self, norm_x=False, data_name='', limit_l=None, method='gauss', storm_weight=False, **kwargs):
+        if norm_x:
+            stop = cfg.R_DIST_NORM_STOP
+            step = cfg.R_DIST_NORM_STEP
+            sigma = cfg.R_DIST_NORM_SIGMA
+        else:
+            stop = cfg.R_DIST_STOP
+            step = cfg.R_DIST_STEP
+            sigma = cfg.R_DIST_SIGMA
+
+        stop = kwargs.pop('stop', stop)
+        step = kwargs.pop('step', step)
+        sigma = kwargs.pop('sigma', sigma)
+        x, y = self.cell_list.r_dist(stop, step, data_name=data_name, norm_x=norm_x, storm_weight=storm_weight,
+                                    limit_l=limit_l, method=method, sigma=sigma)
+
+        return x, y
+
     def plot_l_dist(self, ax=None, data_name='', r_max=None, norm_y=False, storm_weight=False, band_func=np.std,
                     method='gauss', **kwargs):
         """Plots the longitudinal distribution of a given data element.
@@ -883,10 +878,77 @@ class CellListPlot(object):
 
         return ax
 
+
+
+    def plot_kymograph(self, mode='r', data_name='', ax=None, time_factor=1, time_unit='frames', dist_kwargs=None,
+                       norm=True, aspect=1, **kwargs):
+
+        # if not data_name:
+        #     try:
+        #         data_elem = list(self.cell_obj.data.flu_dict.values())[0]  # yuck
+        #     except IndexError:
+        #         try:
+        #             data_elem = list(self.cell_obj.data.storm_dict.values())[0]
+        #         except IndexError:
+        #             raise IndexError('No valid data element found')
+        # else:
+        #     data_elem = self.cell_obj.data.data_dict[data_name]
+        # assert data_elem.ndim == 3
+
+        dist_kwargs = dist_kwargs if dist_kwargs is not None else {}
+
+        if mode == 'r':
+            x, arr = self.get_r_dist(data_name=data_name, **dist_kwargs)
+            assert arr.ndim == 2
+        elif mode == 'l':
+            raise NotImplementedError()
+            x, arr = self.get_l_dist()
+        elif mode == 'a':
+            raise NotImplementedError()
+        else:
+            raise ValueError('Invalid mode')
+
+        kymograph(x, arr, ax=ax, time_factor=time_factor, time_unit=time_unit, norm=norm, aspect=aspect, **kwargs)
+
     def show(self):
         """Calls matplotlib.pyplot.show()"""
         plt.show()
 
 
 
+def kymograph(x, arr, ax=None, time_factor=1, time_unit='frames', norm=True, aspect=1):
+    # Mirror array to show symmetrical left and right sides
+    combined = np.concatenate((arr[:, :0:-1], arr), axis=1)
 
+    if norm:
+        maxes = np.max(combined, axis=1)
+        mins = np.min(combined, axis=1)
+        norm = (combined - mins[:, np.newaxis]) / (maxes - mins)[:, np.newaxis]
+    else:
+        norm = combined
+
+    # mirror x array
+    x_full = np.concatenate((-x[:0:-1], x))
+
+    # x array with datapoints equal to y axis
+    x_new = np.linspace(np.min(x_full), np.max(x_full), num=norm.shape[0], endpoint=True)
+
+    # interpolate values for new x array
+    img = np.empty((norm.shape[0], norm.shape[0]))
+    for i, row in enumerate(norm):
+        img[i] = np.interp(x_new, x_full, row)
+
+    # Change x units
+    x_full *= cfg.IMG_PIXELSIZE / 1000
+
+    # Change y units
+    y_max = img.shape[0] * time_factor
+
+    x_range = x_full.max() - x_full.min()
+    aspect_c = y_max / x_range
+
+    ax = plt.gca() if ax is None else ax
+    ax.imshow(img, aspect=aspect * (1 / aspect_c), interpolation='spline16', cmap='viridis', origin='lower_left',
+              extent=[x_full.min(), x_full.max(), 0, y_max])
+    ax.set_xlabel('Distance ($\mu$m)')
+    ax.set_ylabel('Time ({})'.format(time_unit))
