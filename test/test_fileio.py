@@ -1,25 +1,23 @@
 from colicoords.fileIO import load, save
-from colicoords.cell import Cell
 from colicoords.preprocess import data_to_cells
 from test.testcase import ArrayTestCase
 from test.test_functions import load_testdata
 import unittest
 import os
-import tifffile
-import numpy as np
+
 
 
 class FileIOTest(ArrayTestCase):
     def setUp(self):
         self.data = load_testdata('ds3')
-        self.cell_list = data_to_cells(self.data, initial_pad=2, cell_frac=0.5, rotate='binary')
+        self.cell_list = data_to_cells(self.data, initial_crop=2, rotate='binary')
         self.cell_obj = self.cell_list[0]
         self.cell_obj.optimize()
 
     def test_save_load_cells(self):
-        save('temp_save.cc', self.cell_obj)
-        cell_obj_load = load('temp_save.cc')
-        os.remove('temp_save.cc')
+        save('temp_save.hdf5', self.cell_obj)
+        cell_obj_load = load('temp_save.hdf5')
+        os.remove('temp_save.hdf5')
 
         for item in ['r', 'xl', 'xr']:
             self.assertEqual(getattr(self.cell_obj.coords, item), getattr(cell_obj_load.coords, item))
@@ -33,9 +31,9 @@ class FileIOTest(ArrayTestCase):
         self.assertArrayEqual(self.cell_obj.data.flu_fluorescence, cell_obj_load.data.flu_fluorescence)
 
     def test_save_load_cell_list(self):
-        save('temp_save_celllist.cc', self.cell_list)
-        cell_list_load = load('temp_save_celllist.cc')
-        os.remove('temp_save_celllist.cc')
+        save('temp_save_celllist.hdf5', self.cell_list)
+        cell_list_load = load('temp_save_celllist.hdf5')
+        os.remove('temp_save_celllist.hdf5')
 
         self.assertEqual(len(self.cell_list), len(cell_list_load))
 
