@@ -6,7 +6,7 @@ from colicoords.cell import Cell, CellList
 from colicoords.preprocess import data_to_cells
 from colicoords.plot import CellPlot, CellListPlot
 from colicoords.fileIO import load, save, load_thunderstorm
-from colicoords.models import RDistModel, Memory
+from colicoords.models import RDistModel
 from colicoords.optimizers import LinearModelFit, AbstractFit, Optimizer
 from colicoords.synthetic_data import SynthCell, SynthCellList
 

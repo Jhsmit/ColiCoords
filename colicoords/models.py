@@ -1,7 +1,6 @@
 import numpy as np
 from colicoords.optimizers import Parameter
 from scipy.integrate import quad
-from joblib import Memory as JobMemory
 from colicoords.config import cfg
 
 
