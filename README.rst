@@ -11,11 +11,7 @@
 .. |license| image:: https://img.shields.io/badge/License-GPL%20v3-blue.svg
     :target: https://www.gnu.org/licenses/gpl-3.0
     
-==========
-ColiCoords
-==========
-
-Because real cells have curves.
+**Because real cells have curves**
 
 Project Goals
 =============
