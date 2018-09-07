@@ -1,5 +1,11 @@
 |build| |license|
 
+|test|
+
+.. |test| image:: images/ColiCoords_Final_Logo.svg
+    :width: 50%
+
+
 .. |build| image:: https://travis-ci.com/Jhsmit/ColiCoords.svg?token=fHmeVP7wJAvRJCPqsnjv&branch=master
     :target: https://travis-ci.com/Jhsmit/ColiCoords 
 .. |license| image:: https://img.shields.io/badge/License-GPL%20v3-blue.svg
