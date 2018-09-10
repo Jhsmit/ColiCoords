@@ -1,4 +1,4 @@
-|build| |license|
+|build| |license| |doi|
 
 |test|
 
@@ -10,6 +10,8 @@
     :target: https://travis-ci.com/Jhsmit/ColiCoords 
 .. |license| image:: https://img.shields.io/badge/License-GPL%20v3-blue.svg
     :target: https://www.gnu.org/licenses/gpl-3.0
+.. |doi| image:: https://zenodo.org/badge/92830488.svg
+   :target: https://zenodo.org/badge/latestdoi/92830488
     
 
 Project Goals
