@@ -29,3 +29,8 @@ Installation
 
 
 Although `ColiCoords` features automated testing, there are likely to be bugs. Users are encouraged to report them via the Issues page on GitHub.
+
+Documentation and Examples
+==========================
+
+Two basic examples of `ColiCoords` usage can be found in the examples directory. More examples will be added soon. Further documentation can be found in the form of docstrings.
