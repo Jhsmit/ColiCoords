@@ -31,7 +31,6 @@ class Cell(object):
         Args:
             data_object (:class:`Data`): Data object holding all data which describes this single cell
             name (:obj:`str`): Name to identify this single cell.
-                #todo generate names when trying to save cell_list without names to disk
         """
 
         self.data = data_object
@@ -123,9 +122,12 @@ class Cell(object):
 
         """
 
+        length = 1 if norm_x else self.length
         r_max = r_max if r_max else self.coords.r
-        stop = 1 if norm_x else self.length
-        start, stop = -0.5, 1.5
+        stop = 1.25*length if not stop else stop
+        start = -0.25*length if not start else start
+
+        print('cell sigma', sigma)
 
         if not data_name:
             try:
@@ -401,6 +403,8 @@ class Cell(object):
             mask (:obj:`str`): Either 'binary' or 'coords' to specify the source of the mask used.
                 'binary' uses the binary imagea as mask, 'coords' uses reconstructed binary from coordinate system
             data_name (:obj:`str`): The name of the image data element to get the intensity values from.
+            func (:obj:`callable`): This function is applied to the data elements pixels selected by the masking
+                operation. The default is `np.mean()`.
 
         Returns:
             :obj:`float`: Mean fluorescence pixel value
@@ -411,7 +415,7 @@ class Cell(object):
         elif mask == 'coords':
             m = self.coords.rc < self.coords.r
         else:
-            raise ValueError("mask keyword should be either 'binary' or 'coords'")
+            raise ValueError("Mask keyword should be either 'binary' or 'coords'")
 
         if not data_name:
             data_elem = list(self.data.flu_dict.values())[0] #yuck
@@ -1062,11 +1066,14 @@ class CellList(object):
 
         return xvals, out_arr
 
-    def l_dist(self, nbins, data_name='', norm_x=False, r_max=None, storm_weight=False):
+    def l_dist(self, nbins, data_name='', norm_x=False, method='gauss', r_max=None, storm_weight=False, sigma=None):
+        #todo tests for sigma as array
         y_arr = np.zeros((len(self), nbins))
         x_arr = np.zeros((len(self), nbins))
         for i, c in enumerate(self):
-            xvals, yvals = c.l_dist(nbins, data_name=data_name, norm_x=norm_x, r_max=r_max, storm_weight=storm_weight)
+            if len(sigma) == len(self):
+                sigma = sigma[i]
+            xvals, yvals = c.l_dist(nbins, data_name=data_name, norm_x=norm_x, method=method, r_max=r_max, storm_weight=storm_weight, sigma=sigma)
             x_arr[i] = xvals
             y_arr[i] = yvals
 
@@ -1109,7 +1116,7 @@ class CellList(object):
         """
         return np.array([c.get_intensity(mask=mask, data_name=data_name) for c in self])
 
-    def measure_r(self, data_name='brightfield', in_place=True):
+    def measure_r(self, data_name='brightfield', mode='max', in_place=True, **kwargs):
         """
         Measure the radius of the cell by finding the intensity-midpoint of the radial distribution derived from
         brightfield (default) or another data element.
@@ -1123,7 +1130,7 @@ class CellList(object):
             :class:`~numpy.ndarray`: The measured radius `r` values if `in_place` is `False`, otherwise `None`.
         """
 
-        r = [c.measure_r(data_name=data_name, in_place=in_place) for c in self]
+        r = [c.measure_r(data_name=data_name, mode=mode, in_place=in_place, **kwargs) for c in self]
         if not in_place:
             return np.array(r)
 
