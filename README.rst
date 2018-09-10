@@ -39,5 +39,5 @@ Two basic examples of `ColiCoords` usage can be found in the examples directory.
 
 |pipeline|
 
-.. |pipeline| image:: images/pipeline_figure.svg
+.. |pipeline| image:: images/pipeline_figure.png
     :width: 100%
