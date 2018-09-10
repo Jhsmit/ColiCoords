@@ -55,6 +55,8 @@ class RDistModel(object):
         self.r2 = Parameter(name='r2', value=5.5, min=2, max=8)
         self.a2 = Parameter(name='a2', value=0.5, min=0)
 
+        self.r = Parameter(name='r', value=5, min=2, max=8)
+
         self.yerr = None
 
         if mem is not None:
@@ -71,6 +73,9 @@ class RDistModel(object):
         r2 = kwargs.pop('r2', self.r2.value)
         a1 = kwargs.pop('a1', self.a1.value)
         a2 = kwargs.pop('a2', self.a2.value)
+
+        if 'r' in kwargs:
+            r1 = r2 = kwargs.pop('r')
 
         if self.i:
             r1_l = int(np.floor(self.i * r1)) / self.i
@@ -127,6 +132,5 @@ class RDistModel(object):
         return constraints
 
     def sub_par(self, res_dict):
-
         for k, v in res_dict.items():
             getattr(self, k).value = v
