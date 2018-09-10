@@ -7,6 +7,7 @@ from colicoords import CellList
 import seaborn as sns
 from scipy import stats
 sns.set_style('white')
+cmap_default = {'fluorescence': 'viridis', 'binary': 'gray_r', 'brightfield': 'gray'}
 
 
 class CellPlot(object):
@@ -31,7 +32,7 @@ class CellPlot(object):
             **kwargs: Optional kwargs passed to ax.plot().
 
         Returns:
-            :class:`matplotlib.axes.Axes`: The created or specified with `ax` matplotlib axes.
+            (:class:`matplotlib.lines.Line2D`:): Matplotlib line artist object
 
         """
         x = np.linspace(self.cell_obj.coords.xl, self.cell_obj.coords.xr, 100)
@@ -40,11 +41,11 @@ class CellPlot(object):
             kwargs['color'] = 'r'
 
         ax = plt.gca() if ax is None else ax
-        ax.plot(x, y, **kwargs)
+        line, = ax.plot(x, y, **kwargs)
         ymax, xmax = self.cell_obj.data.shape
         ax.set_ylim(ymax, 0)
         ax.set_xlim(0, xmax)
-        return ax
+        return line
 
     def plot_binary_img(self, ax=None, **kwargs):
         """Plot the cell's binary image. Equivalent to CellPlot.imshow('binary').
@@ -54,7 +55,7 @@ class CellPlot(object):
             **kwargs: Optional kwargs passed to ax.plot()
 
         Returns:
-            :class:`matplotlib.axes.Axes`: The created or specified with `ax` matplotlib axes
+            :class:`matplotlib.image.AxesImage`: Matplotlib image artist object
 
         """
 
@@ -63,9 +64,9 @@ class CellPlot(object):
 
         ax = plt.gca() if ax is None else ax
         ymax, xmax = self.cell_obj.data.shape
-        ax.imshow(self.cell_obj.data.binary_img, extent=[0, xmax, ymax, 0], **kwargs)
+        image = ax.imshow(self.cell_obj.data.binary_img, extent=[0, xmax, ymax, 0], **kwargs)
 
-        return ax
+        return image
 
     def plot_simulated_binary(self, ax=None, **kwargs):
         """Plot the cell's binary image calculated from the coordinate system.
@@ -75,7 +76,7 @@ class CellPlot(object):
             **kwargs: Optional kwargs passed to ax.plot().
 
         Returns:
-            :class:`matplotlib.axes.Axes`: The created or specified with `ax` matplotlib axes.
+            :class:`matplotlib.image.AxesImage`: Matplotlib image artist object
 
         """
 
@@ -85,9 +86,9 @@ class CellPlot(object):
 
         ax = plt.gca() if ax is None else ax
         ymax, xmax = self.cell_obj.data.shape
-        ax.imshow(img, extent=[0, xmax, ymax, 0], **kwargs)
+        image = ax.imshow(img, extent=[0, xmax, ymax, 0], **kwargs)
 
-        return ax
+        return image
 
     def plot_bin_fit_comparison(self, ax=None, **kwargs):
         """Plot the cell's binary image together with the calculated binary image from the coordinate system.
@@ -118,7 +119,7 @@ class CellPlot(object):
             **kwargs: Optional kwargs passed to ax.plot().
 
         Returns:
-            (:class:`matplotlib.axes.Axes`:): The created or specified with `ax` matplotlib axes.
+            (:class:`matplotlib.lines.Line2D`:): Matplotlib line artist object
 
         """
         # Parametric plotting of offset line
@@ -162,9 +163,9 @@ class CellPlot(object):
 
         ax = plt.gca() if ax is None else ax
         color = 'r' if 'color' not in kwargs else kwargs.pop('color')
-        ax.plot(x_all, y_all, color=color, **kwargs)
+        line, = ax.plot(x_all, y_all, color=color, **kwargs)
 
-        return ax
+        return line
 
     def plot_r_dist(self, ax=None, data_name='', norm_x=False, norm_y=False, storm_weight=False, limit_l=None,
                     method='gauss', dist_kwargs=None, **kwargs):
@@ -184,7 +185,7 @@ class CellPlot(object):
             **kwargs: Optional kwargs passed to ax.plot().
 
         Returns:
-            (:class:`matplotlib.axes.Axes`:): The created or specified with `ax` matplotlib axes.
+            (:class:`matplotlib.lines.Line2D`:): Matplotlib line artist object
 
         """
 
@@ -220,14 +221,15 @@ class CellPlot(object):
             data_elem = self.cell_obj.data.data_dict[data_name]
 
         if norm_y:
-            y /= y.max()
+            y = y.astype(float) / y.max()
+            #y /= y.max()
 
         x = x if norm_x else x * (cfg.IMG_PIXELSIZE / 1000)
         xunits = 'norm' if norm_x else '$\mu m$'
         yunits = 'norm' if norm_y else 'a.u.'
 
         ax = plt.gca() if ax is None else ax
-        ax.plot(x, y, **kwargs)
+        line, = ax.plot(x, y, **kwargs)
         ax.set_xlabel('Distance ({})'.format(xunits))
         if data_elem.dclass == 'storm':
             if storm_weight:
@@ -241,9 +243,10 @@ class CellPlot(object):
         if norm_y:
             ax.set_ylim(0, 1.1)
 
-        return ax
+        return line
 
     def get_r_dist(self, norm_x=False, data_name='', limit_l=None, method='gauss', storm_weight=False, **kwargs):
+        #todo copy of get_r_dist on CellListPlot, make baseclass?
         if norm_x:
             stop = cfg.R_DIST_NORM_STOP
             step = cfg.R_DIST_NORM_STEP
@@ -263,8 +266,6 @@ class CellPlot(object):
 
     def plot_l_dist(self, ax=None, data_name='', r_max=None, norm_x=False, norm_y=False, storm_weight=False,
                     method='gauss', dist_kwargs=None, **kwargs):
-
-        #todo refactor to actual l dist! not xc
         """Plots the longitudinal distribution of a given data element.
 
         Args:
@@ -279,7 +280,7 @@ class CellPlot(object):
             distribution curve.
             dist_kwargs (:obj:`dict`): Additional kwargs to be passed to *Cell.l_dist*
         Returns:
-            (:class:`matplotlib.axes.Axes`:): The created or specified with `ax` matplotlib axes.
+            (:class:`matplotlib.lines.Line2D`:): Matplotlib line artist object
 
         """
         if not data_name:
@@ -295,14 +296,14 @@ class CellPlot(object):
 
         nbins = kwargs.pop('nbins', cfg.L_DIST_NBINS)
         scf = self.cell_obj.length if norm_x else 1
-        sigma = kwargs.pop('sigma', cfg.L_DIST_SIGMA / scf)
-
+        sigma = kwargs.pop('sigma', cfg.L_DIST_SIGMA) / scf
 
         dist_kwargs = dist_kwargs if dist_kwargs is not None else {}
         x, y = self.cell_obj.l_dist(nbins, data_name=data_name, norm_x=norm_x, r_max=r_max, storm_weight=storm_weight,
                                     method=method, sigma=sigma, **dist_kwargs)
+
         if norm_y:
-            y /= y.max()
+            y = y.astype(float) / y.max()
 
         x = x if norm_x else x * (cfg.IMG_PIXELSIZE / 1000)
         xunits = 'norm' if norm_x else '$\mu m$'
@@ -313,7 +314,7 @@ class CellPlot(object):
         ax.set_ylabel('Intensity ({})'.format(yunits))
 
         ax = plt.gca() if ax is None else ax
-        ax.plot(x, y, **kwargs)
+        line, = ax.plot(x, y, **kwargs)
         ax.set_xlabel('Distance ({})'.format(xunits))
 
         if data_elem.dclass == 'storm':
@@ -330,14 +331,14 @@ class CellPlot(object):
             ymin, ymax = ax.get_ylim()
             ax.set_ylim(0, ymax)
 
-        return ax
+        return line
 
     def plot_storm(self, data_name='', ax=None, method='plot', upscale=5, alpha_cutoff=None, storm_weight=True, sigma=0.25, **kwargs):
-        """Graphically represent STORM data
+        """ Graphically represent STORM data
 
         Args:
             data_name (:obj:`str`): Name of the data element to plot. Must have the data class 'storm'.
-            ax (:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting.
+            ax (:class:`matplotlib.axes.Axes`): Optional matplotlib axes to use for plotting.
             method: (:obj:`str`):  Method of visualization. Options are 'plot', 'hist', or 'gauss' just plotting points,
                 histogram plot or gaussian kernel plot.
             upscale: Upscale factor for the output image. Number of pixels is increased wrt data.shape with a factor
@@ -352,7 +353,7 @@ class CellPlot(object):
             **kwargs: Optional kwargs passed to ax.plot() or ax.imshow()
 
         Returns:
-            (:class:`matplotlib.axes.Axes`:): The created or specified with `ax` matplotlib axes
+            (:class:`matplotlib.image.AxesImage`: or :class:`matplotlib.lines.Line2D`:): Matplotlib artist object.
 
         """
         #todo alpha cutoff docstirng and adjustment / testing
@@ -384,14 +385,14 @@ class CellPlot(object):
             color = kwargs.pop('color', 'r')
             marker = kwargs.pop('marker', '.')
             linestyle = kwargs.pop('linestyle', 'None')
-            ax.plot(x, y, color=color, marker=marker, linestyle=linestyle, **kwargs)
+            artist, = ax.plot(x, y, color=color, marker=marker, linestyle=linestyle, **kwargs)
 
         elif method == 'hist':
             cm = plt.cm.get_cmap('Blues')
             cmap = cm if not 'cmap' in kwargs else kwargs.pop('cmap')
 
             img = h.T
-            ax.imshow(img, interpolation=interpolation, cmap=cmap, extent=extent, **kwargs)
+            artist = ax.imshow(img, interpolation=interpolation, cmap=cmap, extent=extent, **kwargs)
         elif method == 'gauss':
             xmax = self.cell_obj.data.shape[1]
             ymax = self.cell_obj.data.shape[0]
@@ -442,12 +443,12 @@ class CellPlot(object):
             colors = cmap(normed)
             colors[..., -1] = alphas
 
-            ax.imshow(colors, cmap=cmap, extent=extent, interpolation=interpolation, **kwargs)
+            artist = ax.imshow(colors, cmap=cmap, extent=extent, interpolation=interpolation, **kwargs)
 
         else:
             raise ValueError('Invalid plotting method')
 
-        return ax
+        return artist
 
     def plot_l_class(self, data_name='', ax=None, **kwargs):
         """Plots a bar chart of how many foci are in a given STORM data set in classes depending on x-position.
@@ -458,18 +459,18 @@ class CellPlot(object):
             **kwargs: Optional kwargs passed to ax.bar().
 
         Returns:
-            (:class:`matplotlib.axes.Axes`:): The created or specified with `ax` matplotlib axes
+            (:class:`matplotlib.container.BarContainer`:): Container with all the bars.
 
         """
-        #todo created in all there return docstrings is not truthful
+        #todo return in all there return docstrings is not truthful
         cl = self.cell_obj.l_classify(data_name=data_name)
 
         ax = plt.gca() if ax is None else ax
-        ax.bar(np.arange(3), cl, tick_label=['Pole', 'Between', 'Middle'], **kwargs)
+        container = ax.bar(np.arange(3), cl, tick_label=['Pole', 'Between', 'Middle'], **kwargs)
         ax.yaxis.set_major_locator(MaxNLocator(integer=True))
         ax.set_ylabel('Number of spots')
 
-        return ax
+        return container
 
     def _plot_storm(self, storm_table, ax=None, kernel=None, bw_method=0.05, upscale=2, alpha_cutoff=None, **kwargs):
         x, y = storm_table['x'], storm_table['y']
@@ -517,60 +518,33 @@ class CellPlot(object):
 
     def plot_kymograph(self, mode='r', data_name='', ax=None, time_factor=1, time_unit='frames', dist_kwargs=None,
                        norm=True, aspect=1, **kwargs):
-        if not data_name:
-            try:
-                data_elem = list(self.cell_obj.data.flu_dict.values())[0]  # yuck
-            except IndexError:
-                try:
-                    data_elem = list(self.cell_obj.data.storm_dict.values())[0]
-                except IndexError:
-                    raise IndexError('No valid data element found')
-        else:
-            data_elem = self.cell_obj.data.data_dict[data_name]
-        assert data_elem.ndim == 3
+
+        # if not data_name:
+        #     try:
+        #         data_elem = list(self.cell_obj.data.flu_dict.values())[0]  # yuck
+        #     except IndexError:
+        #         try:
+        #             data_elem = list(self.cell_obj.data.storm_dict.values())[0]
+        #         except IndexError:
+        #             raise IndexError('No valid data element found')
+        # else:
+        #     data_elem = self.cell_obj.data.data_dict[data_name]
+        # assert data_elem.ndim == 3
 
         dist_kwargs = dist_kwargs if dist_kwargs is not None else {}
 
         if mode == 'r':
             x, arr = self.get_r_dist(data_name=data_name, **dist_kwargs)
-        self.kymograph(x, arr, ax=ax, time_factor=time_factor, time_unit=time_unit, norm=norm, aspect=aspect)
-
-    def kymograph(self, x, arr, ax=None, time_factor=1, time_unit='frames', norm=True, aspect=1):
-        # Mirror array to show symmetrical left and right sides
-        combined = np.concatenate((arr[:, :0:-1], arr), axis=1)
-
-        if norm:
-            maxes = np.max(combined, axis=1)
-            mins = np.min(combined, axis=1)
-            norm = (combined - mins[:, np.newaxis]) / (maxes - mins)[:, np.newaxis]
+            assert arr.ndim == 2
+        elif mode == 'l':
+            raise NotImplementedError()
+            x, arr = self.get_l_dist()
+        elif mode == 'a':
+            raise NotImplementedError()
         else:
-            norm = combined
+            raise ValueError('Invalid mode')
 
-        # mirror x array
-        x_full = np.concatenate((-x[:0:-1], x))
-
-        # x array with datapoints equal to y axis
-        x_new = np.linspace(np.min(x_full), np.max(x_full), num=norm.shape[0], endpoint=True)
-
-        # interpolate values for new x array
-        img = np.empty((norm.shape[0], norm.shape[0]))
-        for i, row in enumerate(norm):
-            img[i] = np.interp(x_new, x_full, row)
-
-        # Change x units
-        x_full *= cfg.IMG_PIXELSIZE / 1000
-
-        # Change y units
-        y_max = img.shape[0] * time_factor
-
-        x_range = x_full.max() - x_full.min()
-        aspect_c = y_max / x_range
-
-        ax = plt.gca() if ax is None else ax
-        ax.imshow(img, aspect=aspect * (1 / aspect_c), interpolation='spline16', cmap='viridis', origin='lower_left',
-                  extent=[x_full.min(), x_full.max(), 0, y_max])
-        ax.set_xlabel('Distance ($\mu$m)')
-        ax.set_ylabel('Time ({})'.format(time_unit))
+        kymograph(x, arr, ax=ax, time_factor=time_factor, time_unit=time_unit, norm=norm, aspect=aspect, **kwargs)
 
     def imshow(self, img, ax=None, **kwargs):
         """Equivalent to matplotlib's imshow but with default extent kwargs to assure proper overlay of pixel and
@@ -583,7 +557,7 @@ class CellPlot(object):
             **kwargs: Optional kwargs passed to ax.plot().
 
         Returns:
-            :class:`matplotlib.axes.Axes`: The created or specified with `ax` matplotlib axes
+            :class:`matplotlib.image.AxesImage`: Matplotlib image artist object
 
         """
         if type(img) == str:
@@ -594,11 +568,11 @@ class CellPlot(object):
 
         extent = kwargs.pop('extent', [0, xmax, ymax, 0])
         interpolation = kwargs.pop('interpolation', 'none')
-        cmap = kwargs.pop('cmap', 'viridis')
+        cmap = kwargs.pop('cmap', cmap_default[img.dclass] if img.dclass else 'viridis')
 
         ax = plt.gca() if ax is None else ax
-        axes_image = ax.imshow(img, extent=extent, interpolation=interpolation, cmap=cmap, **kwargs)
-        return axes_image
+        image = ax.imshow(img, extent=extent, interpolation=interpolation, cmap=cmap, **kwargs)
+        return image
 
     @staticmethod
     def figure():
@@ -646,7 +620,7 @@ class CellListPlot(object):
             **kwargs: Optional kwargs passed to ax.hist().
 
         Returns:
-            :class:`matplotlib.axes.Axes`: The created or specified with `ax` matplotlib axes
+            #todo
 
         """
         if prop == 'length':
@@ -682,7 +656,7 @@ class CellListPlot(object):
         ax.set_xlabel(xlabel)
         ax.set_ylabel('Cell count')
 
-        return ax
+        return None
 
     def hist_intensity(self, mask='binary', data_name='', ax=None, **kwargs):
         """Histogram all cell's mean fluorescence intensity. Intensities values are calculated by calling
@@ -696,7 +670,7 @@ class CellListPlot(object):
             **kwargs: Optional kwargs passed to ax.hist().
 
         Returns:
-            :class:`matplotlib.axes.Axes`: The created or specified with `ax` matplotlib axes.
+            #todo
 
         """
         values = self.cell_list.get_intensity(mask=mask, data_name=data_name)
@@ -708,7 +682,7 @@ class CellListPlot(object):
         ax.set_xlabel('Mean fluorescence (a.u.)')
         ax.set_ylabel('Cell count')
 
-        return ax
+        return None
 
     #todo put r_dist call kwargs in dedicated dict?
     def plot_r_dist(self, ax=None, data_name='', norm_y=False, norm_x=False, storm_weight=False, limit_l=None,
@@ -728,7 +702,7 @@ class CellListPlot(object):
             **kwargs: Optional kwargs passed to ax.plot().
 
         Returns:
-            (:class:`matplotlib.axes.Axes`:): The created or specified with `ax` matplotlib axes.
+            (:class:`matplotlib.lines.Line2D`:): Matplotlib line artist object
 
         """
 
@@ -749,6 +723,7 @@ class CellListPlot(object):
         out_arr = np.nan_to_num(out_arr)
 
         if norm_y:
+            #todo test for storm / sparse
             maxes = np.max(out_arr, axis=1)
             bools = maxes != 0
             n = np.sum(~bools)
@@ -772,7 +747,7 @@ class CellListPlot(object):
             ax.set_ylim(0, 1.1)
 
         mean = np.nanmean(out_arr, axis=0)
-        ax.plot(x, mean, **kwargs)
+        line, = ax.plot(x, mean, **kwargs)
 
         if band_func:
             width = band_func(out_arr, axis=0)
@@ -785,7 +760,25 @@ class CellListPlot(object):
         if norm_y:
             ax.set_ylim(0, 1.1)
 
-        return ax
+        return line
+
+    def get_r_dist(self, norm_x=False, data_name='', limit_l=None, method='gauss', storm_weight=False, **kwargs):
+        if norm_x:
+            stop = cfg.R_DIST_NORM_STOP
+            step = cfg.R_DIST_NORM_STEP
+            sigma = cfg.R_DIST_NORM_SIGMA
+        else:
+            stop = cfg.R_DIST_STOP
+            step = cfg.R_DIST_STEP
+            sigma = cfg.R_DIST_SIGMA
+
+        stop = kwargs.pop('stop', stop)
+        step = kwargs.pop('step', step)
+        sigma = kwargs.pop('sigma', sigma)
+        x, y = self.cell_list.r_dist(stop, step, data_name=data_name, norm_x=norm_x, storm_weight=storm_weight,
+                                    limit_l=limit_l, method=method, sigma=sigma)
+
+        return x, y
 
     def plot_l_dist(self, ax=None, data_name='', r_max=None, norm_y=False, storm_weight=False, band_func=np.std,
                     method='gauss', **kwargs):
@@ -804,13 +797,16 @@ class CellListPlot(object):
             **kwargs: Optional kwargs passed to ax.hist().
 
         Returns:
-            (:class:`matplotlib.axes.Axes`:): The created or specified with `ax` matplotlib axes.
+            (:class:`matplotlib.lines.Line2D`:): Matplotlib line artist object
 
         """
+
+        #todo deal with sigma
         nbins = kwargs.pop('nbins', cfg.L_DIST_NBINS)
         sigma = kwargs.pop('sigma', cfg.L_DIST_SIGMA)
+        sigma_arr = sigma / self.cell_list.length
         x_arr, out_arr = self.cell_list.l_dist(nbins, data_name=data_name, norm_x=True, r_max=r_max,
-                                               storm_weight=storm_weight, method=method, sigma=sigma)
+                                               storm_weight=storm_weight, method=method, sigma=sigma_arr)
         x = x_arr[0]
 
         if norm_y:
@@ -831,9 +827,8 @@ class CellListPlot(object):
         ax.set_xlabel('Distance ({})'.format(xunits))
         ax.set_ylabel('Intensity ({})'.format(yunits))
 
-
         mean = np.nanmean(out_arr, axis=0)
-        ax.plot(x, mean, **kwargs)
+        line, = ax.plot(x, mean, **kwargs)
 
         if band_func:
             width = band_func(out_arr, axis=0)
@@ -849,7 +844,7 @@ class CellListPlot(object):
             ymin, ymax = ax.get_ylim()
             ax.set_ylim(0, ymax)
 
-        return ax
+        return line
 
     def plot_l_class(self, data_name='', ax=None, yerr='std', **kwargs):
         """Plots a bar chart of how many foci are in a given STORM data set in classes depending on x-position.
@@ -883,10 +878,85 @@ class CellListPlot(object):
 
         return ax
 
-    def show(self):
+    def plot_kymograph(self, mode='r', data_name='', ax=None, time_factor=1, time_unit='frames', dist_kwargs=None,
+                       norm=True, aspect=1, **kwargs):
+
+        # if not data_name:
+        #     try:
+        #         data_elem = list(self.cell_obj.data.flu_dict.values())[0]  # yuck
+        #     except IndexError:
+        #         try:
+        #             data_elem = list(self.cell_obj.data.storm_dict.values())[0]
+        #         except IndexError:
+        #             raise IndexError('No valid data element found')
+        # else:
+        #     data_elem = self.cell_obj.data.data_dict[data_name]
+        # assert data_elem.ndim == 3
+
+        dist_kwargs = dist_kwargs if dist_kwargs is not None else {}
+
+        if mode == 'r':
+            x, arr = self.get_r_dist(data_name=data_name, **dist_kwargs)
+            assert arr.ndim == 2
+        elif mode == 'l':
+            raise NotImplementedError()
+            x, arr = self.get_l_dist()
+        elif mode == 'a':
+            raise NotImplementedError()
+        else:
+            raise ValueError('Invalid mode')
+
+        kymograph(x, arr, ax=ax, time_factor=time_factor, time_unit=time_unit, norm=norm, aspect=aspect, **kwargs)
+
+    @staticmethod
+    def show():
         """Calls matplotlib.pyplot.show()"""
         plt.show()
 
+    @staticmethod
+    def figure():
+        """Calls matplotlib.pyplot.figure()"""
+        return plt.figure()
+
+    @staticmethod
+    def savefig(*args, **kwargs):
+        """Calls matplotlib.pyplot.savefig(*args, **kwargs)"""
+        plt.savefig(*args, **kwargs)
 
 
+def kymograph(x, arr, ax=None, time_factor=1, time_unit='frames', norm=True, aspect=1, **kwargs):
+    # Mirror array to show symmetrical left and right sides
+    combined = np.concatenate((arr[:, :0:-1], arr), axis=1)
 
+    if norm:
+        maxes = np.max(combined, axis=1)
+        mins = np.min(combined, axis=1)
+        norm = (combined - mins[:, np.newaxis]) / (maxes - mins)[:, np.newaxis]
+    else:
+        norm = combined
+
+    # mirror x array
+    x_full = np.concatenate((-x[:0:-1], x))
+
+    # x array with datapoints equal to y axis
+    x_new = np.linspace(np.min(x_full), np.max(x_full), num=norm.shape[0], endpoint=True)
+
+    # interpolate values for new x array
+    img = np.empty((norm.shape[0], norm.shape[0]))
+    for i, row in enumerate(norm):
+        img[i] = np.interp(x_new, x_full, row)
+
+    # Change x units
+    x_full *= cfg.IMG_PIXELSIZE / 1000
+
+    # Change y units
+    y_max = img.shape[0] * time_factor
+
+    x_range = x_full.max() - x_full.min()
+    aspect_c = y_max / x_range
+
+    ax = plt.gca() if ax is None else ax
+    ax.imshow(img, aspect=aspect * (1 / aspect_c), interpolation='spline16', cmap='viridis', origin='lower_left',
+              extent=[x_full.min(), x_full.max(), 0, y_max], **kwargs)
+    ax.set_xlabel('Distance ($\mu$m)')
+    ax.set_ylabel('Time ({})'.format(time_unit))
