@@ -11,7 +11,6 @@
 .. |license| image:: https://img.shields.io/badge/License-GPL%20v3-blue.svg
     :target: https://www.gnu.org/licenses/gpl-3.0
     
-**Because real cells have curves**
 
 Project Goals
 =============
@@ -24,8 +23,9 @@ Installation
 
 `ColiCoords` is in its initial realease phase and will in time be distributed via conda/pip. For the moment, to install `ColiCoords`, a python 3.6 installation is required as well as dependencies listed in `requirements.txt`. Then to install:
 
-```
-$ python setup.py install
-```
+.. code:: bash
+
+    python setup.py install
+
 
 Although `ColiCoords` features automated testing, there are likely to be bugs. Users are encouraged to report them via the Issues page on GitHub.
