@@ -36,3 +36,8 @@ Documentation and Examples
 ==========================
 
 Two basic examples of `ColiCoords` usage can be found in the examples directory. More examples will be added soon. Further documentation can be found in the form of docstrings.
+
+|pipeline|
+
+.. |pipeline| image:: images/pipeline_figure.png
+    :width: 100%
