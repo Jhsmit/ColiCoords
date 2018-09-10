@@ -1,4 +1,3 @@
-from colicoords.fileIO import load, save
 from colicoords.cell import Cell, CellList
 from test import testcase
 from test.test_functions import load_testdata
@@ -31,9 +30,9 @@ class DataTest(testcase.ArrayTestCase):
     def _test_cell_list(self):
         #todo check order
         print(hashlib.md5(self.data).hexdigest())
-        cell_list = data_to_cells(self.data, initial_pad=2, cell_frac=0.5, rotate='binary')
+        cell_list = data_to_cells(self.data, initial_crop=2, cell_frac=0.5, rotate='binary')
         print(hashlib.md5(self.data).hexdigest())
-        cell_list = data_to_cells(self.data, initial_pad=2, cell_frac=0.5, rotate='binary')
+        cell_list = data_to_cells(self.data, initial_crop=2, cell_frac=0.5, rotate='binary')
         print(hashlib.md5(self.data).hexdigest())
 
         d = self.data.copy()

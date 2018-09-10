@@ -83,7 +83,6 @@ class BaseFit(metaclass=ABCMeta):
         # todo this needs some checking if not all parameters are bounded
         accept_test = partial(self._accept_test, bounds)
 
-        # todo use mystic for constraints: https://github.com/uqfoundation/mystic/blob/master/mystic/differential_evolution.py
         if solver == 'DE':
             if constraints:
                 print('Warning: Constraints are currently not implemented for Differential Evolution fitting')
@@ -461,6 +460,7 @@ def minimize_storm_leastsq(par_values, par_names, cell_obj, data_name, r_upper=N
     b = np.logical_and(b_upper, b_lower)
 
     r_vals = r_vals[b]
+    #todo return inf when no valus are present anymore
 
     return np.sum(np.square(r_vals - cell_obj.coords.r))**2
 

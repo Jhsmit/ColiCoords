@@ -56,7 +56,6 @@ def gauss_2d(x, y, x_mu, y_mu, sigma):
     return np.exp( - (( (x - x_mu)**2 / (2*sigma**2) ) + ( (y - y_mu)**2 / (2*sigma**2) )) )
 
 
-
 def pad_data(data, shape, mode='mean'):
     # todo doesnt work for 3d data
     pad_h = shape[1] - data.shape[1]
@@ -133,7 +132,6 @@ def crop_data(data, shape):
             v_out['x'] -= crop_h_l
             v_out['y'] -= crop_v_t
 
-
         elif v.ndim == 2:
             v_out = v.copy()[crop_v_t:-(crop_v-crop_v_t), crop_h_l:-(crop_h-crop_h_l)]
         elif v.ndim == 3:
@@ -143,7 +141,9 @@ def crop_data(data, shape):
 
     return d_out
 
+
 def crop_cell(cell, shape):
+    #todo doesnt work when shape equal to current shape
     crop_h = cell.data.shape[1] - shape[1]
     assert crop_h >= 0
     crop_h_l = int(np.floor(crop_h/2))

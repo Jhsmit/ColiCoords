@@ -1,5 +1,5 @@
 #https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.basinhopping.html#scipy.optimize.basinhopping
-
+import numbers
 import mahotas as mh
 import numpy as np
 import operator
@@ -7,8 +7,7 @@ from functools import partial
 from colicoords.optimizers import Optimizer
 from colicoords.support import allow_scalars, box_mean, running_mean
 from scipy.integrate import quad
-from scipy.optimize import fsolve, brentq
-#import multiprocessing as mp
+from scipy.optimize import brentq
 import multiprocess as mp
 from tqdm import tqdm
 import sys
@@ -30,9 +29,8 @@ class Cell(object):
     def __init__(self, data_object, name=None, **kwargs):
         """
         Args:
-            data_object (:class:`Data`): Data class holding all data which describes this single cell
+            data_object (:class:`Data`): Data object holding all data which describes this single cell
             name (:obj:`str`): Name to identify this single cell.
-                #todo generate names when trying to save cell_list without names to disk
         """
 
         self.data = data_object
@@ -124,9 +122,12 @@ class Cell(object):
 
         """
 
+        length = 1 if norm_x else self.length
         r_max = r_max if r_max else self.coords.r
-        stop = 1 if norm_x else self.length
-        start, stop = -0.5, 1.5
+        stop = 1.25*length if not stop else stop
+        start = -0.25*length if not start else start
+
+        print('cell sigma', sigma)
 
         if not data_name:
             try:
@@ -327,33 +328,49 @@ class Cell(object):
 
         return xvals, yvals
 
-    def measure_r(self, data_name='brightfield', in_place=True):
+    def measure_r(self, data_name='brightfield', mode='max', in_place=True, **kwargs):
         """
-        Measure the radius of the cell by finding the intensity-midpoint of the radial distribution derived from
+        Measure the radius of the cell by finding the intensity-mid/min/max-point of the radial distribution derived from
         brightfield (default) or another data element.
 
         Args:
             data_name (:obj:`str`): Name of the data element to use.
+            mode (:obj:`str`): Mode to find the radius. Can be either 'min', 'mid' or 'max' to use the minimum, middle
+                or maximum value of the radial distribution, respectively.
             in_place (:obj:`bool`): If `True` the found value of `r` is directly substituted in the cell's coordinate
                 system, otherwise the value is returned.
 
         Returns:
             The measured radius `r` if `in_place` is `False`, otherwise `None`.
         """
-        x, y = self.r_dist(15, 1, data_name=data_name)  # todo again need sensible default for stop
-        mid_val = (np.min(y) + np.max(y)) / 2
 
-        imin = np.argmin(y)
-        imax = np.argmax(y)
-        try:
-            r = np.interp(mid_val, y[imin:imax], x[imin:imax])
-            if in_place:
-                self.coords.r = r
-            else:
-                return r
+        step = kwargs.pop('step', 1)
+        stop = kwargs.pop('stop', int(self.data.shape[0] / 2))
+        x, y = self.r_dist(stop, step, data_name=data_name)  # todo again need sensible default for stop
 
-        except ValueError:
-            print('r value not found')
+        if mode == 'min':
+            imin = np.argmin(y)
+            r = x[imin]
+        elif mode == 'mid':
+            mid_val = (np.min(y) + np.max(y)) / 2
+            imin = np.argmin(y)
+            imax = np.argmax(y)
+            assert np.all(np.diff(y[imax:imin][::-1]) > 0)
+            try:
+                r = np.interp(mid_val, y[imax:imin][::-1], x[imax:imin][::-1])
+            except ValueError:
+                print("r value not found")
+                return
+        elif mode == 'max':
+            imax = np.argmax(y)
+            r = x[imax]
+        else:
+            ValueError('Invalid value for mode')
+
+        if in_place:
+            self.coords.r = r
+        else:
+            return r
 
     def reconstruct_cell(self, data_name, norm_x=False, r_scale=1, **kwargs):
         #todo stop and step defaults when norm_x=True?
@@ -386,6 +403,8 @@ class Cell(object):
             mask (:obj:`str`): Either 'binary' or 'coords' to specify the source of the mask used.
                 'binary' uses the binary imagea as mask, 'coords' uses reconstructed binary from coordinate system
             data_name (:obj:`str`): The name of the image data element to get the intensity values from.
+            func (:obj:`callable`): This function is applied to the data elements pixels selected by the masking
+                operation. The default is `np.mean()`.
 
         Returns:
             :obj:`float`: Mean fluorescence pixel value
@@ -396,7 +415,7 @@ class Cell(object):
         elif mask == 'coords':
             m = self.coords.rc < self.coords.r
         else:
-            raise ValueError("mask keyword should be either 'binary' or 'coords'")
+            raise ValueError("Mask keyword should be either 'binary' or 'coords'")
 
         if not data_name:
             data_elem = list(self.data.flu_dict.values())[0] #yuck
@@ -555,8 +574,8 @@ class Coordinates(object):
         Returned values are 1 for left pole, 2 for middle, 3 for right pole.
 
         Args:
-            xp (:`obj`:float: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
-            yp (:`obj`:float: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as xp
+            xp (:`obj`:float: or :class:`~numpy.ndarray`): Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
+            yp (:`obj`:float: or :class:`~numpy.ndarray`): Input scalar or vector/matrix x-coordinate. Must be the same shape as xp
 
         Returns:
             :`obj`:float: or :class:`~numpy.ndarray`: Array to mask different cellular regions.
@@ -574,8 +593,8 @@ class Coordinates(object):
         """ Calculates the coordinate xc on p(x) closest to (xp, yp), where xl < xc < xr
 
         Args:
-            xp (:`obj`:float: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
-            yp (:`obj`:float: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as xp
+            xp (:obj:`float`: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
+            yp (:obj:`float`: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as xp
 
         Returns:
             :`obj`:float: or :class:`~numpy.ndarray`: Cellular x-coordinate for point(s) xp, yp, where xl < xc < xr
@@ -659,11 +678,11 @@ class Coordinates(object):
             coordinates xc
 
         Args:
-            xp (:`obj`:float: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
-            yp (:`obj`:float: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as xp
+            xp (:obj:`float` or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
+            yp (:obj:`float` or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as xp
 
         Returns:
-            :`obj`:tuple: Angle psi for (xp, yp).
+            :obj:`tuple`: Angle psi for (xp, yp).
         """
 
         xc = np.array(self.calc_xc(xp, yp).copy())
@@ -1016,7 +1035,8 @@ class CellList(object):
         assert isinstance(cell_obj, Cell)
         self.cell_list = np.append(self.cell_list, cell_obj)
 
-    def r_dist(self, stop, step, data_name='', norm_x=False, storm_weight=False, limit_l=None, method='gauss', sigma=None):
+    def r_dist(self, stop, step, data_name='', norm_x=False, storm_weight=False, limit_l=None, method='gauss', sigma=0.3):
+        #todo refactor to get_r_dist?
         """ Calculates the radial distribution of a given data element for all cells in the `CellList`.
 
         Args:
@@ -1046,11 +1066,14 @@ class CellList(object):
 
         return xvals, out_arr
 
-    def l_dist(self, nbins, data_name='', norm_x=False, r_max=None, storm_weight=False):
+    def l_dist(self, nbins, data_name='', norm_x=False, method='gauss', r_max=None, storm_weight=False, sigma=None):
+        #todo tests for sigma as array
         y_arr = np.zeros((len(self), nbins))
         x_arr = np.zeros((len(self), nbins))
         for i, c in enumerate(self):
-            xvals, yvals = c.l_dist(nbins, data_name=data_name, norm_x=norm_x, r_max=r_max, storm_weight=storm_weight)
+            if len(sigma) == len(self):
+                sigma = sigma[i]
+            xvals, yvals = c.l_dist(nbins, data_name=data_name, norm_x=norm_x, method=method, r_max=r_max, storm_weight=storm_weight, sigma=sigma)
             x_arr[i] = xvals
             y_arr[i] = yvals
 
@@ -1093,7 +1116,7 @@ class CellList(object):
         """
         return np.array([c.get_intensity(mask=mask, data_name=data_name) for c in self])
 
-    def measure_r(self, data_name='brightfield', in_place=True):
+    def measure_r(self, data_name='brightfield', mode='max', in_place=True, **kwargs):
         """
         Measure the radius of the cell by finding the intensity-midpoint of the radial distribution derived from
         brightfield (default) or another data element.
@@ -1107,7 +1130,7 @@ class CellList(object):
             :class:`~numpy.ndarray`: The measured radius `r` values if `in_place` is `False`, otherwise `None`.
         """
 
-        r = [c.measure_r(data_name=data_name, in_place=in_place) for c in self]
+        r = [c.measure_r(data_name=data_name, mode=mode, in_place=in_place, **kwargs) for c in self]
         if not in_place:
             return np.array(r)
 
@@ -1162,7 +1185,7 @@ class CellList(object):
         return self.cell_list.__iter__()
 
     def __getitem__(self, key):
-        if type(key) == int:
+        if isinstance(key, numbers.Integral):
             return self.cell_list.__getitem__(key)
         else:
             return CellList(self.cell_list.__getitem__(key))
