@@ -3,7 +3,7 @@ from keras.utils import Sequence
 import scipy
 
 
-class MySequence(Sequence):
+class ImgSequence(Sequence):
     def __init__(self, x_arr, y_arr, batch_size=10, shuffle=True):
         assert x_arr.shape == y_arr.shape
         self.x_arr = x_arr
@@ -62,21 +62,40 @@ class MySequence(Sequence):
         return np.expand_dims(x_arr, -1), np.expand_dims(y_arr, -1)
 
 
-def zoom_norm(bf_img):
-    #todo refactor
-    bf_zoom = np.stack([scipy.ndimage.interpolation.zoom(bf, 0.5) for bf in bf_img])
+def norm_stack(img_stack):
+    """Normalized a stack of images between 0 and 1
 
-    mins, maxes = bf_zoom.min(axis=(1,2)), bf_zoom.max(axis=(1,2))
-    bf_norm = (bf_zoom - mins[:, np.newaxis, np.newaxis]) / (maxes - mins)[:, np.newaxis, np.newaxis]
-    
-    return bf_norm
+    Args:
+        img_stack (:class:`~numpy.ndarray`): Input image stack (shape z, w, h)
+
+    Returns:
+        :class:`~numpy.ndarray` Normalized stack of images
+
+    """
+
+    img_float = img_stack.astype(float)
+    mins, maxes = img_float.min(axis=(1,2)), img_float.max(axis=(1,2))
+    norm_stack = (img_float - mins[:, np.newaxis, np.newaxis]) / (maxes - mins)[:, np.newaxis, np.newaxis]
+
+    return norm_stack
 
 
-def zoom_norm_binary(bin_img):
-    #todo refactor
-    bin_zoom = np.stack([scipy.ndimage.interpolation.zoom(bf, 0.5) for bf in bin_img])
+def resize_stack(img_stack, factor, img_type=None):
+    """Resize a stack of images with
 
-    mins = np.min(bin_zoom, axis=(1,2))
-    bin_final = (bin_zoom > mins[:, np.newaxis, np.newaxis]).astype(int)
-    
-    return bin_final
+    Args:
+        img_stack (:class:`~numpy.ndarray`): Input image stack (shape z, w, h)
+        factor (:obj:`float`): Images are resized by this factor. Width and 
+            height dimensions are increased by the value of factor.
+
+    Returns:
+        :class:`~numpy.ndarray` Resized stack of images
+
+    """
+    zoom_stack = np.stack([scipy.ndimage.interpolation.zoom(img, factor) for img in img_stack])
+
+    if img_type == 'binary':
+        mins = np.min(zoom_stack, axis=(1,2))
+        zoom_stack = (zoom_stack > mins[:, np.newaxis, np.newaxis]).astype(int)
+
+    return zoom_stack
