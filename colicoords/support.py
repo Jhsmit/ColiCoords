@@ -13,7 +13,7 @@ def allow_scalars(f):
                 return result.squeeze()
             except AttributeError:
                 if type(result) == tuple:
-                    return tuple(_res.squeeze() for _res in result)
+                    return tuple(float(_res.squeeze()) for _res in result)
                 else:
                     return result
         else:
