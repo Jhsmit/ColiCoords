@@ -30,7 +30,9 @@ Installation
     python setup.py install
 
 
-Although `ColiCoords` features automated testing, there are likely to be bugs. Users are encouraged to report them via the Issues page on GitHub.
+Although `ColiCoords` features automated testing, there are likely to be bugs. Users are encouraged to report them via the Issues page on GitHub. 
+
+Contact: jhsmit@gmail.com
 
 Documentation and Examples
 ==========================
