@@ -568,7 +568,10 @@ class CellPlot(object):
 
         extent = kwargs.pop('extent', [0, xmax, ymax, 0])
         interpolation = kwargs.pop('interpolation', 'none')
-        cmap = kwargs.pop('cmap', cmap_default[img.dclass] if img.dclass else 'viridis')
+        try:
+            cmap = kwargs.pop('cmap', cmap_default[img.dclass] if img.dclass else 'viridis')
+        except AttributeError:
+            cmap = kwargs.pop('cmap', 'viridis')
 
         ax = plt.gca() if ax is None else ax
         image = ax.imshow(img, extent=extent, interpolation=interpolation, cmap=cmap, **kwargs)
