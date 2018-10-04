@@ -63,18 +63,10 @@ class SynthCell(Cell):
 
             segments_lenghts = np.array([np.pi * r_mean, top, np.pi * r_mean, bot])
             if np.any(np.isnan(segments_lenghts)):
-                print(' vallerrlrlr' )
-                raise ValueError('uhoh')
-            print(segments_lenghts)
-            print(np.any(segments_lenghts == np.nan))
-            print(segments_lenghts[1] == np.nan)
-            print(type(segments_lenghts[1]))
-            print(segments_lenghts[1])
+                raise ValueError('Some NaNs found in segment lengths')
 
             total = np.sum(segments_lenghts)
             cumsum = np.cumsum(segments_lenghts)
-
-            print('total', total, num)
             s = np.random.uniform(0, np.nextafter(total, total + 1), num)
             i = np.digitize(s, cumsum)
 
@@ -141,6 +133,6 @@ def calc_length(xr, xl, a2, length):
 
 
 class SynthCellList(CellList):
-    def __init__(self, radii, lengths, curvatures):
-        cell_list = [SynthCell(l, r, c, name='Cell_' + str(i).zfill(int(np.ceil(np.log10(len(radii)))))) for i, (l, r, c) in enumerate(zip(radii, lengths, curvatures))]
+    def __init__(self, lengths, radii, curvatures):
+        cell_list = [SynthCell(l, r, c, name='Cell_' + str(i).zfill(int(np.ceil(np.log10(len(radii)))))) for i, (l, r, c) in enumerate(zip(lengths, radii, curvatures))]
         super(SynthCellList, self).__init__(cell_list)
