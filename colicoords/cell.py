@@ -700,7 +700,25 @@ class Coordinates(object):
     @allow_scalars
     #todo scalar input wont work because of sqeeeeeze?
     def transform(self, xp, yp):
-        """ Transforms image coordinates (xp, yp) to cell coordinates (xc, lc, rc, psi)
+        """ Transforms image coordinates (xp, yp) to cell coordinates (lc, rc, psi)
+
+        Args:
+            xp (:`obj`:float: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
+            yp (:`obj`:float: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as xp
+
+        Returns:
+            :`obj`:tuple: Tuple of cellular coordinates xc, lc, rc, psi
+        """
+
+        lc = self.calc_lc(xp, yp)
+        rc = self.calc_rc(xp, yp)
+        psi = self.calc_phi(xp, yp)
+
+        return lc, rc, psi
+
+    @allow_scalars
+    def full_transform(self, xp, yp):
+        """ Transforms image coordinates (xp, yp) to cell coordinates (lc, rc, psi)
 
         Args:
             xp (:`obj`:float: or :class:`~numpy.ndarray`:): Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
