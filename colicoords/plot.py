@@ -372,13 +372,13 @@ class CellPlot(object):
             xmax = int(storm_table['x'].max())
             ymax = int(storm_table['y'].max())
 
-        x_bins = np.linspace(0, xmax, num=xmax*upscale, endpoint=True)
-        y_bins = np.linspace(0, ymax, num=ymax*upscale, endpoint=True)
-
-        h, xedges, yedges = np.histogram2d(x, y, bins=[x_bins, y_bins])
-
-        extent = kwargs.pop('extent',[0, xmax, ymax, 0])
+        extent = kwargs.pop('extent', [0, xmax, ymax, 0])
         interpolation = kwargs.pop('interpolation', 'nearest')
+        try:
+            intensities = storm_table['intensity'] if storm_weight else np.ones_like(x)
+        except ValueError:
+            print("Warning: The field 'intensity' was not found, all weights are set to one")
+            intensities = np.ones_like(x)
 
         ax = plt.gca() if ax is None else ax
         if method == 'plot':
@@ -388,12 +388,60 @@ class CellPlot(object):
             artist, = ax.plot(x, y, color=color, marker=marker, linestyle=linestyle, **kwargs)
 
         elif method == 'hist':
+            x_bins = np.linspace(0, xmax, num=xmax * upscale, endpoint=True)
+            y_bins = np.linspace(0, ymax, num=ymax * upscale, endpoint=True)
+
+            h, xedges, yedges = np.histogram2d(x, y, bins=[x_bins, y_bins])
+
             cm = plt.cm.get_cmap('Blues')
             cmap = cm if not 'cmap' in kwargs else kwargs.pop('cmap')
 
             img = h.T
             artist = ax.imshow(img, interpolation=interpolation, cmap=cmap, extent=extent, **kwargs)
+
         elif method == 'gauss':
+            if type(sigma) == str:
+                sigma = storm_table[sigma]
+            elif isinstance(sigma, np.ndarray):
+                assert sigma.shape == x.shape
+            elif np.isscalar(sigma):
+                sigma = sigma*np.ones_like(x)
+            else:
+                raise ValueError('Invalid sigma')
+
+            step = 1 / upscale
+            xi = np.arange(step / 2, xmax, step)
+            yi = np.arange(step / 2, ymax, step)
+
+            x_coords = np.repeat(xi, len(yi)).reshape(len(xi), len(yi)).T
+            y_coords = np.repeat(yi, len(xi)).reshape(len(yi), len(xi))
+
+            img = np.zeros_like(x_coords)
+
+            for _sigma, _int, _x, _y in zip(sigma, intensities, x, y):
+                    img += _int * np.exp(-(((_x - x_coords) / _sigma) ** 2 + ((_y - y_coords) / _sigma) ** 2) / 2)
+
+            # cmap = kwargs.pop('cmap', 'viridis')
+            # artist = ax.imshow(img, interpolation=interpolation, cmap=cmap, extent=extent, **kwargs)
+
+            img_norm = img / img.max()
+
+            #            np.ma.masked_where(img_norm < alpha_cutoff, img)
+
+            alphas = np.ones(img.shape)
+            if alpha_cutoff:
+                alphas[img_norm < alpha_cutoff] = img_norm[img_norm < alpha_cutoff] / alpha_cutoff
+
+            cmap = kwargs.pop('cmap', 'viridis')
+            cmap = plt.cm.get_cmap(cmap) if type(cmap) == str else cmap
+
+            normed = Normalize()(img)
+            colors = cmap(normed)
+            colors[..., -1] = alphas
+
+            artist = ax.imshow(colors, cmap=cmap, extent=extent, interpolation=interpolation, **kwargs)
+
+        elif method == 'gauss_old':
             xmax = self.cell_obj.data.shape[1]
             ymax = self.cell_obj.data.shape[0]
 
@@ -473,6 +521,7 @@ class CellPlot(object):
         return container
 
     def _plot_storm(self, storm_table, ax=None, kernel=None, bw_method=0.05, upscale=2, alpha_cutoff=None, **kwargs):
+        #depracated
         x, y = storm_table['x'], storm_table['y']
 
         if self.cell_obj.data.shape:
