@@ -25,7 +25,7 @@ class SynthCellTest(testcase.ArrayTestCase):
                                                 self.cell_1.coords.rc,
                                                 self.cell_1.coords.phi, l_norm=False)
 
-        xc, lc, rc, phi = self.cell_1.coords.transform(x, y)
+        lc, rc, phi = self.cell_1.coords.transform(x, y)
 
         self.assertArrayAlmostEqual(rc, self.cell_1.coords.rc)
         self.assertArrayAlmostEqual(lc, self.cell_1.coords.lc)
