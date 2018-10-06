@@ -4,8 +4,9 @@ import mahotas as mh
 import numpy as np
 import operator
 from functools import partial
-from colicoords.optimizers import Optimizer
+from colicoords.optimizers import CellOptimizer
 from colicoords.support import allow_scalars, box_mean, running_mean
+from colicoords.models import CellModel
 from scipy.integrate import quad
 from scipy.optimize import brentq
 import multiprocess as mp
@@ -48,7 +49,8 @@ class Cell(object):
             objective (:obj:`str` or :obj:`callable`):
             **kwargs: keyword arguments which are passed to `Optimizer.optimize`
         """
-        optimizer = Optimizer(self, data_name=data_name, objective=objective)
+
+        optimizer = CellOptimizer(self, data_name=data_name, objective=objective)
         return optimizer.optimize(**kwargs)
 
     @property
