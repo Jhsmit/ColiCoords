@@ -10,7 +10,7 @@ def wrap_execute(execute):
     return wrapped_function
 
 
-ScipyMinimize.execute = wrap_execute(ScipyMinimize.execute)
+#ScipyMinimize.execute = wrap_execute(ScipyMinimize.execute)
 
 
 class Powell(ScipyMinimize, BaseMinimizer):

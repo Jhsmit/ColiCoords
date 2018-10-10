@@ -3,11 +3,12 @@ from scipy.optimize import minimize, basinhopping, differential_evolution
 from colicoords.config import cfg
 from functools import partial
 from abc import ABCMeta, abstractmethod
-from symfit import Parameter, Model, Fit
+from symfit import Fit
 from symfit.core.objectives import BaseObjective
-from colicoords.models import CellModel
+from colicoords.models import CellModel, NumericalCellModel
 from colicoords.minimizers import Powell, BaseMinimizer, NelderMead, BFGS, SLSQP, LBFGSB
 from symfit.core.minimizers import BaseMinimizer
+from symfit.core.fit import CallableModel
 
 
 class CellBaseObjective(BaseObjective):
@@ -17,6 +18,52 @@ class CellBaseObjective(BaseObjective):
 
         self.cell_obj = cell_obj
         self.data_name = data_name
+
+
+class NumericalBinaryXORObjective(CellBaseObjective):
+    def __call__(self, **parameters):
+        self.cell_obj.coords.sub_par(parameters)
+        binary = self.cell_obj.coords.rc < self.cell_obj.coords.r
+        return binary.astype(int)
+
+
+class NumericalSimulatedCellObjective(CellBaseObjective):
+    def __call__(self, **parameters):
+        r = parameters.pop('r', self.cell_obj.coords.r)
+        r = r / self.cell_obj.coords.r
+
+        self.cell_obj.coords.sub_par(parameters)
+        #todo check and make sure that the r_dist isnt calculated to far out which can give some strange results
+
+        stop = np.max(self.cell_obj.data.shape) / 2
+        step = 1
+
+        #todo some way to access these kwargs
+        xp, fp = self.cell_obj.r_dist(stop, step, data_name=self.data_name, method='box')
+        simulated = np.interp(r * self.cell_obj.coords.rc, xp, np.nan_to_num(fp))  # todo check nantonum cruciality
+
+        return simulated
+
+
+class NumericalSTORMMembraneObjective(CellBaseObjective):
+    def __init__(self, *args, **kwargs):
+        self.r_upper = kwargs.pop('r_upper', None)
+        self.r_lower = kwargs.pop('r_lower', lambda x: 2*np.std(x))
+        super(STORMMembraneObjective, self).__init__(*args, **kwargs)
+
+    def __call__(self, parameters):
+
+        self.cell_obj.coords.sub_par(parameters)
+        storm_data = self.cell_obj.data.data_dict[self.data_name]
+        r_vals = self.cell_obj.coords.calc_rc(storm_data['x'], storm_data['y'])
+
+        b_upper = r_vals < (r_vals.mean() + self.r_upper(r_vals)) if self.r_upper else True
+        b_lower = r_vals > (r_vals.mean() - self.r_lower(r_vals)) if self.r_lower else True
+
+        b = np.logical_and(b_upper, b_lower)
+
+        r_vals = r_vals[b]
+        return r_vals
 
 
 class BinaryXORObjective(CellBaseObjective):
@@ -90,6 +137,80 @@ class STORMAreaObjective(CellBaseObjective):
             raise ValueError('Invalid maximize keyword value')
 
         return -p / self.cell_obj.area
+
+# def calc_binary_img(cell_obj, parameters):
+#     cell_obj.coords.sub_par(parameters)
+#     binary = cell_obj.coords.rc < cell_obj.coords
+#     return binary.astype(int).flatten()
+#
+# def calc_img
+
+
+
+class CellFit(object):
+    defaults = {
+        'binary': NumericalBinaryXORObjective,
+        'storm': NumericalSTORMMembraneObjective,
+        'brightfield': NumericalSimulatedCellObjective,
+        'fluorescence': NumericalSimulatedCellObjective,
+    }
+
+    def __init__(self, cell_obj, data_name='binary', objective=None, minimizer=Powell, **kwargs):
+        self.cell_obj = cell_obj
+        self.data_name = data_name
+        self.minimizer = minimizer
+        self.kwargs = kwargs
+
+        dclass = self.data_elem.dclass
+        obj = self.defaults[dclass] if not objective else objective
+
+        obj(self.cell_obj, data_name)
+        self.model = NumericalCellModel(cell_obj, obj(self.cell_obj, data_name))
+        self.fit = Fit(self.model, self.data_elem, minimizer=minimizer, **kwargs)
+
+    def renew_fit(self):
+        self.fit = Fit(self.model, self.data_elem, minimizer=self.minimizer, **self.kwargs)
+
+    def execute(self, **kwargs):
+        return self.fit.execute(**kwargs)
+
+    def fit_parameters(self, parameters, **kwargs):
+        with set_params(self.fit, parameters):
+            self.renew_fit()
+            res = self.execute(**kwargs)
+            for k, v in res.params.items():
+                i = [par.name for par in self.model.params].index(k)
+                self.model.params[i].value = v
+
+        self.model.cell_obj.coords.sub_par(res.params)
+        return res
+
+    def fit_stepwise(self, **kwargs):
+        i = 0
+        j = 0
+        prev_val = 0
+
+        imax = kwargs.get('imax', 3)
+        jmax = kwargs.get('jmax', 5)
+
+        assert imax > 0
+        assert jmax > 0
+        while i < imax and j < jmax:
+            #todo checking and testng
+            j += 1
+            res = self.fit_parameters('r', **kwargs)
+            res = self.fit_parameters('xl xr', **kwargs)
+            res = self.fit_parameters('a0 a1 a2', **kwargs)
+            print('Current minimize value: {}'.format(res.objective_value))
+            if prev_val == res.objective_value:
+                i += 1
+            prev_val = res.objective_value
+
+        return res
+
+    @property
+    def data_elem(self):
+        return self.cell_obj.data.data_dict[self.data_name]
 
 
 class BaseFit(metaclass=ABCMeta):
@@ -358,8 +479,21 @@ class CellOptimizer(BaseFit):
 
 
 
+class set_params:
+    def __init__(self, fit_object, parameters):
+        self.parametes = [par.rstrip(',.: ') for par in parameters.split(' ')]
+        self.fit_object = fit_object
 
+    def __enter__(self):
+    # todo context manager for fixing / unfixing params
+        self.original_fixing = [par.fixed for par in self.fit_object.model.params]
+        fixed_params = [par for par in self.fit_object.model.params if not par.name in self.parametes]
+        for par in fixed_params:
+            par.fixed = True
 
+    def __exit__(self, *args):
+        for par, fixed in zip(self.fit_object.model.params, self.original_fixing):
+            par.fixed = fixed
 
 
 # might want to wrap the objective functions since they have the parameter substituion part in common
