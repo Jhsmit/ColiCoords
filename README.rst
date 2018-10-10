@@ -23,7 +23,7 @@ ColiCoords is a python project for analysis of fluorescence microscopy data from
 Installation
 ============
 
-`ColiCoords` is in its initial realease phase and will in time be distributed via conda/pip. For the moment, to install `ColiCoords`, a python 3.6 installation is required as well as dependencies listed in `requirements.txt`. Then to install:
+`ColiCoords` is in its initial realease phase and will in time be distributed via conda/pip. For the moment, to install `ColiCoords`, a python 3.6 installation is required as well as dependencies listed in `requirements.txt`. Then download the latest release, and then to install:
 
 .. code:: bash
 
