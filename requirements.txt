@@ -7,4 +7,4 @@ h5py
 tifffile
 multiprocess
 tqdm
-symfit > 0.4.5
+symfit >= 0.4.5
