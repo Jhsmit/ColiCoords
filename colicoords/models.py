@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.integrate import quad
 from colicoords.config import cfg
+from colicoords.support import ArrayFitResults
 from symfit.core.fit import CallableModel, CallableNumericalModel, TakesData
 from functools import partial
 from symfit import Parameter, Variable, Fit
@@ -106,127 +107,7 @@ def _y2(x, r2, psf, psf_uid):
     return yarr
 
 
-class wrapped_func(object):
-    def __init__(self, func, data, linear_params):
-        self.func = func # the original callable
-        self.data = data # only data  no dict
-        self.linear_params = linear_params  # list of names only
 
-    def __call__(self, *args, **kwargs):
-        y_list = [self.func(*args, **{par: 1 if par == s_par else 0 for par in self.linear_params}, **kwargs) for s_par in self.linear_params]
-        self.a_list = solve_linear_system(y_list, self.data)
-
-        result = sum([a_elem[:, np.newaxis] * y_elem for a_elem, y_elem in zip(self.a_list, y_list)])
-        return result.flatten()
-
-def make_linear_model(model, data):
-    new_dict = {k: wrapped_func(v, data[k], [par.name for par in model.linear_params]) for k, v in model.model_dict.items()}
-    new_params = [par for par in model.params if par not in model.linear_params]
-    return CallableNumericalModel(new_dict, model.independent_vars, new_params)
-
-
-class LinearModelFit(Fit):
-    def __init__(self, model, *args, **kwargs):
-        objective = kwargs.pop('objective', None)
-        minimizer = kwargs.pop('minimizer', None)
-        constraints = kwargs.pop('constraints', None)
-        temp_data = TakesData(model, *args, **kwargs)
-        self._old_model = model
-        self._new_model = make_linear_model(model, temp_data.dependent_data)
-        super(LinearModelFit, self).__init__(self._new_model, *args, **kwargs, minimizer=minimizer, objective=objective, constraints=constraints)
-
-    def execute(self, **kwargs):
-        res = super(LinearModelFit, self).execute(**kwargs)
-        linear_dict = {par.name: float(value) for par, value in zip(self._old_model.linear_params, [func.a_list for func in self.model.numerical_components][0])}
-        # î assuming all linear parameters are in all numerical components which is not true i guess
-        overall_dict = {**res.params, **linear_dict}
-        popt = [overall_dict[par.name] for par in self._old_model.params]
-
-        return FitResults(self._old_model, popt, None, res.infodict, res.status_message, res.iterations, **res.gof_qualifiers)
-    #
-    #
-    # def old__init__(self, model, *args, **kwargs):
-    #
-    #
-    #
-    #
-    #     tempdata = TakesData(model, *args, **kwargs)
-    #     print(model.params)
-    #     self.original_objective = next(iter(model.model_dict.values()))
-    #     self.nonlinear_objective = copy.deepcopy(LeastSquares(model, tempdata.data))
-    #     print('call nonlinear obj', self.nonlinear_objective(x=10, a1=2, a2=0, r1=4, r2=20))
-    #     __dontthouchthis = copy.deepcopy(self.nonlinear_objective)
-    #
-    #
-    #     new_params = [par for par in model.params if par not in model.linear_params]
-    #     print('new params', new_params)
-    #     print('before super call', model.independent_vars)
-    #     #print(self.model.__bases__)
-    #     #super(CallableNumericalModel, model).__init__(model.model_dict, model.independent_vars, new_params)
-    #     print('dict and vars')
-    #     print(model.model_dict)
-    #     print(model.independent_vars)
-    #     print(model.dependent_vars)
-    #
-    #     objective = LinearEquationsObjective( self.original_objective, self.nonlinear_objective)
-    #     new_dict = {model.dependent_vars[0]: objective}
-    #     new_model = CallableNumericalModel(new_dict, model.independent_vars, new_params)
-    #
-    #     #self.model.__init__(self.model.model_dict, self.model.vars, new_params)
-    #
-    #     print('updated model params', new_model.params)
-    #     print(*args)
-    #     super(LinearModelFit, self).__init__(new_model, *args, minimizer=minimizer, constraints=constraints, objective=objective, **kwargs)
-    #
-    #
-    #     print('call nonlinear obj_new',  self.nonlinear_objective(x=10, a1=2, a2=0, r1=4, r2=20))
-    #     self.objective = LinearEquationsObjective( self.original_objective, self.nonlinear_objective)
-    #     print(self.objective)
-    #
-    #     print('model params', self.model.params)
-    #
-    # def older___init__(self, *args, **kwargs):
-    #     super(LinearModelFit, self).__init__(*args, **kwargs)
-    #
-    #
-    #     new_params = [par for par in self.model.params if par not in self.model.linear_params]
-    #     print('new params', new_params)
-    #     print('before super call', self.model.independent_vars)
-    #     #print(self.model.__bases__)
-    #     super(CallableNumericalModel, self.model).__init__(self.model.model_dict, self.model.independent_vars, new_params)
-    #     #self.model.__init__(self.model.model_dict, self.model.vars, new_params)
-    #
-    #     print('updated model params', self.model.params)
-    #
-    #     super(LinearModelFit, self).__init__(self.model, *args[1:], **kwargs)
-    #
-    #
-    #     #self.objective = LinearEquationsObjective(self.nonlinear_objective)
-    #
-    #
-    #     #print(self.objective)
-    #
-    #     print('model params', self.model.params)
-
-
-def solve_linear_system(y_list, data):
-    """Solve system of linear eqns a1*y1 + a2*y2 == data but then also vector edition of that"""
-    y1, y2 = y_list
-    Dy1 = data.dot(y1)
-    Dy2 = data.dot(y2)
-
-    D_vec = np.stack((Dy1, Dy2)).flatten()
-
-    y1y1 = y1.dot(y1)
-    y1y2 = y1.dot(y2)
-    y2y2 = y2.dot(y2)
-
-    M = np.array([[y1y1, y1y2], [y1y2, y2y2]])
-    l = len(data) if data.ndim == 2 else 1
-    bigM = np.kron(M, np.eye(l))
-    a1a2 = np.linalg.solve(bigM, D_vec)
-
-    return np.split(a1a2, 2)
 
 
 class RDistModel(CallableNumericalModel):
@@ -239,13 +120,13 @@ class RDistModel(CallableNumericalModel):
         self.x = Variable('x')
         self.y = Variable('y')
 
-        func = RDistObjective(psf, mem)
+        func = RDistFunc(psf, mem)
         parameters = [self.a1, self.a2, self.r1, self.r2]
         self.linear_params = [self.a1, self.a2]
         super(RDistModel, self).__init__({self.y: func}, [self.x], parameters)
 
 
-class RDistObjective(object):
+class RDistFunc(object): #todo refactor since its not an objective
     def __init__(self, psf, mem=None):
         self.psf = psf
 
@@ -291,6 +172,11 @@ class RDistObjective(object):
             y1 = self.y1(x, r1, self.psf, self.psf.sigma)
             y2 = self.y2(x, r2, self.psf, self.psf.sigma)
 
-        yarr = (a1 / (0.5 * np.pi * r1 ** 2))*y1 + (a2 / (np.pi * r2))*y2
+        try:
+            yarr = (a1 / (0.5 * np.pi * r1 ** 2))*y1 + (a2 / (np.pi * r2))*y2
+        except ValueError: # a's are arrays
+            assert a1.shape == a2.shape
+            yarr = (a1[:, np.newaxis] / (0.5 * np.pi * r1 ** 2))*y1[np.newaxis, :] + (a2[:, np.newaxis] / (np.pi * r2))*y2[np.newaxis, :]
+
 
         return yarr

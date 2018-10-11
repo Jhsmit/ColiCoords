@@ -1,7 +1,34 @@
 from functools import wraps
 import colicoords
 import numpy as np
+from symfit.core.fit import FitResults
 
+
+class ArrayFitResults(FitResults):
+
+    def __str__(self):
+        """
+        Pretty print the results as a table.
+        """
+        res = '\nParameter Value        Standard Deviation\n'
+        for p in self.model.params:
+            value = self.value(p)
+            try:
+                value = float(value)
+                value_str = '{:e}'.format(value) if value is not None else 'None'
+            except TypeError:
+                value_str = 'np.array'
+            stdev = self.stdev(p)
+            stdev_str = '{:e}'.format(stdev) if stdev is not None else 'None'
+            res += '{:10}{} {}\n'.format(p.name, value_str, stdev_str, width=20)
+
+        res += 'Fitting status message: {}\n'.format(self.status_message)
+        res += 'Number of iterations:   {}\n'.format(self.infodict['nfev'])
+        try:
+            res += 'Regression Coefficient: {}\n'.format(self.r_squared)
+        except AttributeError:
+            pass
+        return res
 
 def allow_scalars(f):
     @wraps(f)

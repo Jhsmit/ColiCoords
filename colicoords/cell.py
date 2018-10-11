@@ -4,7 +4,7 @@ import mahotas as mh
 import numpy as np
 import operator
 from functools import partial
-from colicoords.optimizers import CellOptimizer
+from colicoords.fitting import CellOptimizer
 from colicoords.support import allow_scalars, box_mean, running_mean
 from colicoords.models import CellModel
 from scipy.integrate import quad
