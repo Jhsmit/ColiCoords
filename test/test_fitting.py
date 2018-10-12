@@ -7,7 +7,7 @@ from colicoords.minimizers import *
 
 class TestCellFitting(ArrayTestCase):
     def setUp(self):
-        self.cells = load('test_data/test_cells.hdf5')
+        self.cells = load(r'test_data/test_cells.hdf5')
 
     def test_fitting_binary(self):
         resdict = {'a0':2.004259e+01, 'a1':-2.571423e-01, 'a2':4.944874e-03,
