@@ -36,11 +36,11 @@ class SynthCell(Cell):
         self.coords.xr = xr
         self.coords.r = r
 
-    def add_radial_model_data(self, rmodel, dclass='fluorescence', name=None, **kwargs):
+    def add_radial_model_data(self, rmodel, parameters, dclass='fluorescence', name=None, **kwargs):
         #todo more catchy name for this function
         num = kwargs.pop('num', 200)
         x = np.linspace(0, np.max(self.data.shape) / 1.8, num=num)
-        y = rmodel(x)
+        y = rmodel(x, **parameters)[0]
         flu = np.interp(self.coords.rc, x, y)
         self.data.add_data(flu, dclass, name=name)
 

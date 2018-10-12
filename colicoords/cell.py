@@ -4,12 +4,13 @@ import mahotas as mh
 import numpy as np
 import operator
 from functools import partial
-from colicoords.fitting import CellOptimizer
+from colicoords.fitting import CellFit
 from colicoords.support import allow_scalars, box_mean, running_mean
-from colicoords.models import CellModel
+from colicoords.minimizers import Powell
 from scipy.integrate import quad
 from scipy.optimize import brentq
 import multiprocess as mp
+
 from tqdm import tqdm
 import sys
 import contextlib
@@ -39,7 +40,7 @@ class Cell(object):
         self.name = name
         self.index = kwargs.pop('index', None)
 
-    def optimize(self, data_name='binary', objective=None, **kwargs):
+    def optimize(self, data_name='binary', objective=None, minimizer=Powell, **kwargs):
         # todo find out if callable is a thing
         """ Optimize the cell's coordinate system. The optimization is performed on the data element given by `data_name`
             using objective function `objective`. See the documentation REF or colicoords.optimizers for more details.
@@ -50,8 +51,8 @@ class Cell(object):
             **kwargs: keyword arguments which are passed to `Optimizer.optimize`
         """
 
-        optimizer = CellOptimizer(self, data_name=data_name, objective=objective)
-        return optimizer.optimize(**kwargs)
+        fit = CellFit(self, data_name=data_name, objective=objective, minimizer=minimizer)
+        return fit.execute(**kwargs)
 
     @property
     def radius(self):

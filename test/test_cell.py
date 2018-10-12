@@ -18,7 +18,7 @@ class TestCell(ArrayTestCase):
         r_mid = self.cell_obj.measure_r(data_name='fluorescence', mode='mid', in_place=False)
 
         self.assertEqual(r_max, 5.0)
-        self.assertAlmostEqual(r_mid, 8.16, 2)
+        self.assertAlmostEqual(r_mid, 8.11, 2)
 
 
 class TestSynthCell(ArrayTestCase):
@@ -26,10 +26,9 @@ class TestSynthCell(ArrayTestCase):
         self.cell_obj = SynthCell(40, 12, 0.01)  # length, radius, curvature
         psf = PSF(1.54)
         rmodel = RDistModel(psf)
-        d = {'a1': 0.0, 'a2': 0.1, 'r1': 6, 'r2': 6.5}
-        rmodel.sub_par(d)
+        parameters = {'a1': 0.0, 'a2': 0.1, 'r1': 6, 'r2': 6.5}
 
-        self.cell_obj.add_radial_model_data(rmodel)
+        self.cell_obj.add_radial_model_data(rmodel, parameters)
 
     def test_measure_r(self):
         r_max = self.cell_obj.measure_r(data_name='fluorescence', mode='max', in_place=False, step=0.5)

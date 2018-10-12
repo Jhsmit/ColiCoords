@@ -2,14 +2,9 @@ import numpy as np
 from scipy.integrate import quad
 from colicoords.config import cfg
 from colicoords.support import ArrayFitResults
-from symfit.core.fit import CallableModel, CallableNumericalModel, TakesData
-from functools import partial
-from symfit import Parameter, Variable, Fit
-from symfit.core.objectives import BaseObjective, LeastSquares
-from symfit.core.support import key2str
-from symfit.core.fit import FitResults
-import copy
-import inspect
+from symfit.core.fit import CallableNumericalModel
+from symfit import Parameter, Variable
+
 
 
 class NumericalCellModel(CallableNumericalModel):
@@ -30,42 +25,6 @@ class NumericalCellModel(CallableNumericalModel):
         super(NumericalCellModel, self).__init__({y: objective}, [], parameters)
 
 
-class CustomCallableModel(CallableModel):
-    def __init__(self, parameters, variables, *args, **kwargs):
-        super(CustomCallableModel, self).__init__({})
-        self.params = sorted(parameters, key=str)
-        self.full_params = self.params.copy()
-        self.dependent_vars = variables
-        self.sigmas = {Variable('y'): Variable('sigma_y')}
-        self.__signature__ = self._make_signature()
-        self.model_dict = {Variable('y'): None}
-
-
-class CellModel(CustomCallableModel):
-    def __init__(self, cell_obj):
-        self.cell_obj = cell_obj
-
-        r = Parameter('r', value=cell_obj.coords.r, min=cell_obj.coords.r / 4, max=cell_obj.coords.r * 4)
-        xl = Parameter('xl', value=cell_obj.coords.xl,
-                            min=cell_obj.coords.xl - cfg.ENDCAP_RANGE / 2, max=cell_obj.coords.xl + cfg.ENDCAP_RANGE / 2)
-        xr = Parameter('xr', value=cell_obj.coords.xr,
-                            min=cell_obj.coords.xr - cfg.ENDCAP_RANGE / 2, max=cell_obj.coords.xr + cfg.ENDCAP_RANGE / 2)
-        a0 = Parameter('a0', value=cell_obj.coords.coeff[0], min=0, max=cell_obj.data.shape[0]*1.5)
-        a1 = Parameter('a1', value=cell_obj.coords.coeff[1], min=-15, max=15)
-        a2 = Parameter('a2', value=cell_obj.coords.coeff[2], min=-0.05, max=0.05)
-
-        y = Variable('y')
-
-        parameters = [a0, a1, a2, r, xl, xr]
-        variables = [y]
-
-        super(CellModel, self).__init__(parameters, variables)
-
-    def __str__(self):
-        return 'cell_model'
-
-    def eval_components(self, *args, **kwargs):
-        return [0]
 
 
 try:
@@ -107,9 +66,6 @@ def _y2(x, r2, psf, psf_uid):
     return yarr
 
 
-
-
-
 class RDistModel(CallableNumericalModel):
     def __init__(self, psf, mem=None):
         self.r1 = Parameter(name='r1', value=4.5, min=2, max=6)
@@ -126,7 +82,7 @@ class RDistModel(CallableNumericalModel):
         super(RDistModel, self).__init__({self.y: func}, [self.x], parameters)
 
 
-class RDistFunc(object): #todo refactor since its not an objective
+class RDistFunc(object):
     def __init__(self, psf, mem=None):
         self.psf = psf
 

@@ -8,7 +8,7 @@ from colicoords.postprocess import align_cells, align_images, align_storm
 from colicoords.plot import CellPlot, CellListPlot
 from colicoords.fileIO import load, save, load_thunderstorm
 from colicoords.models import RDistModel, PSF
-from colicoords.fitting import LinearModelFit
+from colicoords.fitting import LinearModelFit, CellFit
 from colicoords.synthetic_data import SynthCell, SynthCellList
 
 
