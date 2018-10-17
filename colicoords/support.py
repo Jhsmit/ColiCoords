@@ -30,6 +30,7 @@ class ArrayFitResults(FitResults):
             pass
         return res
 
+
 def allow_scalars(f):
     @wraps(f)
     def wrapper(self, *args, **kwargs):

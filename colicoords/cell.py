@@ -9,7 +9,9 @@ from colicoords.support import allow_scalars, box_mean, running_mean
 from colicoords.minimizers import Powell
 from scipy.integrate import quad
 from scipy.optimize import brentq
-import multiprocess as mp
+#import multiprocess as mp
+
+import multiprocessing as mp
 
 from tqdm import tqdm
 import sys
@@ -938,9 +940,11 @@ class Coordinates(object):
 
 
 def worker(obj, **kwargs):
-    return obj.optimize(**kwargs)
+    res = obj.optimize(**kwargs)
+    return res
 
-
+# for c in tqdm(self):
+#     c.optimize(data_name=data_name, objective=objective, **kwargs)
 def worker_pb(pbar, obj, **kwargs):
     res = obj.optimize(**kwargs)
     pbar.update()
@@ -1003,8 +1007,9 @@ class CellList(object):
             **kwargs: keyword arguments which are passed to `Optimizer.optimize`
         """
 
-        for c in tqdm(self):
-            c.optimize(data_name=data_name, objective=objective, **kwargs)
+        #
+
+        return [c.optimize(data_name=data_name, objective=objective, **kwargs) for c in tqdm(self)]
 
     def optimize_mp(self, data_name='binary', objective=None, processes=None, pbar=True, **kwargs):
         """ Optimize all cell's coordinate systems using `optimize` through parallel computing. Note that if this
@@ -1030,10 +1035,17 @@ class CellList(object):
                     res.append(r)
 
         pool.close()
-        pool.join()
 
-        for (r, v), cell in zip(res, self):
-            cell.coords.sub_par(r)
+
+        for r, cell in zip(res, self):
+            cell.coords.sub_par(r.params)
+
+        return res
+
+        #         pool.join()
+        #
+        #         # for (r, v), cell in zip(res, self):
+        #         #         #     cell.coords.sub_par(r)
 
     def execute(self, worker):
         """Apply worker function `worker` to all cell objects and returns the results"""

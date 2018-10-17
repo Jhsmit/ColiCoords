@@ -6,10 +6,11 @@ from symfit.core.fit import CallableNumericalModel
 from symfit import Parameter, Variable
 
 
-
 class NumericalCellModel(CallableNumericalModel):
     def __init__(self, cell_obj, objective):
         self.cell_obj = cell_obj
+        self.objective = objective
+
         r = Parameter('r', value=cell_obj.coords.r, min=cell_obj.coords.r / 4, max=cell_obj.coords.r * 4)
         xl = Parameter('xl', value=cell_obj.coords.xl,
                             min=cell_obj.coords.xl - cfg.ENDCAP_RANGE / 2, max=cell_obj.coords.xl + cfg.ENDCAP_RANGE / 2)
@@ -24,7 +25,11 @@ class NumericalCellModel(CallableNumericalModel):
         parameters = [a0, a1, a2, r, xl, xr]
         super(NumericalCellModel, self).__init__({y: objective}, [], parameters)
 
-
+    def __reduce__(self):
+        return (
+            self.__class__,
+            (self.cell_obj, self.objective)
+        )
 
 
 try:

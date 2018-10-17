@@ -10,6 +10,8 @@ from colicoords.minimizers import Powell, BaseMinimizer, NelderMead, BFGS, SLSQP
 from symfit.core.minimizers import BaseMinimizer
 from symfit.core.fit import CallableNumericalModel, TakesData
 
+from symfit.core.fit_results import FitResults
+
 
 class CellBaseObjective(object):
     def __init__(self, cell_obj, data_name, *args, **kwargs):
