@@ -14,7 +14,7 @@ environment:
 
 
 init:
-  - "ECHO %PYTHON%
+  - "ECHO %PYTHON%"
 
 install:
  - "SET PATH=%PYTHON_HOME%;%PYTHON_HOME%\\Scripts;%PATH%"
