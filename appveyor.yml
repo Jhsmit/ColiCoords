@@ -1,0 +1,27 @@
+build: off
+
+environment:
+
+  matrix:
+
+    # For Python versions available on Appveyor, see
+    # http://www.appveyor.com/docs/installed-software#python
+    # The list here is complete (excluding Python 2.6, which
+    # isn't covered by this document) at the time of writing.
+    
+    - PYTHON_HOME: "C:\\Python36-x64"
+
+
+
+init:
+  - "ECHO %PYTHON_HOME%"
+
+install:
+ - "SET PATH=%PYTHON_HOME%;%PYTHON_HOME%\\Scripts;%PATH%"
+ - "python --version"
+ - pip install --upgrade pytest
+ - pip install -r requirements.txt --prefer-binary
+ - pip install configparser
+
+test_script:
+  - '%PYTHON_HOME%\Scripts\pytest'
