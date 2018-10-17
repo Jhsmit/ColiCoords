@@ -3,7 +3,6 @@ import os
 from symfit import Fit, Eq
 from test.testcase import ArrayTestCase
 from colicoords import CellFit, load
-from colicoords.models import PSF, RDistModel, Memory
 from colicoords.minimizers import *
 
 
@@ -176,53 +175,6 @@ class TestCellFitting(ArrayTestCase):
         obj_values = [23.0, 17.0, 18.0, 22.0]
         for r, val in zip(res_list, obj_values):
             self.assertLessEqual(r.objective_value, val + 3)
-
-
-class RDistModelFittingTest(unittest.TestCase):
-    def setUp(self):
-        f_path = os.path.dirname(os.path.realpath(__file__))
-        self.cells = load(os.path.join(f_path, 'test_data', 'test_cells.hdf5'))
-        self.memory = Memory()
-
-    def test_rdistmodel_fit(self):
-        psf = PSF(sigma=1.59146972e+00)
-        rm = RDistModel(psf, mem=self.memory)
-        x, y = self.cells[0].r_dist(20, 1)
-        y -= y.min()
-
-        fit = Fit(rm, x, y, minimizer=Powell)
-        res = fit.execute()
-
-        import matplotlib.pyplot as plt
-        plt.plot(x, y)
-        plt.plot(x, rm(x, **res.params)[0])
-        d = res.params.copy()
-        d['a1'] = 0
-        plt.plot(x, rm(x, **d)[0])
-        d = res.params.copy()
-        d['a2'] = 0
-        plt.plot(x, rm(x, **d)[0])
-
-        plt.show()
-
-        par_dicts = {'a1': 1.3039e5, 'a2': 1.3203e5, 'r1': 1.143e1, 'r2':6.408}
-        for k, v in par_dicts.items():
-            self.assertAlmostEqual(v, res.params[k], delta=0.1*v)
-        print(res)
-        print(res.objective_value)
-
-
-    def test_rdistmodel_fit_slsqb(self):
-        psf = PSF(sigma=1.59146972e+00)
-        rm = RDistModel(psf, mem=self.memory)
-        x, y = self.cells[0].r_dist(20, 1)
-
-        constraints = [Eq(rm.r1 - rm.r2, 0)]
-        fit = Fit(rm, x, y, constraints=constraints, minimizer=MINPACK)
-        res = fit.execute()
-        print(res)
-        print(res.gof_qualifiers.items())
-        print(res.chi_squared) #12144896.892
 
 
 if __name__ == '__main__':
