@@ -19,7 +19,7 @@ init:
 install:
  - pip install --upgrade pytest
  - pip install -r requirements.txt --prefer-binary
-
+ - pip install configparser
 
 test_script:
   - pytest
