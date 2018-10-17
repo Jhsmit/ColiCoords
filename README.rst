@@ -1,4 +1,4 @@
-|build| |license| |doi|
+|travis| |appveyor| |license| |doi|
 
 |test|
 
@@ -6,8 +6,10 @@
     :width: 50%
 
 
-.. |build| image:: https://travis-ci.com/Jhsmit/ColiCoords.svg?token=fHmeVP7wJAvRJCPqsnjv&branch=master
+.. |travis| image:: https://travis-ci.com/Jhsmit/ColiCoords.svg?token=fHmeVP7wJAvRJCPqsnjv&branch=master
     :target: https://travis-ci.com/Jhsmit/ColiCoords 
+.. |appveyor| image:: https://ci.appveyor.com/api/projects/status/801teey9fnm8kuc9?svg=true
+    :target: https://ci.appveyor.com/api/projects/status/801teey9fnm8kuc9     
 .. |license| image:: https://img.shields.io/badge/License-GPL%20v3-blue.svg
     :target: https://www.gnu.org/licenses/gpl-3.0
 .. |doi| image:: https://zenodo.org/badge/92830488.svg
