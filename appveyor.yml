@@ -24,4 +24,4 @@ install:
  - pip install configparser
 
 test_script:
-  - %PYTHON_HOME%\Scripts\pytest
+  - "%PYTHON_HOME%\Scripts\pytest"
