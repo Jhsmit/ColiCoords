@@ -10,8 +10,8 @@
     :target: https://travis-ci.com/Jhsmit/ColiCoords 
 .. |appveyor| image:: https://ci.appveyor.com/api/projects/status/801teey9fnm8kuc9?svg=true
     :target: https://ci.appveyor.com/api/projects/status/801teey9fnm8kuc9     
-.. |license| image:: https://img.shields.io/badge/License-GPL%20v3-blue.svg
-    :target: https://www.gnu.org/licenses/gpl-3.0
+.. |license| image:: https://img.shields.io/badge/License-MIT-yellow.svg
+    :target: https://opensource.org/licenses/MIT
 .. |doi| image:: https://zenodo.org/badge/92830488.svg
    :target: https://zenodo.org/badge/latestdoi/92830488
     
