@@ -9,7 +9,7 @@
 .. |travis| image:: https://travis-ci.com/Jhsmit/ColiCoords.svg?token=fHmeVP7wJAvRJCPqsnjv&branch=master
     :target: https://travis-ci.com/Jhsmit/ColiCoords 
 .. |appveyor| image:: https://ci.appveyor.com/api/projects/status/801teey9fnm8kuc9?svg=true
-    :target: https://ci.appveyor.com/api/projects/status/801teey9fnm8kuc9     
+    :target: https://ci.appveyor.com/project/Jhsmit/colicoords     
 .. |license| image:: https://img.shields.io/badge/License-MIT-yellow.svg
     :target: https://opensource.org/licenses/MIT
 .. |doi| image:: https://zenodo.org/badge/92830488.svg
