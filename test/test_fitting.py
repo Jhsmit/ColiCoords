@@ -42,13 +42,13 @@ class TestCellFitting(ArrayTestCase):
 
         bf_value = 10016887.21301574 if platform.system() == 'Linux' else 10016887.123816863
 
-        self.assertEqual(res.objective_value, bf_value)
+        self.assertEqual(float(res.objective_value), bf_value)  #cast to float is only needed on linux
         for key, val in res_dict.items():
             self.assertAlmostEqual(res.params[key], val, 5)
 
         cell_0 = self.cells[0].copy()
         res = cell_0.optimize('brightfield', minimizer=Powell)
-        self.assertEqual(res.objective_value, bf_value)
+        self.assertEqual(float(res.objective_value), bf_value)  #cast to float is only needed on linux
         for key, val in res_dict.items():
             self.assertAlmostEqual(res.params[key], val, 5)
 
