@@ -4,7 +4,7 @@ from symfit import Fit, Eq
 from test.testcase import ArrayTestCase
 from colicoords import CellFit, load
 from colicoords.minimizers import *
-
+import platform
 
 class TestCellFitting(ArrayTestCase):
     def setUp(self):
@@ -39,13 +39,16 @@ class TestCellFitting(ArrayTestCase):
 
         cell_0 = self.cells[0].copy()
         res = cell_0.optimize('brightfield')
-        self.assertEqual(res.objective_value, 10016887.123816863)
+
+        bf_value = 10016887.21301574 if platform.system() == 'Linux' else 10016887.123816863
+
+        self.assertEqual(res.objective_value, bf_value)
         for key, val in res_dict.items():
             self.assertAlmostEqual(res.params[key], val, 5)
 
         cell_0 = self.cells[0].copy()
         res = cell_0.optimize('brightfield', minimizer=Powell)
-        self.assertEqual(res.objective_value, 10016887.123816863)
+        self.assertEqual(res.objective_value, bf_value)
         for key, val in res_dict.items():
             self.assertAlmostEqual(res.params[key], val, 5)
 
