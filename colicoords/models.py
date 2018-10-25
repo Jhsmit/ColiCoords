@@ -72,17 +72,24 @@ def _y2(x, r2, psf, psf_uid):
 
 
 class RDistModel(CallableNumericalModel):
-    def __init__(self, psf, mem=None):
-        self.r1 = Parameter(name='r1', value=4.5, min=2, max=6)
+    def __init__(self, psf, mem=None, r='separate'):
         self.a1 = Parameter(name='a1', value=0.5, min=0)
-        self.r2 = Parameter(name='r2', value=5.5, min=2, max=8)
         self.a2 = Parameter(name='a2', value=0.5, min=0)
+
+        if r == 'separate':
+            self.r1 = Parameter(name='r1', value=4.5, min=2, max=6)
+            self.r2 = Parameter(name='r2', value=5.5, min=2, max=8)
+            parameters = [self.a1, self.a2, self.r1, self.r2]
+        elif r == 'equal':
+            self.r = Parameter(name='r', value=5.5, min=2, max=8)
+            parameters = [self.a1, self.a2, self.r]
+        else:
+            raise ValueError('Invalid value for r')
 
         self.x = Variable('x')
         self.y = Variable('y')
 
         func = RDistFunc(psf, mem)
-        parameters = [self.a1, self.a2, self.r1, self.r2]
         self.linear_params = [self.a1, self.a2]
         super(RDistModel, self).__init__({self.y: func}, [self.x], parameters)
 
@@ -101,10 +108,11 @@ class RDistFunc(object):
         self.i = 10
 
     def __call__(self, x, **kwargs):
-        r1 = kwargs.pop('r1')
-        r2 = kwargs.pop('r2')
-        a1 = kwargs.pop('a1')
-        a2 = kwargs.pop('a2')
+        r = kwargs.pop('r', None)
+        r1 = kwargs.pop('r1', r)
+        r2 = kwargs.pop('r2', r)
+        a1 = kwargs['a1']
+        a2 = kwargs['a2']
 
         if self.i:
             r1_l = int(np.floor(self.i * r1)) / self.i

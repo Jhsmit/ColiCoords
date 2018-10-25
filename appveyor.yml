@@ -21,7 +21,7 @@ install:
  - "python --version"
  - pip install --upgrade pytest
  - pip install -r requirements.txt --prefer-binary
- - pip install configparser
+ - pip install joblib
 
 test_script:
   - '%PYTHON_HOME%\Scripts\pytest'

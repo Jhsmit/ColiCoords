@@ -6,4 +6,4 @@ scipy
 h5py
 tifffile
 tqdm
-symfit >= 0.4.5
+symfit >= 0.4.6
