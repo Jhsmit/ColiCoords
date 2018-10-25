@@ -1,6 +1,6 @@
 import os
 import configparser
-
+import numpy as np
 
 #https://stackoverflow.com/questions/128573/using-property-on-classmethods
 class classproperty(object):
@@ -35,6 +35,8 @@ class DefaultConfig(object):
     ALHPA_DIST_STOP = 180.
     ALPHA_DIST_STEP = 1.
 
+    DEBUG = False
+
     #Other
     @classproperty
     def CACHE_DIR(self):
@@ -46,19 +48,22 @@ config_sections = {
     'Optimization': ['ENDCAP_RANGE'],
     'Plotting': ['R_DIST_STOP', 'R_DIST_STEP', 'R_DIST_SIGMA', 'R_DIST_NORM_STOP', 'R_DIST_NORM_STEP',
                  'R_DIST_NORM_SIGMA', 'L_DIST_NBINS', 'L_DIST_SIGMA', 'ALHPA_DIST_STOP', 'ALPHA_DIST_STEP'],
-    'Other': ['CACHE_DIR']
+    'Other': ['CACHE_DIR', 'DEBUG']
 }
 
-reverse_sections = {vi:k for k, v in config_sections.items() for vi in v}
+reverse_sections = {vi: k for k, v in config_sections.items() for vi in v}
 
 
 class ParsedConfig(object):
+    getters = {bool: 'getboolean', float: 'getfloat', int: 'getint', str: 'get'}
+
     def __init__(self, config):
         self.config = config
 
     def __getattr__(self, name):
         _type = type(getattr(DefaultConfig, name))
-        return _type(self.config[reverse_sections[name]][name])
+        get = self.getters[_type]
+        return getattr(self.config[reverse_sections[name]], get)(name)
 
 
 def load_config(path=None):
@@ -77,9 +82,6 @@ def load_config(path=None):
         cfg = ParsedConfig(config)
     else:
         cfg = DefaultConfig
-
-
-load_config()
 
 
 def create_config(path=None):
@@ -104,3 +106,12 @@ def create_config(path=None):
 
     with open(os.path.join(path, 'config.ini'), 'w') as configfile:
         config.write(configfile)
+
+
+load_config()
+
+try:
+    if not cfg.DEBUG:
+        np.seterr(divide='ignore')
+except KeyError:
+    print('Invalid config file')
