@@ -11,7 +11,7 @@ class RDistModelFittingTest(unittest.TestCase):
     def setUp(self):
         f_path = os.path.dirname(os.path.realpath(__file__))
         self.cells = load(os.path.join(f_path, 'test_data', 'test_cells.hdf5'))
-        self.memory = Memory()
+        self.memory = Memory(verbose=0)
         self.de_kwargs = {'popsize': 10, 'seed': 42}
 
     def test_rdistmodel_fit(self):
@@ -47,7 +47,7 @@ class RDistModelFittingTest(unittest.TestCase):
 
         par_dict = {'a1': 75355.7394237, 'a2': 172377.87770918, 'r': 7.206538881423469}
         for k, v in par_dict.items():
-            self.assertAlmostEqual(v, float(res.params[k]), 5)
+            self.assertAlmostEqual(v, float(res.params[k]), 3)
         self.assertAlmostEqual(22329654459.541504, float(res.objective_value), 5)
 
         fit = LinearModelFit(rm, x, y, minimizer=Powell)
@@ -69,12 +69,12 @@ class RDistModelFittingTest(unittest.TestCase):
         fit = LinearModelFit(rm, x, y, minimizer=DifferentialEvolution)
         res = fit.execute(**self.de_kwargs)
 
-        self.assertEqual(345643270.9300041, res.objective_value)
+        self.assertAlmostEqual(345643270.9300041, res.objective_value, 3)
 
         fit = LinearModelFit(rm, x, y, minimizer=DifferentialEvolution, sigma_y=1/np.sqrt(y))
         res = fit.execute(**self.de_kwargs)
 
-        self.assertEqual(3040393780457.542, res.objective_value)
+        self.assertAlmostEqual(3040393780457.542, res.objective_value, 3)
 
 
 if __name__ == '__main__':
