@@ -5,5 +5,5 @@ mahotas
 scipy
 h5py
 tifffile
-tqdm
+tqdm >= 4.27.0
 symfit >= 0.4.6

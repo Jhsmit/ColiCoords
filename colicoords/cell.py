@@ -13,7 +13,7 @@ from scipy.optimize import brentq
 
 import multiprocessing as mp
 
-from tqdm import tqdm
+from tqdm.auto import tqdm
 import sys
 import contextlib
 
@@ -943,41 +943,6 @@ def worker(obj, **kwargs):
     res = obj.optimize(**kwargs)
     return res
 
-# for c in tqdm(self):
-#     c.optimize(data_name=data_name, objective=objective, **kwargs)
-def worker_pb(pbar, obj, **kwargs):
-    res = obj.optimize(**kwargs)
-    pbar.update()
-    return res
-
-
-class DummyTqdmFile(object):
-    """Dummy file-like that will write to tqdm"""
-    file = None
-    def __init__(self, file):
-        self.file = file
-
-    def write(self, x):
-        # Avoid print() second call (useless \n)
-        if len(x.rstrip()) > 0:
-            tqdm.write(x, file=self.file)
-
-    def flush(self):
-        return getattr(self.file, "flush", lambda: None)()
-
-@contextlib.contextmanager
-def std_out_err_redirect_tqdm():
-    orig_out_err = sys.stdout, sys.stderr
-    try:
-        sys.stdout, sys.stderr = map(DummyTqdmFile, orig_out_err)
-        yield orig_out_err[0]
-    # Relay exceptions
-    except Exception as exc:
-        raise exc
-    # Always restore sys.stdout/err if necessary
-    finally:
-        sys.stdout, sys.stderr = orig_out_err
-
 
 class CellList(object):
     """Object holding a list of cell objects exposing several methods to either apply functions to all cells or to extract
@@ -1011,7 +976,7 @@ class CellList(object):
 
         return [c.optimize(data_name=data_name, objective=objective, **kwargs) for c in tqdm(self)]
 
-    def optimize_mp(self, data_name='binary', objective=None, processes=None, pbar=True, **kwargs):
+    def optimize_mp(self, data_name='binary', objective=None, processes=None, **kwargs):
         """ Optimize all cell's coordinate systems using `optimize` through parallel computing. Note that if this
             is called the call must be protected by if __name__ == '__main__'.
 
@@ -1027,15 +992,7 @@ class CellList(object):
 
         f = partial(worker, **kwargs)
 
-        res = []
-        with std_out_err_redirect_tqdm() as orig_stdout:
-            with tqdm(total=len(self), file=orig_stdout, position=0) as pbar:
-                for i, r in tqdm(enumerate(pool.imap(f, self))):
-                    pbar.update(1)
-                    res.append(r)
-
-        pool.close()
-
+        res = list(tqdm(pool.imap(f, self), total=len(self)))
 
         for r, cell in zip(res, self):
             cell.coords.sub_par(r.params)
