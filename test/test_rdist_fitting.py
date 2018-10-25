@@ -25,16 +25,16 @@ class RDistModelFittingTest(unittest.TestCase):
 
         par_dict = {'a1': 75984.78344557587, 'a2': 170938.0835695505, 'r': 7.186390052694122}
         for k, v in par_dict.items():
-            self.assertEqual(v, res.params[k])
-        self.assertEqual(21834555979.09033, res.objective_value)
+            self.assertAlmostEqual(v, res.params[k], 2)
+        self.assertAlmostEqual(21834555979.09033, res.objective_value, 3)
 
         fit = Fit(rm, x, y, minimizer=Powell)
         res = fit.execute()
 
         par_dict = {'a1': 86129.37542153012, 'a2': 163073.91919617794, 'r': 7.372535479080642}
         for k, v in par_dict.items():
-            self.assertEqual(v, res.params[k])
-        self.assertEqual(7129232.534842306, res.objective_value)
+            self.assertAlmostEqual(v, res.params[k], 2)
+        self.assertAlmostEqual(7129232.534842306, res.objective_value, 3)
 
     def test_linear_fit(self):
         psf = PSF(sigma=1.59146972e+00)
@@ -47,15 +47,15 @@ class RDistModelFittingTest(unittest.TestCase):
 
         par_dict = {'a1': 75355.7394237, 'a2': 172377.87770918, 'r': 7.206538881423469}
         for k, v in par_dict.items():
-            self.assertAlmostEqual(v, float(res.params[k]), 3)
-        self.assertAlmostEqual(22329654459.541504, float(res.objective_value), 5)
+            self.assertAlmostEqual(v, float(res.params[k]), 2)
+        self.assertAlmostEqual(22329654459.541504, float(res.objective_value), 3)
 
         fit = LinearModelFit(rm, x, y, minimizer=Powell)
         res = fit.execute()
 
         par_dict = {'a1': 86129.31724353383, 'a2': 163073.9713967057, 'r': 7.372535479080642}
         for k, v in par_dict.items():
-            self.assertAlmostEqual(v, float(res.params[k]), 5)
+            self.assertAlmostEqual(v, float(res.params[k]), 2)
         self.assertAlmostEqual(7129232.534804644, float(res.objective_value), 5)
 
     def test_linear_fit_global(self):
@@ -74,7 +74,7 @@ class RDistModelFittingTest(unittest.TestCase):
         fit = LinearModelFit(rm, x, y, minimizer=DifferentialEvolution, sigma_y=1/np.sqrt(y))
         res = fit.execute(**self.de_kwargs)
 
-        self.assertAlmostEqual(3040393780457.542, res.objective_value, 3)
+        self.assertAlmostEqual(3040393780457.542, res.objective_value, 1)
 
 
 if __name__ == '__main__':
