@@ -20,6 +20,12 @@ class TestCell(ArrayTestCase):
         self.assertEqual(r_max, 5.0)
         self.assertAlmostEqual(r_mid, 8.11, 2)
 
+        r_max = self.cell_obj.measure_r(data_name='brightfield', mode='max', in_place=False, step=0.5)
+        r_mid = self.cell_obj.measure_r(data_name='brightfield', mode='mid', in_place=False)
+
+        self.assertEqual(r_max, 9.0)
+        self.assertAlmostEqual(r_mid, 6.49, 2)
+
 
 class TestSynthCell(ArrayTestCase):
     def setUp(self):

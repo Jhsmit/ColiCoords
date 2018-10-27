@@ -360,9 +360,15 @@ class Cell(object):
             mid_val = (np.min(y) + np.max(y)) / 2
             imin = np.argmin(y)
             imax = np.argmax(y)
-            assert np.all(np.diff(y[imax:imin][::-1]) > 0)
+            y_select = y[imin:imax] if imax > imin else y[imax:imin][::-1]
+            x_select = x[imin:imax] if imax > imin else x[imax:imin][::-1]
+
             try:
-                r = np.interp(mid_val, y[imax:imin][::-1], x[imax:imin][::-1])
+                assert np.all(np.diff(y_select) > 0)
+            except AssertionError:
+                print('Radial distribution not monotonically increasing')
+            try:
+                r = np.interp(mid_val, y_select, x_select)
             except ValueError:
                 print("r value not found")
                 return
