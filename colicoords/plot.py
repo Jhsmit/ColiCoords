@@ -696,7 +696,7 @@ class CellListPlot(object):
         elif prop == 'volume':
             values = self.cell_list.volume * (cfg.IMG_PIXELSIZE / 1000) ** 3
             title = 'Cell volume'
-            xlabel = r'Volume ($\mu m^{3}$'
+            xlabel = r'Volume ($\mu m^{3}$)'
         else:
             raise ValueError('Invalid target')
 
