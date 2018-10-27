@@ -2,10 +2,8 @@ from keras.models import Model
 from keras.layers import Input, concatenate, Conv2D, MaxPooling2D, Activation, UpSampling2D, BatchNormalization
 from keras.optimizers import RMSprop
 
-from .losses import bce_dice_loss, dice_loss, weighted_bce_dice_loss, weighted_dice_loss, dice_coeff
-
 #https://arxiv.org/abs/1505.04597
-#https://github.com/brine-io/u-net-segmentation-example/blob/master/model/losses.py
+
 
 def get_unet_128(input_shape=(128, 128, 3),
                  num_classes=1):
@@ -120,7 +118,6 @@ def get_unet_256(input_shape=(256, 256, 3),
                  num_classes=1):
     inputs = Input(shape=input_shape)
     # 256
-    #!!! chnage to channels first for enhanced performance
     down0 = Conv2D(32, (3, 3), padding='same')(inputs)
     down0 = BatchNormalization()(down0)
     down0 = Activation('relu')(down0)
