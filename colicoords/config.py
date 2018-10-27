@@ -112,6 +112,6 @@ load_config()
 
 try:
     if not cfg.DEBUG:
-        np.seterr(divide='ignore')
+        np.seterr(divide='ignore', invalid='ignore')
 except KeyError:
     print('Invalid config file')

@@ -29,7 +29,7 @@ Plot
 Optimizers
 ----------
 
-.. automodule:: colicoords.optimizers
+.. automodule:: colicoords.fitting
    :members:
 
 

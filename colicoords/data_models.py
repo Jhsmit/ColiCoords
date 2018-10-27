@@ -230,7 +230,8 @@ class Data(object):
 
         Args:
             data: Input data, either np.ndarray with ndim 2 or 3 (images / movies) or numpy structured array for STORM data
-            dclass: hmmm
+            dclass (:obj:`str`): Data class of the provided data. Must be either 'binary', 'brightfield', 'fluorescence'
+                or 'storm'.
             name (:obj:`str`): The data element's name
             metadata: (:obj:`dict`): Optional associated metadata (load/save metadata currently not supported)
         """

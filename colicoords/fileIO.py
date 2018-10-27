@@ -52,9 +52,7 @@ def _write_cell(cell_grp, cell_obj):
     attr_grp.attrs.create('xl', cell_obj.coords.xl)
     attr_grp.attrs.create('xr', cell_obj.coords.xr)
     attr_grp.attrs.create('coeff', cell_obj.coords.coeff)
-
     attr_grp.attrs.create('name', np.string_(cell_obj.name))
-    #attr_grp.attrs.create('index', cell_obj.index)
 
     data_grp = cell_grp.create_group('data')
     for k, v in cell_obj.data.data_dict.items():

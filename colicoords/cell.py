@@ -21,13 +21,12 @@ import contextlib
 class Cell(object):
     """ ColiCoords' main single-cell object.
 
-    This class hold all single-cell associated data as well as an internal coordinate system.
+    This class organizes all single-cell associated data as well as an internal coordinate system.
 
     Attributes:
         data (:class:`Data`): Holds all data describing this single cell.
         coords (:class:`Coordinates`): Calculates and optimizes the cell's coordinate system.
         name (:obj:`str`): Name identifying the cell (optional)
-        index (:obj:`int`) Index of the cell in a cell list (for maintaining order upon load/save)
     """
 
     def __init__(self, data_object, name=None, **kwargs):
@@ -40,17 +39,18 @@ class Cell(object):
         self.data = data_object
         self.coords = Coordinates(self.data)
         self.name = name
-        self.index = kwargs.pop('index', None)
 
     def optimize(self, data_name='binary', objective=None, minimizer=Powell, **kwargs):
         # todo find out if callable is a thing
         """ Optimize the cell's coordinate system. The optimization is performed on the data element given by `data_name`
-            using objective function `objective`. See the documentation REF or colicoords.optimizers for more details.
+            using objective function `objective`. A default depending on the data class is used of objective is omitted.
+
 
         Args:
             data_name (:obj:`str`): Name of the data element on which coordinate optimization is performed.
             objective (:obj:`str` or :obj:`callable`):
-            **kwargs: keyword arguments which are passed to `Optimizer.optimize`
+            minimizer (): A subclass of :class:`~symfit.core.minimizers.BaseMinimizer`
+            **kwargs: keyword arguments which are passed to `:func:~colicoords.fitting.CellFit.execute`
         """
 
         fit = CellFit(self, data_name=data_name, objective=objective, minimizer=minimizer)
@@ -407,8 +407,9 @@ class Cell(object):
         return interp
 
     def get_intensity(self, mask='binary', data_name='', func=np.mean):
-        """ Returns the mean fluorescence intensity in the region masked by either the binary image or synthetic
-            binary image derived from the cell's coordinate system
+        """
+        Returns the mean fluorescence intensity in the region masked by either the binary image or synthetic binary
+            image derived from the cell's coordinate system
 
         Args:
             mask (:obj:`str`): Either 'binary' or 'coords' to specify the source of the mask used.

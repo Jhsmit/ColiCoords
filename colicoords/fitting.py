@@ -15,8 +15,6 @@ from symfit.core.fit_results import FitResults
 
 class CellBaseObjective(object):
     def __init__(self, cell_obj, data_name, *args, **kwargs):
-        #super(BaseObjective, self).__init__(*args, **kwargs)
-
         self.cell_obj = cell_obj
         self.data_name = data_name
 

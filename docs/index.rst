@@ -10,13 +10,16 @@ Welcome to ColiCoords's documentation!
     :maxdepth: 2
     :caption: Contents:
 
-    installation
     introduction
-    many_cells
+    installation
+    batch_processing
+    optimization
     storm_data
-    advanced_usage
-    saving_and_loading
-    using_the_gui
+    indexing
+    align_cells
+    configuration
+    modules
+    
 
 Indices and tables
 ==================
