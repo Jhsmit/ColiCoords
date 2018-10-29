@@ -1,16 +1,60 @@
 import numpy as np
-from scipy.optimize import minimize, basinhopping, differential_evolution
+import numbers
 from colicoords.config import cfg
 from colicoords.support import ArrayFitResults
 from functools import partial
-from abc import ABCMeta, abstractmethod
 from symfit import Fit
 from colicoords.models import NumericalCellModel
-from colicoords.minimizers import Powell, BaseMinimizer, NelderMead, BFGS, SLSQP, LBFGSB
+from colicoords.minimizers import Powell
 from symfit.core.minimizers import BaseMinimizer
 from symfit.core.fit import CallableNumericalModel, TakesData
-
 from symfit.core.fit_results import FitResults
+
+
+class RadialData(np.lib.mixins.NDArrayOperatorsMixin):
+    _HANDLED_TYPES = (np.ndarray, numbers.Number)
+
+    def __init__(self, cell_obj, length):
+        self._cell_obj = cell_obj
+        self._len = length
+        self._array = np.ones(length, dtype=float)
+
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        out = kwargs.get('out', ())
+        for x in inputs + out:
+            # Only support operations with instances of _HANDLED_TYPES.
+            # Use ArrayLike instead of type(self) for isinstance to
+            # allow subclasses that don't override __array_ufunc__ to
+            # handle ArrayLike objects.
+            if not isinstance(x, self._HANDLED_TYPES + (RadialData,)):
+                return NotImplemented
+
+        # Defer to the implementation of the ufunc on unwrapped values.
+        inputs = tuple(x.value if isinstance(x, RadialData) else x
+                       for x in inputs)
+        if out:
+            kwargs['out'] = tuple(
+                x.value if isinstance(x, RadialData) else x
+                for x in out)
+        result = getattr(ufunc, method)(*inputs, **kwargs)
+
+        if type(result) is tuple:
+            # multiple return values
+            return tuple(np.array(x) for x in result)
+        elif method == 'at':
+            # no return value
+            return None
+        else:
+            # one return value
+            return np.array(result)
+
+    @property
+    def shape(self):
+        return self.value.shape
+
+    @property
+    def value(self):
+        return self._cell_obj.radius*self._array
 
 
 class CellBaseObjective(object):
@@ -51,7 +95,7 @@ class CellSTORMMembraneFunction(CellBaseObjective):
         # self.r_lower = kwargs.pop('r_lower', lambda x: 2*np.std(x))
         super(CellSTORMMembraneFunction, self).__init__(*args, **kwargs)
 
-    def __call__(self, parameters):
+    def __call__(self, **parameters):
         self.cell_obj.coords.sub_par(parameters)
         storm_data = self.cell_obj.data.data_dict[self.data_name]
         r_vals = self.cell_obj.coords.calc_rc(storm_data['x'], storm_data['y'])
@@ -63,6 +107,13 @@ class CellSTORMMembraneFunction(CellBaseObjective):
 
         r_vals = r_vals
         return r_vals
+
+    @property
+    def target_data(self):
+        return RadialData(self.cell_obj, len(self.cell_obj.data.data_dict[self.data_name]['x']))
+
+
+        #return self.cell_obj.radius*np.ones_like(self.cell_obj.data.data_dict[self.data_name]['x'], dtype=float)
 
 
 class DepCellFit(Fit):
@@ -144,10 +195,9 @@ class CellFit(object):
         self.kwargs = kwargs
 
         dclass = self.data_elem.dclass
-        obj = self.defaults[dclass] if not objective else objective
-
-        obj(self.cell_obj, data_name)
-        self.model = NumericalCellModel(cell_obj, obj(self.cell_obj, data_name))
+        objective_klass = self.defaults[dclass] if not objective else objective
+        self.objective = objective_klass(self.cell_obj, data_name)
+        self.model = NumericalCellModel(cell_obj, self.objective)
         self.fit = Fit(self.model, self.data_elem, minimizer=minimizer, **kwargs)
 
     def renew_fit(self):
@@ -192,7 +242,10 @@ class CellFit(object):
 
     @property
     def data_elem(self):
-        return self.cell_obj.data.data_dict[self.data_name]
+        try:
+            return self.objective.target_data
+        except AttributeError:
+            return self.cell_obj.data.data_dict[self.data_name]
 
 
 class LinearModelFit(Fit):

@@ -140,7 +140,6 @@ class TestCellFitting(ArrayTestCase):
             for k, v in r.params.items():
                 self.assertEqual(v, getattr(cell.coords, k))
 
-
         if platform.system() == 'Linux':
             obj_values = [10016887.213015744, 23617786.724680573, 8999333.060823418, 29395182.431100346,
                           62892422.38607424, 20011819.274376377, 33025293.22872089, 112600585.35048027]
@@ -171,6 +170,32 @@ class TestCellFitting(ArrayTestCase):
     #     obj_values = [24.0, 17.0, 19.0, 22.0]
     #     for r, val in zip(res_list, obj_values):
     #         self.assertEqual(r.objective_value, val)
+
+
+class TestSynthCellFitting(ArrayTestCase):
+    def setUp(self):
+        f_path = os.path.dirname(os.path.realpath(__file__))
+        self.cells = load(os.path.join(f_path, 'test_data', 'test_synth_cell_storm.hdf5'))
+
+    def test_fitting_storm(self):
+        cell = self.cells[0]
+        cell_fit = cell.copy()
+
+        cell_fit.coords.xl -= 5
+        cell_fit.coords.xr -= 2
+        cell_fit.coords.a0 -= 5
+        cell_fit.coords.a1 *= 0.1
+        cell_fit.coords.a2 *= -1.2
+        cell_fit.coords.r += 5
+
+        res = cell_fit.optimize('storm', minimizer=Powell)
+
+        res_dict = {'a0': 10.97109892275029, 'a1': 0.18567779050907443, 'a2': -0.0025215258088723746,
+                    'r': 7.4819827565860555, 'xl': 13.174377724643914, 'xr': 60.56108371075396}
+
+        self.assertEqual(214.05394964376524, res.objective_value)
+        for k, v in res_dict.items():
+            self.assertEqual(v, res.params[k])
 
 
 if __name__ == '__main__':

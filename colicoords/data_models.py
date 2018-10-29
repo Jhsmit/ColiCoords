@@ -2,9 +2,6 @@ import mahotas as mh
 import numpy as np
 import math
 from scipy.ndimage.interpolation import rotate as scipy_rotate
-from collections import OrderedDict
-from colicoords.config import cfg
-import tifffile
 
 
 # https://stackoverflow.com/questions/26598109/preserve-custom-attributes-when-pickling-subclass-of-numpy-array
