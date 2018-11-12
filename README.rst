@@ -42,7 +42,10 @@ Contact: jhsmit@gmail.com
 Documentation and Examples
 ==========================
 
-Two basic examples of `ColiCoords` usage can be found in the examples directory. More examples will be added soon. Further documentation can be found in the form of docstrings.
+Preliminary docs: https://colicoords.readthedocs.io/en/latest/index.html
+
+Several examples of `ColiCoords` usage can be found in the examples directory. More examples will be added in time. 
+
 
 |pipeline|
 
