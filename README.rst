@@ -1,4 +1,4 @@
-|travis| |appveyor| |license| |doi|
+|travis| |appveyor| |docs| |license| |doi|
 
 |test|
 
@@ -8,12 +8,16 @@
 .. |travis| image:: https://travis-ci.org/Jhsmit/ColiCoords.svg?branch=master
     :target: https://travis-ci.org/Jhsmit/ColiCoords 
 .. |appveyor| image:: https://ci.appveyor.com/api/projects/status/801teey9fnm8kuc9?svg=true
-    :target: https://ci.appveyor.com/project/Jhsmit/colicoords     
+    :target: https://ci.appveyor.com/project/Jhsmit/colicoords
+.. |docs| image:: https://readthedocs.org/projects/colicoords/badge/?version=latest
+    :target: https://colicoords.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
 .. |license| image:: https://img.shields.io/badge/License-MIT-yellow.svg
     :target: https://opensource.org/licenses/MIT
 .. |doi| image:: https://zenodo.org/badge/92830488.svg
    :target: https://zenodo.org/badge/latestdoi/92830488
-    
+  
+  
 
 Project Goals
 =============
