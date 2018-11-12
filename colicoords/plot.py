@@ -18,12 +18,12 @@ class CellPlot(object):
 
     Parameters
     ----------
-    cell_obj : :class:`Cell`
+    cell_obj : :class:`~colicoords.cell.Cell`
         Single-cell object to plot.
 
     Attributes
     ----------
-    cell_obj : :class:`Cell`
+    cell_obj : :class:`~colioords.cell.Cell`
         Single-cell object to plot.
     """
     def __init__(self, cell_obj):
@@ -787,7 +787,7 @@ class CellListPlot(object):
 
     Parameters
     ----------
-    cell_list : :class:`CellList`
+    cell_list : :class:`~colicoords.cell.CellList`
         ``CellList`` object with ``Cell`` objects to plot.
     """
     def __init__(self, cell_list):
