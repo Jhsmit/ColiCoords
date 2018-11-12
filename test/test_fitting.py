@@ -193,9 +193,9 @@ class TestSynthCellFitting(ArrayTestCase):
         res_dict = {'a0': 10.97109892275029, 'a1': 0.18567779050907443, 'a2': -0.0025215258088723746,
                     'r': 7.4819827565860555, 'xl': 13.174377724643914, 'xr': 60.56108371075396}
 
-        self.assertEqual(214.05394964376524, res.objective_value)
+        self.assertAlmostEqual(214.05394964376524, res.objective_value, 5)
         for k, v in res_dict.items():
-            self.assertEqual(v, res.params[k])
+            self.assertAlmostEqual(v, res.params[k], 3)
 
 
 if __name__ == '__main__':
