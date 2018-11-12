@@ -2,8 +2,35 @@ import numpy as np
 from colicoords.support import gauss_2d
 from scipy.spatial import distance
 
+#todo make align cells function which aligns all data elements
 
+
+#todo refactor to align alement
 def align_cells(model_cell, data_cells, data_name, r_norm=True, sigma=1):
+    """
+    Align cells with respect to the shape of `model_cell`.
+
+    The returned data element has the same shape as the model Cell's data. Returned image data is aligned and averaged
+    by a gaussian kernel. Returned STORM data element consists of all aligned individual data element.
+
+    Parameters
+    ----------
+    model_cell : :class:`~colicoords.cell.Cell`
+        Model cell used to align `data_cells` to
+    data_cells : :class:`~colicoords.cell.CellList`
+        ``CellList`` of data cells to align.
+    data_name : :obj:`str`
+        Name of the target data element to align.
+    r_norm : :obj:`bool`, optional
+        Whether or not to normalize the cells with respect to their radius. Default is `True`.
+    sigma : :obj:`float`
+        Sigma of the gaussian kernel used to calculate output aligned images.
+
+    Returns
+    -------
+    output : array_like
+        Aligned output data element.
+    """
     data_elem = data_cells[0].data.data_dict[data_name]
     if data_elem.dclass == 'fluorescence' or data_elem.dclass == 'brightfield':
 
@@ -18,6 +45,28 @@ def align_cells(model_cell, data_cells, data_name, r_norm=True, sigma=1):
 
 
 def align_storm(model_cell, data_cells, data_name, r_norm=True):
+    """
+    Align STORM data element with respect to the shape of `model_cell`.
+
+    The returned STORM data element consists of all aligned individual data element.
+
+    Parameters
+    ----------
+    model_cell : :class:`~colicoords.cell.Cell`
+        Model cell used to align `data_cells` to
+    data_cells : :class:`~colicoords.cell.CellList`
+        ``CellList`` of data cells to align.
+    data_name : :obj:`str`
+        Name of the target STORM data element to align.
+    r_norm : :obj:`bool`, optional
+        Whether or not to normalize the cells with respect to their radius. Default is `True`.
+
+    Returns
+    -------
+    output : array_like
+        Aligned output data element.
+    """
+
     dpts = np.sum([len(cell.data.data_dict[data_name]) for cell in data_cells])
     output = np.zeros(dpts, dtype=data_cells[0].data.data_dict[data_name].dtype)
 
@@ -42,6 +91,33 @@ def align_storm(model_cell, data_cells, data_name, r_norm=True):
 
 
 def align_images(model_cell, data_cells, data_name, r_norm=True):
+    """
+    Align image data with respect to the shape of `model_cell`.
+
+    The returned data element has the same shape as the model Cell's data. The returned image data is aligned and
+    averaged by a gaussian kernel.
+
+    Parameters
+    ----------
+    model_cell : :class:`~colicoords.cell.Cell`
+        Model cell used to align `data_cells` to.
+    data_cells : :class:`~colicoords.cell.CellList`
+        ``CellList`` of data cells to align.
+    data_name : :obj:`str`
+        Name of the target data element to align.
+    r_norm : :obj:`bool`, optional
+        Whether or not to normalize the cells with respect to their radius. Default is `True`.
+
+    Returns
+    -------
+    x : :class:`~numpy.ndarray`
+        Array with combined x-coordinates of aligned pixels.
+    y : :class:`~numpy.ndarray`
+        Array with combined y-coordinates of aligned pixels.
+    z : :class:`~numpy.ndarray`
+        Array with pixel values of aligned pixels.
+    """
+
     dpts = np.sum([np.product(cell.data.shape) for cell in data_cells])
     x = np.empty(dpts, dtype=float)
     y = np.empty(dpts, dtype=float)
@@ -66,6 +142,28 @@ def align_images(model_cell, data_cells, data_name, r_norm=True):
 
 
 def gauss_kernel(model_cell, x, y, z, sigma=1):
+    """
+    Convolute aligned pixels given coordinates `x`, `y` and values `z` with a gaussian kernel to form the final image.
+
+    Parameters
+    ----------
+    model_cell : :class:`~colicoords.cell.Cell`
+        Model cell defining output shape.
+    x : :class:`~numpy.ndarray`
+        Array with combined x-coordinates of aligned pixels.
+    y : :class:`~numpy.ndarray`
+        Array with combined y-coordinates of aligned pixels.
+    z : :class:`~numpy.ndarray`
+        Array with pixel values of aligned pixels.
+    sigma : :obj:`float`
+        Sigma of the gaussian kernel.
+
+    Returns
+    -------
+    output : :class:`~numpy.ndarray`
+        Output aligned image.
+    """
+
     output = np.empty(model_cell.data.shape)
     coords = np.array([x, y])
     for index in np.ndindex(model_cell.data.shape):

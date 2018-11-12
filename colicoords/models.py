@@ -1,21 +1,28 @@
 import numpy as np
 from scipy.integrate import quad
 from colicoords.config import cfg
-from colicoords.support import ArrayFitResults
 from symfit.core.fit import CallableNumericalModel
 from symfit import Parameter, Variable
 
 
 class NumericalCellModel(CallableNumericalModel):
+    """
+    Symfit model to describe the cell used in coordinate optimization
+
+    Parameters
+    ----------
+    cell_obj : :class:`~colicoords.cell.Cell`
+        Cell object to be modelled.
+    """
     def __init__(self, cell_obj, objective):
         self.cell_obj = cell_obj
         self.objective = objective
 
         r = Parameter('r', value=cell_obj.coords.r, min=cell_obj.coords.r / 4, max=cell_obj.coords.r * 4)
         xl = Parameter('xl', value=cell_obj.coords.xl,
-                            min=cell_obj.coords.xl - cfg.ENDCAP_RANGE / 2, max=cell_obj.coords.xl + cfg.ENDCAP_RANGE / 2)
+                       min=cell_obj.coords.xl - cfg.ENDCAP_RANGE / 2, max=cell_obj.coords.xl + cfg.ENDCAP_RANGE / 2)
         xr = Parameter('xr', value=cell_obj.coords.xr,
-                            min=cell_obj.coords.xr - cfg.ENDCAP_RANGE / 2, max=cell_obj.coords.xr + cfg.ENDCAP_RANGE / 2)
+                       min=cell_obj.coords.xr - cfg.ENDCAP_RANGE / 2, max=cell_obj.coords.xr + cfg.ENDCAP_RANGE / 2)
         a0 = Parameter('a0', value=cell_obj.coords.coeff[0], min=0, max=cell_obj.data.shape[0]*1.5)
         a1 = Parameter('a1', value=cell_obj.coords.coeff[1], min=-15, max=15)
         a2 = Parameter('a2', value=cell_obj.coords.coeff[2], min=-0.05, max=0.05)
@@ -72,6 +79,19 @@ def _y2(x, r2, psf, psf_uid):
 
 
 class RDistModel(CallableNumericalModel):
+    """
+    Symfit model used for modelling of radial distributions.
+
+    Parameters
+    ----------
+    psf : :obj:`callable`
+        Callable describing the point-spread function in 1D.
+    mem : :class:`Memory`, optional
+        Optional ``joblib`` ``Memory`` object to cache the model's function calls and speed up the fitting process.
+    r : :obj:`str`
+        Either 'separate' or 'equal'. If 'separate' the model has two radial parameters, `r1`, `r2', corresponding to
+        radii of both components. If 'equal' the model has one radial parameter, 'r', for both components.
+    """
     def __init__(self, psf, mem=None, r='separate'):
         self.a1 = Parameter(name='a1', value=0.5, min=0)
         self.a2 = Parameter(name='a2', value=0.5, min=0)
@@ -95,6 +115,17 @@ class RDistModel(CallableNumericalModel):
 
 
 class RDistFunc(object):
+    """
+    Callable that calculates a superposition of membrane and cytsol components returning a radial distribution.
+
+    Parameters
+    ----------
+    psf : :obj:`callable`
+        Callable describing the point-spread function in 1D.
+    mem : :class:`Memory`, optional
+        Optional ``joblib`` ``Memory`` object to cache the model's function calls and speed up the fitting process.
+    """
+
     def __init__(self, psf, mem=None):
         self.psf = psf
 
@@ -146,6 +177,5 @@ class RDistFunc(object):
         except ValueError: # a's are arrays
             assert a1.shape == a2.shape
             yarr = (a1[:, np.newaxis] / (0.5 * np.pi * r1 ** 2))*y1[np.newaxis, :] + (a2[:, np.newaxis] / (np.pi * r2))*y2[np.newaxis, :]
-
 
         return yarr

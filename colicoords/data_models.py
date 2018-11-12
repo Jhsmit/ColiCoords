@@ -6,14 +6,16 @@ from scipy.ndimage.interpolation import rotate as scipy_rotate
 
 # https://stackoverflow.com/questions/26598109/preserve-custom-attributes-when-pickling-subclass-of-numpy-array
 class BinaryImage(np.ndarray):
-    """ Binary image data class
+    """
+    Binary image data class.
 
-    This class is a subclass of np.ndarray and has therefore all its normal functionality.
-
-     Attributes:
-         name (:obj:`str`): Name string to identify the data element
-         metadata (:obj:`dict`): Optional dict for metadata, load/save not implemented
-     """
+    Attributes
+    ----------
+    name : :obj:`str`
+        Name identifying the data element.
+    metadata : :obj:`dict`
+        Optional dict for metadata, load/save not implemented.
+    """
 
     def __new__(cls, input_array, name=None, metadata=None):
         if input_array is None:
@@ -51,14 +53,16 @@ class BinaryImage(np.ndarray):
 
 
 class BrightFieldImage(np.ndarray):
-    """ Brightfield image data class
+    """
+    Brightfield image data class.
 
-    This class is a subclass of np.ndarray and has therefore all its normal functionality.
-
-     Attributes:
-         name (:obj:`str`): Name string to identify the data element
-         metadata (:obj:`dict`): Optional dict for metadata, load/save not implemented
-     """
+    Attributes
+    ----------
+    name : :obj:`str`
+        Name identifying the data element.
+    metadata : :obj:`dict`
+        Optional dict for metadata, load/save not implemented.
+    """
 
     def __new__(cls, input_array, name=None, metadata=None):
         if input_array is None:
@@ -95,14 +99,16 @@ class BrightFieldImage(np.ndarray):
 
 
 class FluorescenceImage(np.ndarray):
-    """ Fluorescence image data class
+    """
+    Fluorescence image data class
 
-    This class is a subclass of np.ndarray and has therefore all its normal functionality. The array can be 2D or 3D.
-
-     Attributes:
-         name (:obj:`str`): Name string to identify the data element
-         metadata (:obj:`dict`): Optional dict for metadata, load/save not implemented
-     """
+    Attributes
+    ----------
+    name : :obj:`str`
+        Name identifying the data element.
+    metadata : :obj:`dict`
+        Optional dict for metadata, load/save not implemented.
+    """
 
     def __new__(cls, input_array, name=None, metadata=None):
         if input_array is None:
@@ -139,14 +145,16 @@ class FluorescenceImage(np.ndarray):
 
 
 class STORMTable(np.ndarray):
-    """ STORM table data class
+    """
+    STORM table data class.
 
-    This class is a subclass of np.ndarray and has therefore all its normal functionality.
-
-     Attributes:
-         name (:obj:`str`): Name string to identify the data element
-         metadata (:obj:`dict`): Optional dict for metadata, load/save not implemented
-     """
+    Attributes
+    ----------
+    name : :obj:`str`
+        Name identifying the data element.
+    metadata : :obj:`dict`
+        Optional dict for metadata, load/save not implemented.
+    """
 
     def __new__(cls, input_array, name=None, metadata=None):
 
@@ -195,17 +203,23 @@ class MetaData(dict):
 
 
 class Data(object):
-    """ Main class to hold all data and perform transformations
+    """
+    Main data class holding data from different input channels.
 
     The data class is designed to combine and organize all different channels (brightfield, binary, fluorescence, storm)
-    into one object. The class also provides basic functionality to manipulate the data, such as rotation and slicing.
+    into one object. The class provides basic functionality such as rotation and slicing.
 
+    Data elements can be accessed from `data_dict` or by attribute '<class>_<name>', where class can be either 'bf',
+    'flu', 'storm'.
 
-    Attributes:
-        data_dict (:obj:`dict`): Dictionary with all data elements by their name
-        flu_dict (:obj:`dict`): Subset of `data_dict` with all Fluorescence data elements
-        storm_dict (:obj:`dict`): Subset of `data_dict` with all STORM data elements
-
+    Attributes
+    ----------
+    data_dict : :obj:`dict`
+        Dictionary with all data elements by their name.
+    flu_dict : :obj:`dict`
+        Subset of `data_dict` with all Fluorescence data elements.
+    storm_dict : :obj:`dict`
+        Subset of `data_dict` with all STORM data elements.
     """
 
     def __init__(self):
@@ -223,14 +237,19 @@ class Data(object):
         self._idx = 0
 
     def add_data(self, data, dclass, name=None, metadata=None):
-        """ Add data to the :class:`Data` to form a new data element
+        """
+        Add data to form a new data element.
 
-        Args:
-            data: Input data, either np.ndarray with ndim 2 or 3 (images / movies) or numpy structured array for STORM data
-            dclass (:obj:`str`): Data class of the provided data. Must be either 'binary', 'brightfield', 'fluorescence'
-                or 'storm'.
-            name (:obj:`str`): The data element's name
-            metadata: (:obj:`dict`): Optional associated metadata (load/save metadata currently not supported)
+        Parameters
+        ----------
+        data : array_like
+            Input data. Either np.ndarray with ndim 2 or 3 (images / movies) or numpy structured array for STORM data.
+        dclass : :obj:`str`
+            Data class. Must be either 'binary', 'brightfield', 'fluorescence' or 'storm'.
+        name : :obj:`str`, optional
+            The name to identify the data element. Default is equal to the data class.
+        metadata : :obj:`dict`
+            Associated metadata (load/save metadata currently not supported)
         """
 
         if name in ['', u'', r'', None]:
@@ -292,6 +311,14 @@ class Data(object):
         self.add_data(storm_out, storm.dclass, name=data_name)
 
     def copy(self):
+        """
+        Copy the data object.
+
+        Returns
+        -------
+        data : :class:`~colicoords.data_models.Data`
+            Copied data object.
+        """
         data = Data()
         for v in self.data_dict.values():
             data.add_data(np.copy(v), v.dclass, name=v.name, metadata=v.metadata)
@@ -299,13 +326,29 @@ class Data(object):
 
     @property
     def dclasses(self):
+        """:obj:`list`: List of all data classes in the ``Data`` object."""
         return [d.dclass for d in self.data_dict.values()]
 
     @property
     def names(self):
+        """:obj:`list`: List of all data names in the ``Data`` object."""
         return [d.name for d in self.data_dict.values()]
 
     def rotate(self, theta):
+        """
+        Rotate all data elements and return a new ``Data`` object with rotated data elements.
+
+        Parameters
+        ----------
+        theta :obj:`float`
+            Rotation angle in degrees.
+
+        Returns
+        -------
+        data : :class:`colicoords.data_models.Data`
+            Rotated ``Data``
+        """
+
         data = Data()
         for v in self.data_dict.values():
             if v.dclass == 'storm':

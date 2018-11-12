@@ -22,6 +22,16 @@ TYPES = {
 
 #todo add colicoords' version to the files
 def save(file_path, cell_obj):
+    """
+    Save ``ColiCoords`` Cell objects to disk as hdf5-files
+
+    Parameters
+    ----------
+    file_path : :obj:`str`
+        Target file path.
+    cell_obj : :class:`~colicoords.cell.Cell` or :class:`~colicoords.cell.CellList
+        ``Cell`` or ``CellList`` object to save to disk.
+    """
 
     if isinstance(cell_obj, Cell):
             with h5py.File(file_path, 'w') as f:
@@ -40,12 +50,12 @@ def save(file_path, cell_obj):
             for name, c in zip(names, cell_obj):
                 cell_grp = f.create_group(name)
                 _write_cell(cell_grp, c)
-
     else:
         raise ValueError('Invalid type, expected CellList or CellObject, got {}'.format(type(cell_obj)))
 
 
 def _write_cell(cell_grp, cell_obj):
+    """Write a ``Cell`` object to `cell_grp`"""
     attr_grp = cell_grp.create_group('attributes')
 
     attr_grp.attrs.create('r', cell_obj.coords.r)
@@ -62,6 +72,7 @@ def _write_cell(cell_grp, cell_obj):
 
 
 def _load_cell(cell_grp):
+    """Load the cell object from `cell_grp`"""
     data_obj = Data()
     data_grp = cell_grp['data']
 
@@ -81,12 +92,25 @@ def _load_cell(cell_grp):
 
     name = attr_dict.get('name').decode('UTF-8')
     c.name = name if name is not 'None' else None
-    #c.index = attr_dict.get('index')
 
     return c
 
 
 def load(file_path):
+    """"
+    Load ``Cell`` or ``CellList`` from disk.
+
+    Parameters
+    ----------
+    file_path : :obj:`str`
+        Source file path.
+
+    Returns
+    -------
+    cell : :class:`~colicoords.cell.Cell` or :class:`~colicoords.cell.CellList`
+        Loaded ``Cell`` or ``CellList``
+    """
+
     with h5py.File(file_path, 'r') as f:
         cell_list = [_load_cell(f[key]) for key in f.keys()]
 
@@ -98,9 +122,16 @@ def load(file_path):
 
 def load_thunderstorm(file_path, pixelsize=None):
     """
-    Load a .csv file from THUNDERSTORM output
-    :param file_path: Target file to open
-    :return:
+    Load a .csv file from THUNDERSTORM output.
+
+    Parameters
+    ----------
+    file_path : :obj:`str`
+        Target file path to THUNDERSTORM file.
+    pixelsize : :obj:`float`, optional
+        pixelsize in the THUNDERSTORM file to convert units to pixels. If not specified the default value in config is
+        used.
+
     """
 
     pixelsize = cfg.IMG_PIXELSIZE if not pixelsize else pixelsize

@@ -5,6 +5,9 @@ from symfit.core.fit import FitResults
 
 
 class ArrayFitResults(FitResults):
+    """"
+    Subclass of ``FitResults`` allowing parameter values as arrays.
+    """
 
     def __str__(self):
         """
@@ -32,6 +35,9 @@ class ArrayFitResults(FitResults):
 
 
 def allow_scalars(f):
+    """
+    Wraps a function so it accepts scalars instead of only numpy arrays.
+    """
     @wraps(f)
     def wrapper(self, *args, **kwargs):
         if np.all([np.isscalar(a) for a in args]):
@@ -50,7 +56,7 @@ def allow_scalars(f):
 
 
 def box_mean(x_in, y_in, bins, storm_weight=False):
-    """bins xvals in given bins using y_weight as weights"""
+    """Bins xvals in given bins using y_weight as weights"""
     i_sort = x_in.argsort()
     r_sorted = x_in[i_sort]
     y_in = y_in[i_sort] if y_in is not None else y_in
@@ -81,10 +87,29 @@ def running_mean(x_in, y_in, x_out, sigma=0.5):
 
 
 def gauss_2d(x, y, x_mu, y_mu, sigma):
+    """"2D gaussian function"""
     return np.exp( - (( (x - x_mu)**2 / (2*sigma**2) ) + ( (y - y_mu)**2 / (2*sigma**2) )) )
 
 
 def pad_data(data, shape, mode='mean'):
+    """
+    Pad ``Data`` class to target shape.
+
+    Parameters
+    ----------
+    data : :class:`~colicoords.data_moels.Data`
+        ``Data`` class to pad to `shape`
+    shape : :obj:`tuple`
+        Shape to pad the data to
+    mode : :obj:`str` or :obj:`float`
+        Mode to pad data elements. If 'mean' the image data elements are padded with the mean value of bordering pixels.
+        If a scalar value is given this value is used.
+
+    Returns
+    -------
+    d_out : :class:`~colicoords.data_models.Data`
+        Padded ``Data`` object.
+    """
     # todo doesnt work for 3d data
     pad_h = shape[1] - data.shape[1]
     assert pad_h >= 0
@@ -121,6 +146,25 @@ def pad_data(data, shape, mode='mean'):
 
 
 def pad_cell(cell, shape, mode='mean'):
+    """
+    Pad ``Cell`` to give target shape.
+
+    Parameters
+    ----------
+    cell : :class:`~colicoords.cell.Cell`
+        Input ``Cell`` to pad.
+    shape : :obj:`tuple`
+        Target shape.
+    mode : :obj:`str` or :obj:`float`
+        Mode to pad data elements. If 'mean' the image data elements are padded with the mean value of bordering pixels.
+        If a scalar value is given this value is used.
+
+    Returns
+    -------
+    cell : :class:`~colicoords.cell.Cell`
+        Padded ``Cell`` object.
+    """
+
     pad_h = shape[1] - cell.data.shape[1]
     assert pad_h >= 0
     pad_h_l = int(np.floor(pad_h/2))
@@ -144,7 +188,24 @@ def pad_cell(cell, shape, mode='mean'):
     return c_out
 
 
+#todo tests
 def crop_data(data, shape):
+    """
+    Crop ``Data`` object to target `shape`.
+
+    Parameters
+    ----------
+    data : :class:`~colicoords.data_models.Data`
+        Data object to crop.
+    shape : :obj:`tuple`
+        Target shape to crop to.
+
+    Returns
+    -------
+    d_out : :class:`~colicoords.data_model.Data`
+        Cropped data object.
+    """
+
     crop_h = data.shape[1] - shape[1]
     assert crop_h >= 0
     crop_h_l = int(np.floor(crop_h/2))
@@ -170,8 +231,25 @@ def crop_data(data, shape):
     return d_out
 
 
+#todo tests
 def crop_cell(cell, shape):
+    """
+    Crop a ``Cell`` object to target shape.
+
+    Parameters
+    ----------
+    cell : :class:`~colicoords.cell.Cell`
+        ``Cell`` object to crop.
+    shape : :obj:`tuple`
+        Target shape to crop to.
+
+    Returns
+    -------
+    c_out : :class:`~colicoords.cell.Cell`
+        Cropped ``Cell`` object
+    """
     #todo doesnt work when shape equal to current shape
+
     crop_h = cell.data.shape[1] - shape[1]
     assert crop_h >= 0
     crop_h_l = int(np.floor(crop_h/2))

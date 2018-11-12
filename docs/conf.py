@@ -36,9 +36,18 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
-    'sphinxcontrib.napoleon',
+    'numpydoc',
     'sphinxcontrib.bibtex'
 ]
+
+numpydoc_show_inherited_class_members = False
+
+# Napoleon settings
+# napoleon_include_init_with_doc = True
+# napoleon_include_private_with_doc = False
+# napoleon_include_special_with_doc = True
+# napoleon_use_ivar = False
+#autoclass_content = 'both'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -147,7 +156,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'ColiCoords.tex', 'ColiCoords Documentation',
-     'Jochem Smit', 'manual'),
+     author, 'manual'),
 ]
 
 
@@ -182,4 +191,5 @@ texinfo_documents = [
 intersphinx_mapping = {'python': ('http://docs.python.org/2', None),
                        'numpy': ('http://docs.scipy.org/doc/numpy/', None),
                        'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
-                       'matplotlib': ('http://matplotlib.sourceforge.net/', None)}
+                       'matplotlib': ('http://matplotlib.sourceforge.net/', None),
+                       'symfit': ('https://symfit.readthedocs.io/en/stable/', None)}

@@ -6,33 +6,44 @@ from colicoords.config import cfg
 from colicoords import CellList
 import seaborn as sns
 from scipy import stats
+
+
 sns.set_style('white')
 cmap_default = {'fluorescence': 'viridis', 'binary': 'gray_r', 'brightfield': 'gray'}
 
 
 class CellPlot(object):
-    """ Object for plotting single-cell derived data.
+    """
+    Object for plotting single-cell derived data.
 
-    Attributes:
-        cell_obj (:class:`Cell`): Single-cell object to plot.
+    Parameters
+    ----------
+    cell_obj : :class:`Cell`
+        Single-cell object to plot.
+
+    Attributes
+    ----------
+    cell_obj : :class:`Cell`
+        Single-cell object to plot.
     """
     def __init__(self, cell_obj):
-        """
-
-        Args:
-            cell_obj (:class:`Cell`): Single-cell object to plot.
-        """
         self.cell_obj = cell_obj
 
     def plot_midline(self, ax=None, **kwargs):
-        """Plot the cell's coordinate system midline.
+        """
+        Plot the cell's coordinate system midline.
 
-        Args:
-            ax (:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting.
-            **kwargs: Optional kwargs passed to ax.plot().
+        Parameters
+        ---------
+        ax : :class:`~matplotlib.axes.Axes`, optional
+            Matplotlib axes to use for plotting.
+        **kwargs
+            Additional kwargs passed to ax.plot().
 
-        Returns:
-            (:class:`matplotlib.lines.Line2D`:): Matplotlib line artist object
+        Returns
+        -------
+        line : :class:`~matplotlib.lines.Line2D`
+            Matplotlib line artist object
 
         """
         x = np.linspace(self.cell_obj.coords.xl, self.cell_obj.coords.xr, 100)
@@ -48,14 +59,22 @@ class CellPlot(object):
         return line
 
     def plot_binary_img(self, ax=None, **kwargs):
-        """Plot the cell's binary image. Equivalent to CellPlot.imshow('binary').
+        """
+        Plot the cell's binary image.
 
-        Args:
-            ax (:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting
-            **kwargs: Optional kwargs passed to ax.plot()
+        Equivalent to CellPlot.imshow('binary').
 
-        Returns:
-            :class:`matplotlib.image.AxesImage`: Matplotlib image artist object
+        Parameters
+        ---------
+        ax : :class:`matplotlib.axes.Axes`, optional
+            Optional matplotlib axes to use for plotting
+        **kwargs
+            Additional kwargs passed to ax.imshow().
+
+        Returns
+        -------
+        image : :class:`matplotlib.image.AxesImage`
+            Matplotlib image artist object
 
         """
 
@@ -64,19 +83,26 @@ class CellPlot(object):
 
         ax = plt.gca() if ax is None else ax
         ymax, xmax = self.cell_obj.data.shape
-        image = ax.imshow(self.cell_obj.data.binary_img, extent=[0, xmax, ymax, 0], **kwargs)
+        cmap = kwargs.pop('cmap', cmap_default['binary'])
+        image = ax.imshow(self.cell_obj.data.binary_img, extent=[0, xmax, ymax, 0], cmap=cmap, **kwargs)
 
         return image
 
     def plot_simulated_binary(self, ax=None, **kwargs):
-        """Plot the cell's binary image calculated from the coordinate system.
+        """
+        Plot the cell's binary image calculated from the coordinate system.
 
-        Args:
-            ax (:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting.
-            **kwargs: Optional kwargs passed to ax.plot().
+        Parameters
+        ---------
+        ax : :class:`matplotlib.axes.Axes`, optional.
+            Matplotlib axes to use for plotting.
+        **kwargs
+            Additional kwargs passed to ax.imshow().
 
-        Returns:
-            :class:`matplotlib.image.AxesImage`: Matplotlib image artist object
+        Returns
+        -------
+        image : :class:`matplotlib.image.AxesImage`
+            Matplotlib image artist object
 
         """
 
@@ -86,42 +112,64 @@ class CellPlot(object):
 
         ax = plt.gca() if ax is None else ax
         ymax, xmax = self.cell_obj.data.shape
-        image = ax.imshow(img, extent=[0, xmax, ymax, 0], **kwargs)
+        cmap = kwargs.pop('cmap', cmap_default['binary'])
+        image = ax.imshow(img, extent=[0, xmax, ymax, 0], cmap=cmap, **kwargs)
 
         return image
 
     def plot_bin_fit_comparison(self, ax=None, **kwargs):
-        """Plot the cell's binary image together with the calculated binary image from the coordinate system.
-
-        Args:
-            ax (:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting.
-            **kwargs: Optional kwargs passed to ax.plot().
-
-        Returns:
-            (:class:`matplotlib.axes.Axes`:): The created or specified with `ax` matplotlib axes.
-
         """
+        Plot the cell's binary image together with the calculated binary image from the coordinate system.
+
+        Parameters
+        ---------
+        ax : :class:`matplotlib.axes.Axes`, optional
+            Matplotlib axes to use for plotting.
+        **kwargs
+            Additional kwargs passed to ax.plot().
+
+        Returns
+        -------
+        image : :class:`matplotlib.image.AxesImage`
+            Matplotlib image artist object.
+        """
+
         if 'interpolation' not in kwargs:
             kwargs['interpolation'] = 'nearest'
         img = self.cell_obj.coords.rc < self.cell_obj.coords.r
 
         ax = plt.gca() if ax is None else ax
         ymax, xmax = self.cell_obj.data.shape
-        ax.imshow(3 - (2 * img + self.cell_obj.data.binary_img), extent=[0, xmax, ymax, 0], **kwargs)
+        image = ax.imshow(3 - (2 * img + self.cell_obj.data.binary_img), extent=[0, xmax, ymax, 0], **kwargs)
 
-        return ax
+        return image
 
     def plot_outline(self, ax=None, **kwargs):
-        """Plot the outline of the cell based on the current coordinate system.
+        """
+        Plot the outline of the cell based on the current coordinate system.
 
-        Args:
-            ax (:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting.
-            **kwargs: Optional kwargs passed to ax.plot().
+        The outline consists of two semicircles and two offset lines to the central parabola.[1]_[2]_
 
-        Returns:
-            (:class:`matplotlib.lines.Line2D`:): Matplotlib line artist object
+        Parameters
+        ---------
+        ax : :class:`~matplotlib.axes.Axes`, optional
+            Matplotlib axes to use for plotting.
+        **kwargs
+            Additional kwargs passed to ax.plot().
+
+        Returns
+        -------
+        line : :class:`~matplotlib.lines.Line2D`
+            Matplotlib line artist object.
+
+
+        .. [1] T. W. Sederberg. "Computer Aided Geometric Design". Computer Aided Geometric Design Course Notes.
+           January 10, 2012
+        .. [2] Rida T.Faroukia, Thomas W. Sederberg, Analysis of the offset to a parabola, Computer Aided Geometric Design
+            vol 12, issue 6, 1995
 
         """
+
         # Parametric plotting of offset line
         # http://cagd.cs.byu.edu/~557/text/ch8.pdf
         #
@@ -169,24 +217,36 @@ class CellPlot(object):
 
     def plot_r_dist(self, ax=None, data_name='', norm_x=False, norm_y=False, storm_weight=False, limit_l=None,
                     method='gauss', dist_kwargs=None, **kwargs):
-        """Plots the radial distribution of a given data element.
+        """
+        Plots the radial distribution of a given data element.
 
-        Args:
-            ax (:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting.
-            data_name (:obj:`str`): Name of the data element to use.
-            norm_x (:obj:`bool`): If *True* the output distribution will be normalized along the length axis.
-            norm_y: (:obj:`bool`): If *True* the output data will be normalized in the y (intensity).
-            storm_weight (:obj:`bool`): If *True* the datapoints of the specified STORM-type data will be weighted by their intensity.
-            limit_l (:obj:`str`): If `None`, all datapoints are taking into account. This can be limited by providing the
-                value `full` (omit poles only), 'poles' (include only poles), or a float value which will limit the data
-                points with around the midline where xmid - xlim < x < xmid + xlim.
-            method (:obj:`str`): Method of averaging datapoints to calculate the final distribution curve.
-            dist_kwargs (:obj:`dict`): Additional kwargs to be passed to *Cell.r_dist()*
-            **kwargs: Optional kwargs passed to ax.plot().
+        Parameters
+        ---------
+        ax : :class:`~matplotlib.axes.Axes`, optional
+            Matplotlib axes to use for plotting.
+        data_name : :obj:`str`
+            Name of the data element to use.
+        norm_x : :obj:`bool`:
+            If `True` the output distribution will be normalized along the length axis.
+        norm_y: : :obj:`bool`:
+            If `True` the output data will be normalized in the y (intensity).
+        storm_weight : :obj:`bool`
+            If *True* the datapoints of the specified STORM-type data will be weighted by their intensity.
+        limit_l : :obj:`str`
+            If `None`, all datapoints are used. This can be limited by providing the value `full` (omit poles only),
+            'poles' (include only poles), or a float value between 0 and 1 which will limit the data points by
+            longitudinal coordinate around the midpoint of the cell.
+        method : :obj:`str`
+            Method of averaging datapoints to calculate the final distribution curve.
+        dist_kwargs : :obj:`dict:
+            Additional kwargs to be passed to :meth:`~colicoords.cell.Cell.r_dist`
+        **kwargs
+            Optional kwargs passed to ax.plot().
 
-        Returns:
-            (:class:`matplotlib.lines.Line2D`:): Matplotlib line artist object
-
+        Returns
+        -------
+        line : :class:`matplotlib.lines.Line2D`
+            Matplotlib line artist object
         """
 
         # if norm_x:
@@ -205,6 +265,7 @@ class CellPlot(object):
         # sigma = kwargs.pop('sigma', sigma)
         # x, y = self.cell_obj.r_dist(stop, step, data_name=data_name, norm_x=norm_x, storm_weight=storm_weight,
         #                             limit_l=limit_l, method=method, sigma=sigma)
+
         dist_kwargs = dist_kwargs if dist_kwargs is not None else {}
         x, y = self.get_r_dist(norm_x=norm_x, data_name=data_name, limit_l=limit_l,
                                method=method, storm_weight=storm_weight, **dist_kwargs)
@@ -222,7 +283,6 @@ class CellPlot(object):
 
         if norm_y:
             y = y.astype(float) / y.max()
-            #y /= y.max()
 
         x = x if norm_x else x * (cfg.IMG_PIXELSIZE / 1000)
         xunits = 'norm' if norm_x else '$\mu m$'
@@ -247,6 +307,7 @@ class CellPlot(object):
 
     def get_r_dist(self, norm_x=False, data_name='', limit_l=None, method='gauss', storm_weight=False, **kwargs):
         #todo copy of get_r_dist on CellListPlot, make baseclass?
+        #used in kymograph plotting
         if norm_x:
             stop = cfg.R_DIST_NORM_STOP
             step = cfg.R_DIST_NORM_STEP
@@ -266,23 +327,35 @@ class CellPlot(object):
 
     def plot_l_dist(self, ax=None, data_name='', r_max=None, norm_x=False, norm_y=False, storm_weight=False,
                     method='gauss', dist_kwargs=None, **kwargs):
-        """Plots the longitudinal distribution of a given data element.
-
-        Args:
-            ax (:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting.
-            data_name (:obj:`str`): Name of the data element to use.
-            r_max: (:obj:`float`): Datapoints within r_max from the cell midline are included. If *None* the value
-                from the cell's coordinate system will be used.
-            norm_x (:obj:`bool`): If *True* the output distribution will be normalized along the length axis.
-            norm_y: (:obj:`bool`): If *True* the output data will be normalized in the y (intensity).
-            storm_weight: If *True* the datapoints of the specified STORM-type data will be weighted by their intensity.
-            method (:obj:`str`): Passed to *Cell.l_dist*, method of averaging datapoints to calculate the final
-            distribution curve.
-            dist_kwargs (:obj:`dict`): Additional kwargs to be passed to *Cell.l_dist*
-        Returns:
-            (:class:`matplotlib.lines.Line2D`:): Matplotlib line artist object
-
         """
+        Plots the longitudinal distribution of a given data element.
+
+        Parameters
+        ----------
+        ax : :class:`matplotlib.axes.Axes`, optional
+            Matplotlib axes to use for plotting.
+        data_name : :obj:`str`
+            Name of the data element to use.
+        r_max: : :obj:`float`
+            Datapoints within r_max from the cell midline are included. If *None* the value from the cell's coordinate
+            system will be used.
+        norm_x : :obj:`bool`
+            If `True` the output distribution will be normalized along the length axis.
+        norm_y: : :obj:`bool`
+            If `True` the output data will be normalized in the y (intensity).
+        storm_weight : :obj:`bool`
+            If `True` the datapoints of the specified STORM-type data will be weighted by their intensity.
+        method : :obj:`str`:
+            Method of averaging datapoints to calculate the final distribution curve.
+        dist_kwargs : :obj:`dict`
+            Additional kwargs to be passed to :meth:`~colicoords.cell.Cell.l_dist`
+
+        Returns
+        -------
+        line : :class:`matplotlib.lines.Line2D`
+            Matplotlib line artist object.
+        """
+
         if not data_name:
             try:
                 data_elem = list(self.cell_obj.data.flu_dict.values())[0]  # yuck
@@ -333,28 +406,39 @@ class CellPlot(object):
 
         return line
 
-    def plot_storm(self, data_name='', ax=None, method='plot', upscale=5, alpha_cutoff=None, storm_weight=True, sigma=0.25, **kwargs):
-        """ Graphically represent STORM data
+    def plot_storm(self, ax=None, data_name='', method='plot', upscale=5, alpha_cutoff=None, storm_weight=True, sigma=0.25, **kwargs):
+        #todo make functions with table and shape and other kwargs?
+        """
+        Graphically represent STORM data.
 
-        Args:
-            data_name (:obj:`str`): Name of the data element to plot. Must have the data class 'storm'.
-            ax (:class:`matplotlib.axes.Axes`): Optional matplotlib axes to use for plotting.
-            method: (:obj:`str`):  Method of visualization. Options are 'plot', 'hist', or 'gauss' just plotting points,
-                histogram plot or gaussian kernel plot.
-            upscale: Upscale factor for the output image. Number of pixels is increased wrt data.shape with a factor
-                upscale**2
-            alpha_cutoff (:obj:`float`): Values (normalized) below `alpha_cutoff` are transparent, where the alpha is
-                linearly scaled between 0 and `alpha_cutoff`
-            storm_weight (:obj:`bool`): If *True* the STORM data points are weighted by their intensity.
-            sigma (:obj:`float` or :obj:`string` or :class:`~numpy.ndarray`:): Only for method 'gauss'. The value
-                is the sigma which describes the gaussian kernel. If `sigma` is a scalar, the same sigma value is used
-                for all data points. If `sigma` is a string it is interpreted as the name of the field in the STORM
-                array to use. Otherwise, sigma can be an array with equal length to the number of datapoints.
-            **kwargs: Optional kwargs passed to ax.plot() or ax.imshow()
+        Parameters
+        ---------
+        ax : :class:`~matplotlib.axes.Axes`
+            Optional matplotlib axes to use for plotting.
+        data_name : :obj:`str`
+            Name of the data element to plot. Must be of data class 'storm'.
+        method : :obj:`str`
+            Method of visualization. Options are 'plot', 'hist', or 'gauss' just plotting points, histogram plot or
+            gaussian kernel plot.
+        upscale : :obj:`int`
+            Upscale factor for the output image. Number of pixels is increased w.r.t. data.shape with a factor upscale**2
+        alpha_cutoff : :obj:`float`
+            Values (normalized) below `alpha_cutoff` are transparent, where the alpha is linearly scaled between 0 and
+            `alpha_cutoff`
+        storm_weight : :obj:`bool`
+            If `True` the STORM data points are weighted by their intensity.
+        sigma : :obj:`float` or :obj:`string` or :class:`~numpy.ndarray`
+            Only applies for method 'gauss'. The value is the sigma which describes the gaussian kernel. If `sigma` is a
+            scalar, the same sigma value is used for all data points. If `sigma` is a string it is interpreted as the
+            name of the field in the STORM array to use. Otherwise, sigma can be an array with equal length to the
+            number of datapoints.
+        **kwargs
+            Additional kwargs passed to ax.plot() or ax.imshow()
 
-        Returns:
-            (:class:`matplotlib.image.AxesImage`: or :class:`matplotlib.lines.Line2D`:): Matplotlib artist object.
-
+        Returns
+        -------
+        artist :class:`~matplotlib.image.AxesImage` or :class:`~matplotlib.lines.Line2D`
+            Matplotlib artist object.
         """
         #todo alpha cutoff docstirng and adjustment / testing
         if not data_name:
@@ -498,19 +582,25 @@ class CellPlot(object):
 
         return artist
 
-    def plot_l_class(self, data_name='', ax=None, **kwargs):
-        """Plots a bar chart of how many foci are in a given STORM data set in classes depending on x-position.
-
-        Args:
-            data_name (:obj:`str`): Name of the data element to plot. Must have the data class 'storm'.
-            ax (:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting.
-            **kwargs: Optional kwargs passed to ax.bar().
-
-        Returns:
-            (:class:`matplotlib.container.BarContainer`:): Container with all the bars.
-
+    def plot_l_class(self, ax=None, data_name='', **kwargs):
         """
-        #todo return in all there return docstrings is not truthful
+        Plots a bar chart of how many foci are in a given STORM data set in classes depending on x-position.
+
+        Parameters
+        ----------
+        ax : :class:`matplotlib.axes.Axes`, optional
+            Matplotlib axes to use for plotting.
+        data_name : :obj:`str`
+            Name of the data element to plot. Must have the data class 'storm'.
+        **kwargs
+            Optional kwargs passed to ax.bar().
+
+        Returns
+        -------
+        container : :class:`~matplotlib.container.BarContainer`
+            Container with all the bars.
+        """
+
         cl = self.cell_obj.l_classify(data_name=data_name)
 
         ax = plt.gca() if ax is None else ax
@@ -521,7 +611,7 @@ class CellPlot(object):
         return container
 
     def _plot_storm(self, storm_table, ax=None, kernel=None, bw_method=0.05, upscale=2, alpha_cutoff=None, **kwargs):
-        #depracated
+        raise DeprecationWarning("")
         x, y = storm_table['x'], storm_table['y']
 
         if self.cell_obj.data.shape:
@@ -565,8 +655,39 @@ class CellPlot(object):
 
             ax.imshow(colors, cmap=cmap, extent=[0, xmax, ymax, 0], interpolation='nearest', **kwargs)
 
-    def plot_kymograph(self, mode='r', data_name='', ax=None, time_factor=1, time_unit='frames', dist_kwargs=None,
-                       norm=True, aspect=1, **kwargs):
+    def plot_kymograph(self, ax=None, mode='r', data_name='', time_factor=1, time_unit='frames', dist_kwargs=None,
+                       norm_y=True, aspect=1, **kwargs):
+        """
+        Plot a kymograph of a chosen axis distribution for a given data element.
+
+        The data element must be a 3D array (t, y, x) where the first axis is the time dimension.
+
+        Parameters
+        ----------
+        ax : :class:`matplotlib.axes.Axes`, optional
+            Matplotlib axes to use for plotting.
+        mode : :obj:`str`
+            Axis of distribution to plot. Options are 'r', 'l' or 'a'. Currently only 'r' is implemented.
+        data_name : :obj:`str`
+            Name of the data element to plot. Must be a 3D array
+        time_factor : :obj:`float`
+            Time factor per frame.
+        time_unit : :obj:`str`
+            Time unit.
+        dist_kwargs : :obj:`dict`
+            Additional kwargs passed to the function getting the distribution.
+        norm_y : :obj:`bool`
+            If `True` the output kymograph is normalized frame-wise.
+        aspect : :obj:`float'
+            Aspect ratio of output kymograph image.
+        **kwargs
+            Additional keyword arguments passed to ax.imshow()
+
+        Returns
+        -------
+        image : :class:`matplotlib.image.AxesImage`
+            Matplotlib image artist object
+        """
 
         # if not data_name:
         #     try:
@@ -593,22 +714,30 @@ class CellPlot(object):
         else:
             raise ValueError('Invalid mode')
 
-        kymograph(x, arr, ax=ax, time_factor=time_factor, time_unit=time_unit, norm=norm, aspect=aspect, **kwargs)
+        return kymograph(x, arr, ax=ax, time_factor=time_factor, time_unit=time_unit,
+                         norm_y=norm_y, aspect=aspect, **kwargs)
 
     def imshow(self, img, ax=None, **kwargs):
-        """Equivalent to matplotlib's imshow but with default extent kwargs to assure proper overlay of pixel and
-            carthesian coordinates.
-
-        Args:
-            img (:obj:`str` or :class:`~numpy.ndarray`) : Image to show. It can be either a data name of the image-type data
-                element to plot or a 2D numpy ndarray.
-            ax (:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting.
-            **kwargs: Optional kwargs passed to ax.plot().
-
-        Returns:
-            :class:`matplotlib.image.AxesImage`: Matplotlib image artist object
-
         """
+        Call to matplotlib's imshow.
+
+        Default `extent` keyword arguments is provided to assure proper overlay of pixel and carthesian coordinates.
+
+        Parameters
+        ----------
+        img : :obj:`str` or :class:`~numpy.ndarray`
+            Image to show. It can be either a data name of the image-type data element to plot or a 2D numpy ndarray.
+        ax : :class:`matplotlib.axes.Axes`
+            Optional matplotlib axes to use for plotting.
+        **kwargs:
+            Additional kwargs passed to ax.imshow().
+
+        Returns
+        -------
+        image : :class:`matplotlib.image.AxesImage`
+            Matplotlib image artist object.
+        """
+
         if type(img) == str:
             img = self.cell_obj.data.data_dict[img]
 
@@ -627,18 +756,18 @@ class CellPlot(object):
         return image
 
     @staticmethod
-    def figure():
-        """Calls matplotlib.pyplot.figure()"""
-        return plt.figure()
+    def figure(*args, **kwargs):
+        """Calls :meth:`matplotlib.pyplot.figure`"""
+        return plt.figure(*args, **kwargs)
 
     @staticmethod
-    def show():
-        """Calls matplotlib.pyplot.show()"""
-        plt.show()
+    def show(*args, **kwargs):
+        """Calls :meth:`matplotlib.pyplot.show`"""
+        plt.show(*args, **kwargs)
 
     @staticmethod
     def savefig(*args, **kwargs):
-        """Calls matplotlib.pyplot.savefig(*args, **kwargs)"""
+        """Calls :meth:`matplotlib.pyplot.savefig`"""
         plt.savefig(*args, **kwargs)
 
     def _plot_intercept_line(self, x_pos, ax=None, **kwargs):
@@ -653,25 +782,34 @@ class CellPlot(object):
 
 
 class CellListPlot(object):
-    """ Object for plotting single-cell derived data
+    """
+    Object for plotting single-cell derived data
 
-      Attributes:
-          cell_list (:class:`CellList`): List of Cell objects to plot
+    Parameters
+    ----------
+    cell_list : :class:`CellList`
+        ``CellList`` object with ``Cell`` objects to plot.
     """
     def __init__(self, cell_list):
         assert isinstance(cell_list, CellList)
         self.cell_list = cell_list
 
     def hist_property(self, prop='length', ax=None, **kwargs):
-        """Plot a histogram of a given geometrical property.
+        """
+        Plot a histogram of a given geometrical property.
 
-        Args:
-            prop (:obj:`str`): Property to histogram. This can be one of 'length', radius, 'circumference', 'area',
-                'surface' or 'volume'.
-            ax (:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting.
-            **kwargs: Optional kwargs passed to ax.hist().
+        Parameters
+        ----------
+        prop : :obj:`str`:
+            Property to histogram. This can be one of 'length', radius, 'circumference', 'area', 'surface' or 'volume'.
+        ax : :class:`~matplotlib.axes.Axes`, optional
+            Matplotlib axes to use for plotting.
+        **kwargs
+            Additional kwargs passed to ax.hist().
 
-        Returns:
+        Returns
+        -------
+
             #todo
 
         """
@@ -711,51 +849,71 @@ class CellListPlot(object):
         return None
 
     def hist_intensity(self, mask='binary', data_name='', ax=None, **kwargs):
-        """Histogram all cell's mean fluorescence intensity. Intensities values are calculated by calling
+        """
+        Histogram all cell's mean fluorescence intensity. Intensities values are calculated by calling
         `Cell.get_intensity()`
 
-        Args:
-            mask (:obj:`str`): Either 'binary' or 'coords' to specify the source of the mask used
-                'binary' uses the binary imagea as mask, 'coords' uses reconstructed binary from coordinate system.
-            data_name (:obj:`str`): The name of the image data element to get the intensity values from.
-            ax (:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting.
-            **kwargs: Optional kwargs passed to ax.hist().
+        Parameters
+        ----------
+        mask : :obj:`str`
+            Either 'binary' or 'coords' to specify the source of the mask used 'binary' uses the binary images as mask,
+            'coords' uses reconstructed binary from coordinate system.
+        data_name :obj:`str`
+            The name of the image data element to get the intensity values from.
+        ax :class:`matplotlib.axes.Axes`, optinal
+            Matplotlib axes to use for plotting.
+        **kwargs
+            Additional kwargs passed to ax.hist().
 
-        Returns:
-            #todo
-
+        Returns
+        -------
+        tuple : :obj:`tuple`
+            Return value is a tuple with `n`, `bins`, `patches` as returned by :meth:`~matplotlib.pyplot.hist`
         """
+
         values = self.cell_list.get_intensity(mask=mask, data_name=data_name)
 
         ax = plt.gca() if ax is None else ax
         bins = kwargs.pop('bins', 'fd')
-        ax.hist(values, bins=bins, **kwargs)
+        n, bins, patches = ax.hist(values, bins=bins, **kwargs)
         ax.set_title('Cell mean fluorescence intensity')
         ax.set_xlabel('Mean fluorescence (a.u.)')
         ax.set_ylabel('Cell count')
 
-        return None
+        return n, bins, patches
 
     #todo put r_dist call kwargs in dedicated dict?
-    def plot_r_dist(self, ax=None, data_name='', norm_y=False, norm_x=False, storm_weight=False, limit_l=None,
+    def plot_r_dist(self, ax=None, data_name='', norm_x=False,  norm_y=False, storm_weight=False, limit_l=None,
                     method='gauss', band_func=np.std, **kwargs):
-        """Plots the radial distribution of a given data element.
+        #todo dist_kwargs, -> adjust docs
+        """
+        Plots the radial distribution of a given data element.
 
-        Args:
-            ax (:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting.
-            data_name (:obj:`str`): Name of the data element to use.
-            norm_x (:obj:`bool`): If *True* the output distribution will be normalized along the length axis.
-            norm_y: (:obj:`bool`): If *True* the output data will be normalized in the y (intensity).
-            storm_weight (:obj:`bool`): If *True* the datapoints of the specified STORM-type data will be weighted by their intensity.
-            xlim (:obj:`str`): If `None`, all datapoints are taking into account. This can be limited by providing the
-                value `full` (omit poles only), 'poles' (include only poles), or a float value which will limit the data
-                points with around the midline where xmid - xlim < x < xmid + xlim.
-            band_func (:obj:`callable`): Callable to determine the fill area around the graph. Default is standard deviation.
-            **kwargs: Optional kwargs passed to ax.plot().
+        Parameters
+        ----------
+        ax : :class:`matplotlib.axes.Axes`
+            Optional matplotlib axes to use for plotting.
+        data_name : :obj:`str`
+            Name of the data element to use.
+        norm_x: : :obj:`bool`
+            If `True` the output distribution will be normalized along the length axis.
+        norm_y: : :obj:`bool`:
+            If `True` the output data will be normalized in the y (intensity).
+        storm_weight : :obj:`bool`:
+            If `True` the datapoints of the specified STORM-type data will be weighted by their intensity.
+        xlim : :obj:`str`:
+            If `None`, all datapoints are taking into account. This can be limited by providing the value `full`
+            (omit poles only), 'poles' (include only poles), or a float value which will limit the data points with
+            around the midline where xmid - xlim < x < xmid + xlim.
+        band_func : :obj:`callable`
+            Callable to determine the fill area around the graph. Default is standard deviation.
+        **kwargs
+            Optional kwargs passed to ax.plot().
 
-        Returns:
-            (:class:`matplotlib.lines.Line2D`:): Matplotlib line artist object
-
+        Returns
+        -------
+        :class:`matplotlib.lines.Line2D`
+            Matplotlib line artist object
         """
 
         if norm_x:
@@ -815,6 +973,7 @@ class CellListPlot(object):
         return line
 
     def get_r_dist(self, norm_x=False, data_name='', limit_l=None, method='gauss', storm_weight=False, **kwargs):
+        #todo wrappertje that autofills defaults?
         if norm_x:
             stop = cfg.R_DIST_NORM_STOP
             step = cfg.R_DIST_NORM_STEP
@@ -834,23 +993,33 @@ class CellListPlot(object):
 
     def plot_l_dist(self, ax=None, data_name='', r_max=None, norm_y=False, storm_weight=False, band_func=np.std,
                     method='gauss', **kwargs):
-        """Plots the longitudinal distribution of a given data element.
+        """
+        Plots the longitudinal distribution of a given data element.
 
-        The data is normalized along the long axis so multiple cells can be combined.
+        The data is normalized along the long axis to allow the combining of multiple cells with different lenghts.
 
-        Args:
-            ax (:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting.
-            data_name (:obj:`str`): Name of the data element to use.
-            r_max: (:obj:`float`): Datapoints within r_max from the cell midline are included. If *None* the value
-                from the cell's coordinate system will be used.
-            norm_y: (:obj:`bool`): If *True* the output data will be normalized in the y (intensity).
-            storm_weight (:obj:`bool`): If *True* the datapoints of the specified STORM-type data will be weighted by their intensity.
-            band_func (:obj:`callable`): Callable to determine the fill area around the graph. Default is standard deviation.
-            **kwargs: Optional kwargs passed to ax.hist().
+        Parameters
+        ----------
+        ax : :class:`matplotlib.axes.Axes`, optional
+            Matplotlib axes to use for plotting.
+        data_name : :obj:`str`
+            Name of the data element to use.
+        r_max : :obj:`float`
+            Datapoints within `r_max` from the cell midline are included. If `None` the value from the cell's coordinate
+            system will be used.
+        norm_y : :obj:`bool`
+            If `True` the output data will be normalized in the y (intensity).
+        storm_weight : :obj:`bool`
+            If `True` the datapoints of the specified STORM-type data will be weighted by their intensity.
+        band_func : :obj:`callable`
+            Callable to determine the fill area around the graph. Default is standard deviation.
+        **kwargs
+            Optional kwargs passed to ax.plot()
 
-        Returns:
-            (:class:`matplotlib.lines.Line2D`:): Matplotlib line artist object
-
+        Returns
+        -------
+        line :class:`matplotlib.lines.Line2D`
+            Matplotlib line artist object
         """
 
         #todo deal with sigma
@@ -899,17 +1068,25 @@ class CellListPlot(object):
         return line
 
     def plot_l_class(self, data_name='', ax=None, yerr='std', **kwargs):
-        """Plots a bar chart of how many foci are in a given STORM data set in classes depending on x-position.
+        """
+        Plots a bar chart of how many foci are in a given STORM data set in classes depending on x-position.
 
-        Args:
-            data_name (:obj:`str`): Name of the data element to plot. Must have the data class 'storm'.
-            ax (:class:`matplotlib.axes.Axes`:): Optional matplotlib axes to use for plotting.
-            yerr (:obj:`str`): How to calcuated error bars. Can be 'std' or 'sem' for standard deviation or standard
-                error of the mean, respectively.
-            **kwargs: Optional kwargs passed to ax.bar().
+        Parameters
+        ----------
+        data_name : :obj:`str`
+            Name of the data element to plot. Must have the data class 'storm'.
+        ax : :class:`matplotlib.axes.Axes`
+            Matplotlib axes to use for plotting.
+        yerr : :obj:`str`
+            How to calculated error bars. Can be 'std' or 'sem' for standard deviation or standard error of the mean,
+            respectively.
+        **kwargs
+            Optional kwargs passed to ax.bar().
 
-        Returns:
-            (:class:`matplotlib.axes.Axes`:): The created or specified with `ax` matplotlib axes
+        Returns
+        -------
+        axes : :class:`matplotlib.axes.Axes`
+            The created or specified with `ax` matplotlib axes
 
         """
         #todo created in all the return docstrings is not truthful
@@ -931,19 +1108,39 @@ class CellListPlot(object):
         return ax
 
     def plot_kymograph(self, mode='r', data_name='', ax=None, time_factor=1, time_unit='frames', dist_kwargs=None,
-                       norm=True, aspect=1, **kwargs):
+                       norm_y=True, aspect=1, **kwargs):
+        """
+        Plot a kymograph of a chosen axis distribution for a given data element.
 
-        # if not data_name:
-        #     try:
-        #         data_elem = list(self.cell_obj.data.flu_dict.values())[0]  # yuck
-        #     except IndexError:
-        #         try:
-        #             data_elem = list(self.cell_obj.data.storm_dict.values())[0]
-        #         except IndexError:
-        #             raise IndexError('No valid data element found')
-        # else:
-        #     data_elem = self.cell_obj.data.data_dict[data_name]
-        # assert data_elem.ndim == 3
+        Each cell in the the ``CellList`` represents one point in time, where the first time point is the first cell in
+        the list.
+
+        Parameters
+        ----------
+        ax : :class:`matplotlib.axes.Axes`, optional
+            Matplotlib axes to use for plotting.
+        mode : :obj:`str`
+            Axis of distribution to plot. Options are 'r', 'l' or 'a'. Currently only 'r' is implemented.
+        data_name : :obj:`str`
+            Name of the data element to plot. Must be a 3D array
+        time_factor : :obj:`float`
+            Time factor per frame.
+        time_unit : :obj:`str`
+            Time unit.
+        dist_kwargs : :obj:`dict`
+            Additional kwargs passed to the function getting the distribution.
+        norm_y : :obj:`bool`
+            If `True` the output kymograph is normalized frame-wise.
+        aspect : :obj:`float'
+            Aspect ratio of output kymograph image.
+        **kwargs
+            Additional keyword arguments passed to ax.imshow()
+
+        Returns
+        -------
+        image : :class:`matplotlib.image.AxesImage`
+            Matplotlib image artist object
+        """
 
         dist_kwargs = dist_kwargs if dist_kwargs is not None else {}
 
@@ -958,7 +1155,7 @@ class CellListPlot(object):
         else:
             raise ValueError('Invalid mode')
 
-        kymograph(x, arr, ax=ax, time_factor=time_factor, time_unit=time_unit, norm=norm, aspect=aspect, **kwargs)
+        return kymograph(x, arr, ax=ax, time_factor=time_factor, time_unit=time_unit, norm_y=norm_y, aspect=aspect, **kwargs)
 
     @staticmethod
     def show():
@@ -976,26 +1173,27 @@ class CellListPlot(object):
         plt.savefig(*args, **kwargs)
 
 
-def kymograph(x, arr, ax=None, time_factor=1, time_unit='frames', norm=True, aspect=1, **kwargs):
+def kymograph(x, arr, ax=None, time_factor=1, time_unit='frames', norm_y=True, aspect=1, **kwargs):
     # Mirror array to show symmetrical left and right sides
+    # todo when implementing l_list this should be moved to plot_kymograph
     combined = np.concatenate((arr[:, :0:-1], arr), axis=1)
 
-    if norm:
+    if norm_y:
         maxes = np.max(combined, axis=1)
         mins = np.min(combined, axis=1)
-        norm = (combined - mins[:, np.newaxis]) / (maxes - mins)[:, np.newaxis]
+        norm_y = (combined - mins[:, np.newaxis]) / (maxes - mins)[:, np.newaxis]
     else:
-        norm = combined
+        norm_y = combined
 
     # mirror x array
     x_full = np.concatenate((-x[:0:-1], x))
 
     # x array with datapoints equal to y axis
-    x_new = np.linspace(np.min(x_full), np.max(x_full), num=norm.shape[0], endpoint=True)
+    x_new = np.linspace(np.min(x_full), np.max(x_full), num=norm_y.shape[0], endpoint=True)
 
     # interpolate values for new x array
-    img = np.empty((norm.shape[0], norm.shape[0]))
-    for i, row in enumerate(norm):
+    img = np.empty((norm_y.shape[0], norm_y.shape[0]))
+    for i, row in enumerate(norm_y):
         img[i] = np.interp(x_new, x_full, row)
 
     # Change x units
@@ -1008,7 +1206,9 @@ def kymograph(x, arr, ax=None, time_factor=1, time_unit='frames', norm=True, asp
     aspect_c = y_max / x_range
 
     ax = plt.gca() if ax is None else ax
-    ax.imshow(img, aspect=aspect * (1 / aspect_c), interpolation='spline16', cmap='viridis', origin='lower_left',
+    image = ax.imshow(img, aspect=aspect * (1 / aspect_c), interpolation='spline16', cmap='viridis', origin='lower_left',
               extent=[x_full.min(), x_full.max(), 0, y_max], **kwargs)
     ax.set_xlabel('Distance ($\mu$m)')
     ax.set_ylabel('Time ({})'.format(time_unit))
+
+    return image

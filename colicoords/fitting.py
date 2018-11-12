@@ -1,17 +1,27 @@
 import numpy as np
 import numbers
-from colicoords.config import cfg
 from colicoords.support import ArrayFitResults
-from functools import partial
 from symfit import Fit
 from colicoords.models import NumericalCellModel
 from colicoords.minimizers import Powell
-from symfit.core.minimizers import BaseMinimizer
 from symfit.core.fit import CallableNumericalModel, TakesData
-from symfit.core.fit_results import FitResults
 
 
 class RadialData(np.lib.mixins.NDArrayOperatorsMixin):
+    """
+    Class mimicking a numpy ndarray used as dependent data for fitting STORM-membrane data.
+
+    The apparent value of this object is an array with length `length` and whoes values are all equal to the radius of
+    `cell_obj`.
+
+    Parameters
+    ----------
+    cell_obj : :class:`~colicoords.cell.Cell`
+        Cell object whos radius gives this array's values.
+    length : :obj:`int`
+        Length of the array.
+    """
+
     _HANDLED_TYPES = (np.ndarray, numbers.Number)
 
     def __init__(self, cell_obj, length):
@@ -57,20 +67,49 @@ class RadialData(np.lib.mixins.NDArrayOperatorsMixin):
         return self._cell_obj.radius*self._array
 
 
-class CellBaseObjective(object):
-    def __init__(self, cell_obj, data_name, *args, **kwargs):
+class CellMinimizeFunctionBase(object):
+    """
+    Base class for Objective objects used by ``CellFit`` to optimize the coordinate system.
+
+    The base class takes a :class:`~colicoords.cell.Cell` object and the name of target data element to perform
+    optimization on. Subclasses of ``CellMinimizeFunctionBase`` must implement the `__call__` builtin, which takes the
+    coordinate system's parameters as keyword arguments.
+
+    Note that this is not an objective function to be minimized, but instead the return value is compared with the
+    specified data element or specific target data to give the chi-squared.
+
+    Parameters
+    ----------
+    cell_obj : :class:`~colicoords.cell.Cell`
+        Cell object to optimize.
+    data_name : :obj:`str`
+        Target data element name.
+    """
+    def __init__(self, cell_obj, data_name):
         self.cell_obj = cell_obj
         self.data_name = data_name
 
 
-class CellBinaryFunction(CellBaseObjective):
+class CellBinaryFunction(CellMinimizeFunctionBase):
+    """
+    Binary data element objective function.
+
+    Calling this object with coordinate system parameters returns a binary image by thresholding the radial distance
+    image with the radius of the cell.
+    """
     def __call__(self, **parameters):
         self.cell_obj.coords.sub_par(parameters)
         binary = self.cell_obj.coords.rc < self.cell_obj.coords.r
         return binary.astype(int)
 
 
-class CellImageFunction(CellBaseObjective):
+class CellImageFunction(CellMinimizeFunctionBase):
+    """
+    Image element objective function.
+
+    Calling this object with coordinate system parameters returns a reconstructed image of the target data element.
+    """
+    #todo add additional parameters to init parameters
     def __call__(self, **parameters):
         r = parameters.pop('r', self.cell_obj.coords.r)
         r = r / self.cell_obj.coords.r
@@ -82,14 +121,21 @@ class CellImageFunction(CellBaseObjective):
         step = 1
 
         #todo some way to access these kwargs
+        #todo scipy.fftsmth.convolve
         xp, fp = self.cell_obj.r_dist(stop, step, data_name=self.data_name, method='box')
         simulated = np.interp(r * self.cell_obj.coords.rc, xp, np.nan_to_num(fp))  # todo check nantonum cruciality
 
         return simulated
 
 
-class CellSTORMMembraneFunction(CellBaseObjective):
+class CellSTORMMembraneFunction(CellMinimizeFunctionBase):
+    """
+    STORM membrane objective function.
+
+    Calling this object with coordinate system parameters returns a reconstructed image of the target data element.
+    """
     #todo booleans is not going to work here, needs to be done via sigma_y!
+    #todo remove init
     def __init__(self, *args, **kwargs):
         # self.r_upper = kwargs.pop('r_upper', None)
         # self.r_lower = kwargs.pop('r_lower', lambda x: 2*np.std(x))
@@ -104,12 +150,12 @@ class CellSTORMMembraneFunction(CellBaseObjective):
         # b_lower = r_vals > (r_vals.mean() - self.r_lower(r_vals)) if self.r_lower else True
         #
         # b = np.logical_and(b_upper, b_lower)
-
         r_vals = r_vals
         return r_vals
 
     @property
     def target_data(self):
+        """Dependent (target) data for coordinate optimization based on STORM membrane markers"""
         return RadialData(self.cell_obj, len(self.cell_obj.data.data_dict[self.data_name]['x']))
 
 
@@ -117,7 +163,9 @@ class CellSTORMMembraneFunction(CellBaseObjective):
 
 
 class DepCellFit(Fit):
-    # in this implementation stepwise fitting doesnt work
+    # in this implementation stepwise fitting doesnt work, however direct subclassing of Fit is preferred. Reasses with
+    # new symfit version
+
     defaults = {
         'binary': CellBinaryFunction,
         'storm': CellSTORMMembraneFunction,
@@ -181,6 +229,8 @@ class DepCellFit(Fit):
 
 
 class CellFit(object):
+
+    # Default functions to use for given data classes.
     defaults = {
         'binary': CellBinaryFunction,
         'storm': CellSTORMMembraneFunction,
@@ -249,6 +299,10 @@ class CellFit(object):
 
 
 class LinearModelFit(Fit):
+    """
+    Fitting of a model with linear parameters where the linear parameters are not fitted by ``symfit`` but instead
+    solved as a system of linear equations.
+    """
     def __init__(self, model, *args, **kwargs):
         objective = kwargs.pop('objective', None)
         minimizer = kwargs.pop('minimizer', None)
@@ -277,9 +331,9 @@ def solve_linear_system(y_list, data):
 
     l = len(data) if data.ndim == 2 else 1
     bigM = np.kron(M, np.eye(l))
-    a1a2 = np.linalg.solve(bigM, D_vec)
+    ai = np.linalg.solve(bigM, D_vec)
 
-    return np.split(a1a2, len(y_list))
+    return np.split(ai, len(y_list))
 
 
 class set_params(object):

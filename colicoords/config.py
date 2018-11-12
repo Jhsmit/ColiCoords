@@ -2,6 +2,7 @@ import os
 import configparser
 import numpy as np
 
+
 #https://stackoverflow.com/questions/128573/using-property-on-classmethods
 class classproperty(object):
     def __init__(self, fget):
@@ -12,16 +13,14 @@ class classproperty(object):
 
 
 class DefaultConfig(object):
-    #Pixel sizes are in nm, displayed units are um
+    # Pixel sizes are in nm, displayed units are um
     IMG_PIXELSIZE = 80
     PAD_WIDTH = 3
-    CELL_FRACTION = 0.5  # Maximum fraction of pixels allowed to be labelled as cells
 
-    #Optimization bounds defaults
-    ENDCAP_RANGE = 20.
+    # Optimization bounds defaults
+    ENDCAP_RANGE = 20. # Endcap (`xl`, `xr`) are allowed to varied this many pixels from the initital guesses.
 
-    #plotting parameters
-
+    # Plotting default values
     R_DIST_STOP = 20.
     R_DIST_STEP = 0.5
     R_DIST_SIGMA = 0.3
@@ -35,7 +34,7 @@ class DefaultConfig(object):
     ALHPA_DIST_STOP = 180.
     ALPHA_DIST_STEP = 1.
 
-    DEBUG = False
+    DEBUG = False # If True, numpy division warnings will be printed.
 
     #Other
     @classproperty
@@ -67,11 +66,14 @@ class ParsedConfig(object):
 
 
 def load_config(path=None):
-    """Load the configuration file at `path`. If not file is given the default directory is used. If no config file is
+    """
+    Load the configuration file at `path`. If not file is given the default directory is used. If no config file is
     present, the default config is used.
 
-    Args:
-        path :obj:`str`: Optional path.
+    Parameters
+    ----------
+    path : :obj:`str`:
+        Optional path.
 
     """
     global cfg
@@ -89,10 +91,12 @@ def create_config(path=None):
     Create a config file at the specified `path` using default values. If not path is given the file is created in the
     user's home directory / .colicoords.
 
-    Args:
-        path :obj:`str`: Optional path where to create the config file.
-
+    Parameters
+    ----------
+    path : :obj:`str`
+        Optional path where to create the config file.
     """
+
     if not path:
         home = os.path.expanduser('~')
         path = os.path.join(home, '.colicoords')

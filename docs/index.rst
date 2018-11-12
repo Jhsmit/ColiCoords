@@ -3,8 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to ColiCoords's documentation!
-======================================
+Welcome to ColiCoords' documentation!
+=====================================
 
 .. toctree::
     :maxdepth: 2

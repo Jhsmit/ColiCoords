@@ -7,8 +7,24 @@ from scipy.optimize import fsolve
 
 
 class SynthCell(Cell):
-    def __init__(self, length, radius, curvature, pad_width=5, name=None):
+    """
+    Generate a synthetic cell.
 
+    Parameters
+    ----------
+    length : :obj:`float`
+        Length of the cell.
+    radius : :obj:`radius`
+        Radius of the cell.
+    curvature : :obj:`curvature`
+        Curvature of the cell. Equal to Cell.coords.a2.
+    pad_width : :obj:`int`
+        Number of pixels to pad around the synthetic cell.
+    name : :obj:`str`, optional
+        Name of the cell object
+    """
+
+    def __init__(self, length, radius, curvature, pad_width=5, name=None):
         a2 = curvature
         xl = radius + pad_width
         xr = fsolve(calc_length, length, args=(xl, a2, length)).squeeze()
@@ -37,6 +53,21 @@ class SynthCell(Cell):
         self.coords.r = r
 
     def add_radial_model_data(self, rmodel, parameters, dclass='fluorescence', name=None, **kwargs):
+        """
+        Add a image data element based on the radial distribution model `rmodel`
+
+        Parameters
+        ----------
+        rmodel : :obj:`callable`
+            Radial distribution model.
+        parameters : :obj:`dict`
+            Parameters dict to pass to rmodel
+        dclass : :obj:`str`, optional
+            Output data class. Default is 'fluorescence'.
+        name : :obj:`str`, optional
+            Name of the data element. Default is 'fluorescence'.
+
+        """
         #todo more catchy name for this function
         num = kwargs.pop('num', 200)
         x = np.linspace(0, np.max(self.data.shape) / 1.8, num=num)
@@ -45,6 +76,25 @@ class SynthCell(Cell):
         self.data.add_data(flu, dclass, name=name)
 
     def add_storm_membrane(self, num, r_mean, r_std=None, name=None):
+        """
+        Returns and adds a STORM data element to the ``Cell`` object with localizations randomly spaced on the membrane.
+
+        Parameters
+        ----------
+        num : :obj:`int`
+            Number of localizations to add.
+        r_mean : :obj:`float`
+            Mean radial distance of localizations.
+        r_std : :obj:`std`
+            Standard deviation of radial distance of localizations.
+        name : :obj:`str`, optional
+            Name of the data element. Default is 'storm'
+
+        Returns
+        -------
+        storm : :class:`~colicoords.data_models.STORMTable`
+            Output STORM table.
+        """
         if num <= 0:
             x_res = np.array([])
             y_res = np.array([])
@@ -110,6 +160,7 @@ class SynthCell(Cell):
         return storm
 
     def gen_storm_image(self, intensities, sigma, data_elem='storm'):
+        raise DeprecationWarning('Generate STORM images though ``CellPlot``')
         storm_table = self.data.data_dict[data_elem]
         img = np.zeros(self.coords.shape)
         for _int, storm_row in zip(intensities, storm_table):
@@ -133,6 +184,18 @@ def calc_length(xr, xl, a2, length):
 
 
 class SynthCellList(CellList):
+    """
+    Create a list of ``SynthCell`` objects.
+
+    Parameters
+    ----------
+    lengths : array_like
+        Array like of lengths of cells.
+    radii : array_like
+        Array like ot radii of cells.
+    curvatures : array_like
+        Array like of curvatures of cells.
+    """
     def __init__(self, lengths, radii, curvatures):
         cell_list = [SynthCell(l, r, c, name='Cell_' + str(i).zfill(int(np.ceil(np.log10(len(radii)))))) for i, (l, r, c) in enumerate(zip(lengths, radii, curvatures))]
         super(SynthCellList, self).__init__(cell_list)
