@@ -1,4 +1,4 @@
-__version__ = "0.1.1-dev_symfit"
+__version__ = "0.1.1-beta3b"
 print('You are using ColiCoords version {}'.format(__version__))
 
 from colicoords.data_models import Data
