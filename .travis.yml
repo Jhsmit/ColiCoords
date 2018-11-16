@@ -14,3 +14,13 @@ install:
  # command to run tests
 script:
   - pytest
+  
+deploy:
+  provider: pypi
+  user: Jhsmit
+  distributions: sdist bdist_wheel
+  password: 
+    secure: pYJSsKgLi+wH3n8/mlkEbaIKvx7zu0fW2bNNkhFXo75XElA7jbG4YbYGbk5/X+bEfpPDpDo1f02q6akcVzb0mjbpAH6+PgUSd+x6q3ZQXR5/77l8+c7y5Wcs+90RoRAV7V+cGnE2TwuOTUTkkCWmJhS9sb+gJr92WTCCkG8nCtEgf48hQsTh0d3/HLzUsXK9+ltrU4nurK61B3hbXWt6g5bXM4C9JbBV56wTg4VNd3JdzoPRGeF0cGpbEmjw+eVOBjS5ugCIoeEEIP2Bi3de2cB3fjGl8RuNuY5ZgOwBXll5sw2gsdo3NdeJwoC8EMFMYJXJKdjlvZb9b/92633uqUg/shqTyrvRQk3sw4hiNtrlRcf9kUgVL2TgIKKg3mWNYiShxO+ydFXYkKeyLbkJxAUi8lJVmxCZmXA8BsEiOv21+mtSnrQj8u0sVa0ViffJrGN/RJTlKPWZJdtAxiJLFfXRO1JU3AVZafbCQtElySC16hogupVI26XdgzpXd3S1xYsSw7O5YEhfR9Ms1SYktPW95l3BFwQRyLHqlJU7EbmcAfepMIrw4wFwQg/H9nAh14+Vl5bg0c9nF/l2d49zy46tUBayECgGuAkE/0t8GjSe8FB/dJKhKOL8ZsXWrzQmHCLD68GdE0p5C0OcM0awRkuC51tB7HD9vuSE+pc3tio=
+  on:
+    branch: master
+    tags: true
