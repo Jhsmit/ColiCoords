@@ -1,6 +1,3 @@
-__version__ = "0.1.1-beta3b"
-print('You are using ColiCoords version {}'.format(__version__))
-
 from colicoords.data_models import Data
 from colicoords.cell import Cell, CellList
 from colicoords.preprocess import data_to_cells
