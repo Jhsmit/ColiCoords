@@ -180,6 +180,15 @@ class GenerateBinaryController(NavigationMixin):
         self.pw.alpha_slider.valueChanged.connect(self.alpha_slider)
         self.pw.keypress.connect(self.on_key_press)
 
+        self.nw.done_button.clicked.connect(self.on_done_button)
+
+    def on_done_button(self):
+        self.iw.update()
+        self.iw.overlay_item.update()
+        self.pw.update()
+        self.set_frame(self.index)
+        self._paint_mode_rb()
+
     def alpha_slider(self):
         self.iw.alpha = self.pw.alpha_slider.value() / 100
         lut = self.iw.make_lut()
