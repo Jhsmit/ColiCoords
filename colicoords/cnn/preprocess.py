@@ -203,6 +203,14 @@ class AugmentedImgSequence(BaseSequence):
         idx_val = np.arange(step-1, len(self.index_list), step) + offset
         if random:
             idx_val += np.random.random_integers(0, step-1, len(idx_val))
+
+        if idx_val.max() > len(self.index_list):
+            idx_val[-1] = len(self.index_list) - 1
+            print("Warning, index out of bounds, set to last element")
+
+        assert idx_val.max() < len(self.index_list)
+        assert len(np.unique(idx_val)) == len(idx_val)
+
         val_indices = self.index_list[idx_val]
         train_idices = np.delete(self.index_list, idx_val, axis=0)
 
