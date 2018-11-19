@@ -14,9 +14,9 @@ class NumericalCellModel(CallableNumericalModel):
     cell_obj : :class:`~colicoords.cell.Cell`
         Cell object to be modelled.
     """
-    def __init__(self, cell_obj, objective):
+    def __init__(self, cell_obj, cell_function):
         self.cell_obj = cell_obj
-        self.objective = objective
+        self.cell_function = cell_function
 
         r = Parameter('r', value=cell_obj.coords.r, min=cell_obj.coords.r / 4, max=cell_obj.coords.r * 4)
         xl = Parameter('xl', value=cell_obj.coords.xl,
@@ -30,12 +30,13 @@ class NumericalCellModel(CallableNumericalModel):
         y = Variable('y')
 
         parameters = [a0, a1, a2, r, xl, xr]
-        super(NumericalCellModel, self).__init__({y: objective}, [], parameters)
+        super(NumericalCellModel, self).__init__({y: cell_function}, [], parameters)
 
     def __reduce__(self):
+        #todo check if this is still needed.
         return (
             self.__class__,
-            (self.cell_obj, self.objective)
+            (self.cell_obj, self.cell_function)
         )
 
 

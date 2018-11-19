@@ -46,7 +46,7 @@ class Cell(object):
         self.coords = Coordinates(self.data, initialize=init_coords)
         self.name = name
 
-    def optimize(self, data_name='binary', objective=None, minimizer=Powell, **kwargs):
+    def optimize(self, data_name='binary', cell_function=None, minimizer=Powell, **kwargs):
         """
         Optimize the cell's coordinate system.
 
@@ -57,8 +57,8 @@ class Cell(object):
         ----------
         data_name : :obj:`str`, optional
             Name of the data element to perform optimization on.
-        objective
-            Optional subclass of :class:`~colicoords.fitting.CellBaseObjective` to use as objective function.
+        cell_function
+            Optional subclass of :class:`~colicoords.fitting.CellMinimizeFunctionBase` to use as objective function.
         minimizer : Subclass of :class:`symfit.core.minimizers.BaseMinimizer` or :class:`~collections.abc.Sequence`
             Minimizer to use for the optimization. Default is the ``Powell`` minimizer.
         **kwargs :
@@ -71,7 +71,7 @@ class Cell(object):
 
 
         """
-        fit = CellFit(self, data_name=data_name, objective=objective, minimizer=minimizer)
+        fit = CellFit(self, data_name=data_name, cell_function=cell_function, minimizer=minimizer)
         return fit.execute(**kwargs)
 
     @property
@@ -1176,7 +1176,7 @@ class CellList(object):
     def __init__(self, cell_list):
         self.cell_list = np.array(cell_list)
 
-    def optimize(self, data_name='binary', objective=None, minimizer=Powell, **kwargs):
+    def optimize(self, data_name='binary', cell_function=None, minimizer=Powell, **kwargs):
         """
         Optimize the cell's coordinate system.
 
@@ -1187,8 +1187,8 @@ class CellList(object):
         ----------
         data_name : :obj:`str`, optional
             Name of the data element to perform optimization on.
-        objective
-            Optional subclass of :class:`~colicoords.fitting.CellBaseObjective` to use as objective function.
+        cell_function
+            Optional subclass of :class:`~colicoords.fitting.CellMinimizeFunctionBase` to use as objective function.
         minimizer : Subclass of :class:`symfit.core.minimizers.BaseMinimizer` or :class:`~collections.abc.Sequence`
             Minimizer to use for the optimization. Default is the ``Powell`` minimizer.
         **kwargs :
@@ -1200,9 +1200,9 @@ class CellList(object):
             List of `symfit` ``FitResults`` object.
         """
 
-        return [c.optimize(data_name=data_name, objective=objective, minimizer=minimizer, **kwargs) for c in tqdm(self)]
+        return [c.optimize(data_name=data_name, cell_function=cell_function, minimizer=minimizer, **kwargs) for c in tqdm(self)]
 
-    def optimize_mp(self, data_name='binary', objective=None, minimizer=Powell, processes=None, **kwargs):
+    def optimize_mp(self, data_name='binary', cell_function=None, minimizer=Powell, processes=None, **kwargs):
         """ Optimize all cell's coordinate systems using `optimize` through parallel computing.
 
         A call to this method must be  protected by if __name__ == '__main__' if its not executed in jupyter notebooks.
@@ -1211,8 +1211,8 @@ class CellList(object):
         ----------
         data_name : :obj:`str`, optional
             Name of the data element to perform optimization on.
-        objective
-            Optional subclass of :class:`~colicoords.fitting.CellBaseObjective` to use as objective function.
+        cell_function
+            Optional subclass of :class:`~colicoords.fitting.CellMinimizeFunctionBase` to use as objective function.
         minimizer : Subclass of :class:`symfit.core.minimizers.BaseMinimizer` or :class:`~collections.abc.Sequence`
             Minimizer to use for the optimization. Default is the ``Powell`` minimizer.
         processes : :obj:`int`
@@ -1226,7 +1226,7 @@ class CellList(object):
             List of `symfit` ``FitResults`` object.`
         """
 
-        kwargs = {'data_name': data_name, 'objective': objective, 'minimizer': minimizer, **kwargs}
+        kwargs = {'data_name': data_name, 'cell_function': cell_function, 'minimizer': minimizer, **kwargs}
         pool = mp.Pool(processes=processes)
 
         f = partial(worker, **kwargs)

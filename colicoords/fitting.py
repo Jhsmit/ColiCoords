@@ -27,7 +27,7 @@ class RadialData(np.lib.mixins.NDArrayOperatorsMixin):
     def __init__(self, cell_obj, length):
         self._cell_obj = cell_obj
         self._len = length
-        self._array = np.ones(length, dtype=float)
+        self._array = np.ones(length, dtype=np.float)
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         out = kwargs.get('out', ())
@@ -145,13 +145,12 @@ class CellSTORMMembraneFunction(CellMinimizeFunctionBase):
         self.cell_obj.coords.sub_par(parameters)
         storm_data = self.cell_obj.data.data_dict[self.data_name]
         r_vals = self.cell_obj.coords.calc_rc(storm_data['x'], storm_data['y'])
-
         # b_upper = r_vals < (r_vals.mean() + self.r_upper(r_vals)) if self.r_upper else True
         # b_lower = r_vals > (r_vals.mean() - self.r_lower(r_vals)) if self.r_lower else True
         #
         # b = np.logical_and(b_upper, b_lower)
         r_vals = r_vals
-        return r_vals
+        return r_vals.astype(np.float)
 
     @property
     def target_data(self):
@@ -238,16 +237,19 @@ class CellFit(object):
         'fluorescence': CellImageFunction,
     }
 
-    def __init__(self, cell_obj, data_name='binary', objective=None, minimizer=Powell, **kwargs):
+    def __init__(self, cell_obj, data_name='binary', cell_function=None, minimizer=Powell, **kwargs):
         self.cell_obj = cell_obj
         self.data_name = data_name
         self.minimizer = minimizer
         self.kwargs = kwargs
 
+        print(cell_function)
+
         dclass = self.data_elem.dclass
-        objective_klass = self.defaults[dclass] if not objective else objective
-        self.objective = objective_klass(self.cell_obj, data_name)
-        self.model = NumericalCellModel(cell_obj, self.objective)
+        func_klass = self.defaults[dclass] if not cell_function else cell_function
+
+        self.cell_function = func_klass(self.cell_obj, data_name)
+        self.model = NumericalCellModel(cell_obj, self.cell_function)
         self.fit = Fit(self.model, self.data_elem, minimizer=minimizer, **kwargs)
 
     def renew_fit(self):
@@ -293,7 +295,7 @@ class CellFit(object):
     @property
     def data_elem(self):
         try:
-            return self.objective.target_data
+            return self.cell_function.target_data
         except AttributeError:
             return self.cell_obj.data.data_dict[self.data_name]
 
