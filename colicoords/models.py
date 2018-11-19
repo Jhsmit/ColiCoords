@@ -7,12 +7,16 @@ from symfit import Parameter, Variable
 
 class NumericalCellModel(CallableNumericalModel):
     """
-    Symfit model to describe the cell used in coordinate optimization
+    ``Symfit`` model to describe the cell used in coordinate optimization.
 
     Parameters
     ----------
     cell_obj : :class:`~colicoords.cell.Cell`
         Cell object to be modelled.
+    cell_function : :obj:`callable`
+        Function used to calculate the dependent variable. Usually a subclass of
+        :class:~`colicoords.fitting.CellMinimizeFunctionBase` but it can be any callable as long as it accepts the
+        coordinate system's parameters as keyword arguments in its `__call__`.
     """
     def __init__(self, cell_obj, cell_function):
         self.cell_obj = cell_obj

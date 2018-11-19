@@ -158,9 +158,6 @@ class CellSTORMMembraneFunction(CellMinimizeFunctionBase):
         return RadialData(self.cell_obj, len(self.cell_obj.data.data_dict[self.data_name]['x']))
 
 
-        #return self.cell_obj.radius*np.ones_like(self.cell_obj.data.data_dict[self.data_name]['x'], dtype=float)
-
-
 class DepCellFit(Fit):
     # in this implementation stepwise fitting doesnt work, however direct subclassing of Fit is preferred. Reasses with
     # new symfit version
@@ -243,12 +240,16 @@ class CellFit(object):
         self.minimizer = minimizer
         self.kwargs = kwargs
 
-        print(cell_function)
-
         dclass = self.data_elem.dclass
         func_klass = self.defaults[dclass] if not cell_function else cell_function
 
-        self.cell_function = func_klass(self.cell_obj, data_name)
+        if issubclass(func_klass, CellMinimizeFunctionBase):
+            self.cell_function = func_klass(self.cell_obj, data_name)
+        elif callable(func_klass):
+            self.cell_function = func_klass
+        else:
+            raise TypeError("Invalid type for cell_function keyword argument.")
+
         self.model = NumericalCellModel(cell_obj, self.cell_function)
         self.fit = Fit(self.model, self.data_elem, minimizer=minimizer, **kwargs)
 
