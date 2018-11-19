@@ -78,15 +78,16 @@ def generate_stormdata():
 
 
 def load_testdata(dataset):
-    if dataset == 'ds2':
-        return load_stormdata()
-    elif dataset in ['ds1', 'ds3', 'ds4']:
-        return load_data(dataset)
-    elif dataset is 'ds5':
-        return load_escvdata()
-    elif dataset == 'ds6':
-        return generate_stormdata()
-
+    return load_data(dataset)
+    # if dataset == 'ds2':
+    #     return load_stormdata()
+    # elif dataset in ['ds1', 'ds2', 'ds4']:
+    #     return load_data(dataset)
+    # elif dataset is 'ds5':
+    #     return load_escvdata()
+    # elif dataset == 'ds6':
+    #     return generate_stormdata()
+    #
 
 if __name__ == '__main__':
     data = load_testdata('ds4')

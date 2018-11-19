@@ -6,6 +6,7 @@ from colicoords import CellFit, load
 from colicoords.minimizers import *
 import platform
 
+
 class TestCellFitting(ArrayTestCase):
     def setUp(self):
         f_path = os.path.dirname(os.path.realpath(__file__))

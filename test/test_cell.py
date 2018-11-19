@@ -8,7 +8,7 @@ from colicoords.models import PSF, RDistModel
 class TestCell(ArrayTestCase):
     def setUp(self):
         #todo update this
-        self.data = load_testdata('ds3')
+        self.data = load_testdata('ds2')
         self.cell_list = data_to_cells(self.data, initial_crop=2, rotate='binary')
         self.cell_obj = self.cell_list[0]
         self.cell_obj.optimize()

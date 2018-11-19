@@ -40,7 +40,7 @@ class TestDataElements(ArrayTestCase):
 
     def test_data_class_storm(self):
         f_path = os.path.dirname(os.path.realpath(__file__))
-        storm_data = load_thunderstorm(os.path.join(f_path, 'test_data/ds5/storm_table.csv'))
+        storm_data = load_thunderstorm(os.path.join(f_path, 'test_data/ds3/storm_table.csv'))
         storm_table = STORMTable(storm_data, name='test1234', metadata={'no_entries:': 123})
         storm_sl = storm_table[5: 20]
         self.assertTrue(storm_table.dclass == 'storm')
