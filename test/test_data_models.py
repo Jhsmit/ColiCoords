@@ -80,17 +80,17 @@ class TestMakeData(ArrayTestCase):
 
 class TestData(ArrayTestCase):
     def setUp(self):
-        self.data = load_testdata('ds4')
+        self.data = load_testdata('ds1')
 
     def test_copying(self):
         data_copy = self.data.copy()
         for k, v in self.data.data_dict.items():
             self.assertArrayEqual(v, data_copy.data_dict[k])
 
-        i = self.data.data_dict['fluorescence'][10, 10, 10]
-        self.data.data_dict['fluorescence'][10, 10, 10] += 20
-        self.assertEqual(self.data.data_dict['fluorescence'][10, 10, 10], i + 20)
-        self.assertEqual(i, data_copy.data_dict['fluorescence'][10, 10, 10])
+        i = self.data.data_dict['fluorescence'][5, 10, 10]
+        self.data.data_dict['fluorescence'][5, 10, 10] += 20
+        self.assertEqual(self.data.data_dict['fluorescence'][5, 10, 10], i + 20)
+        self.assertEqual(i, data_copy.data_dict['fluorescence'][5, 10, 10])
 
     def test_rotation(self):
         data_rotated = self.data[:2].rotate(60)
@@ -103,7 +103,7 @@ class TestData(ArrayTestCase):
             with self.subTest(i=i):
                 self.assertArrayEqual(self.data.binary_img[i], d.binary_img)
 
-        self.assertEqual(len(self.data), 20)
+        self.assertEqual(len(self.data), 10)
 
 
 if __name__ == '__main__':
