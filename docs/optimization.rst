@@ -9,6 +9,7 @@ package that provides a symbolic and intuitive API for using minimizers from ``s
 The shorthand approach for optimizing the coordinate system is:
 
 .. code-block:: python
+
   cell.optimize()
 
 By calling :func:`~colicoords.cell.optimize()` the coordinate system is optimized for the current ``Cell`` object by
@@ -26,6 +27,7 @@ calculating the chi-squared.
 For example, optimimzation based on the brightfield image can be done as follows:
 
 .. code-block:: python
+
   cell.optimize('brightfield')
 
 Where it is assumed that the brightfield data element is named `'brightfield'`. The appropriate function that is used for
@@ -61,6 +63,7 @@ defined by bounds on ``Parameter`` objects defined in the model scan for candida
 The minimizers can be chained together to first do a course optimization followed by global optimization:
 
 .. code-block:: python
+
   cell.optimize('brightfield', minimizer=[Powell, DifferentialEvolution])
 
 The code above will optimize the coordinate system based on the brightfield image, first by using the ``Powell`` minimizer,
@@ -89,6 +92,7 @@ model. To adjust parameter values and bound manually, the user must directly int
 object instead of calling :func:`~colicoords.cell.Cell.optimize`.
 
 .. code-block:: python
+
   from colicoords import CellFit
   fit = CellFit(cell)
   print(fit.model.params) # [a0, a1, a2, r, xl, xr]
