@@ -5,22 +5,38 @@ from colicoords.cell import Cell, CellList
 
 def data_to_cells(input_data, initial_crop=5, final_crop=7, rotate='binary', remove_bordering=True,
                   remove_multiple_cells=True, init_coords=True, verbose=True):
-    """ Create a :class:`CellList` from the input :class:`Data` object. Cell are identified in each frame and added
-        separately to the :class:`CellList``
-
-    Args:
-        input_data (:class:`Data`): Data object with input data. Must be a 3D data object with a labelled binary image,
-            and every frame must have the same amount of labelled objects.
-        initial_crop (:obj:`int`): Number of pixels around the binary image of the cell to crop the image (on all sides)         final_crop:
-        final_crop (:obj:`int`): Number of pixels around the rotated binary image of the cell to crop the image (on all sides)
-        rotate (:obj:`str` or :obj:`bool`): Name of the data element to use to calculate the cell's orientation, the
-            cell will be rotated to orient it horizontally. If *False* the cell is not rotated.
-        remove_bordering (:obj:`bool`):
-        verbose (:obj:`bool`): If *True* the method is ran in verbose mode, set to *False* to disable.
-
-    Returns:
-        :class:`CellList`: List of  :class:`~colicoords.cell.Cell` objects
     """
+    Create ``Cell`` objects from input ``Data`` object.
+
+    Cell are identified in each frame by the binary image and all the data is cropped across all data elements to
+    bundle the data for one cell together in a :class:`~colicoords.cell.Cell` object.
+
+    Parameters
+    ----------
+    input_data :class:`~colicoords.data_models.Data
+        Data object with input data. Must be a 3D data object with a labelled binary image.
+    initial_crop : :obj:`int`
+        Number of pixels around the binary image of the cell to crop the image (on all sides).
+    final_crop : :obj:`int`
+        Number of pixels around the rotated binary image of the cell to crop the image (on all sides)
+    rotate : :obj:`str`
+        Name of the data element to use to calculate the cell's orientation. The cell will be rotated to orient it
+        horizontally. If `None` the cell is not rotated.
+    remove_bordering : :obj:`bool`
+        If `True` cells at the border will not be added.
+    remove_multiple_cells : :obj:`bool`
+        If `True` when a selection is made around a cell object but this selection contains another cell, it is skipped.
+    init_coords : :obj:`bool`
+        If `False` the coordinate system of the ``Cell`` objects will not be initialized.
+    verbose : :obj:`bool`
+        If `True` the method is ran in verbose mode, set to `False` to disable.
+
+    Returns
+    -------
+    cell_list : :class:`CellList`:
+        List of  :class:`~colicoords.cell.Cell` objects
+    """
+
     assert 'binary' in input_data.dclasses
     assert input_data.ndim == 3
 
@@ -92,18 +108,27 @@ def data_to_cells(input_data, initial_crop=5, final_crop=7, rotate='binary', rem
 
 
 def data_to_cell_lists(input_data, initial_crop=5, final_crop=7, rotate='binary'):
-    """ Create a list of :class:`CellList` from the input :class:`Data` object. Typically used for time-lapse data.
+    """
+    Create a list of :class:`CellList` from the input :class:`Data` object.
 
-    Args:
-        input_data (:class:`Data`): Data object with input data. Must be a 3D data object with a labelled binary image,
-            and every frame must have the same amount of labelled objects.
-        initial_crop (:obj:`int`): Number of pixels around the binary image of the cell to crop the image (on all sides)
-        final_crop (:obj:`int`): Number of pixels around the rotated binary image of the cell to crop the image (on all sides)
-        rotate (:obj:`str` or :obj:`bool`): Name of the data element to use to calculate the cell's orientation, the
-            cell will be rotated to orient it horizontally. If *False* the cell is not rotated.
+    Typically used for time-lapse data.
 
-    Returns:
-        :obj:`list`: List of :class:`CellList` objects
+    Parameters
+    ----------
+    input_data (:class:`Data`): Data object with input data. Must be a 3D data object with a labelled binary image,
+        and every frame must have the same amount of labelled objects.
+    initial_crop : :obj:`int`
+        Number of pixels around the binary image of the cell to crop the image (on all sides).
+    final_crop : :obj:`int`
+        Number of pixels around the rotated binary image of the cell to crop the image (on all sides)
+    rotate : :obj:`str`
+        Name of the data element to use to calculate the cell's orientation. The cell will be rotated to orient it
+        horizontally. If `None` the cell is not rotated.
+
+    Returns
+    -------
+    cell_list_list : :obj:`list`
+        List of :class:`CellList` objects
     """
 
     assert 'binary' in input_data.dclasses
