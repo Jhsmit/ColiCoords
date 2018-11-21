@@ -2,7 +2,7 @@ import mahotas as mh
 import numpy as np
 from colicoords.cell import Cell, CellList
 
-
+#todo split into filter binary and data to cells
 def data_to_cells(input_data, initial_crop=5, final_crop=7, rotate='binary', remove_bordering=True,
                   remove_multiple_cells=True, init_coords=True, verbose=True):
     """
@@ -62,6 +62,7 @@ def data_to_cells(input_data, initial_crop=5, final_crop=7, rotate='binary', rem
                 except AssertionError:
                     vprint('Cell {} on image {} {}: on the edge of the image'.format(l, binary.name, i))
                     continue
+
             if remove_multiple_cells:
                 try:
                     assert len(np.unique(binary[min1p:max1p, min2p:max2p])) == 2
@@ -69,7 +70,7 @@ def data_to_cells(input_data, initial_crop=5, final_crop=7, rotate='binary', rem
                     vprint('Cell {} on image {} {}: multiple cells per selection'.format(l, data.binary_img.name, i))
                     continue
 
-            # if bordering are not remove some indices might be outlide of the image dimensions
+            # if bordering are not remove some indices might be outside of the image dimensions
             min1f = np.max((min1p, 0))
             max1f = np.min((max1p, data.shape[0]))
 
@@ -80,8 +81,17 @@ def data_to_cells(input_data, initial_crop=5, final_crop=7, rotate='binary', rem
             output_data.binary_img //= output_data.binary_img.max()
 
             # Calculate rotation angle and rotate selections
-            theta = output_data.data_dict[rotate].orientation if rotate else 0
-            rotated_data = output_data.rotate(theta)
+            if rotate:
+                theta = output_data.data_dict[rotate].orientation
+                if theta % 45 == 0:
+                    theta += 90
+                rotated_data = output_data.rotate(theta)
+
+                try:
+                    assert np.abs(rotated_data.binary_img.orientation) < 10
+                except AssertionError:
+                    vprint('Cell {} on image {} {}: invalid orientation'.format(l, data.binary_img.name, i))
+                    pass
 
             if final_crop:
                 min1, max1, min2, max2 = mh.bbox(rotated_data.binary_img)
