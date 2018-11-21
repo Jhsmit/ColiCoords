@@ -73,7 +73,7 @@ class CellPlot(object):
 
         Returns
         -------
-        image : :class:`matplotlib.image.AxesImage`
+        image : :class:`~matplotlib.image.AxesImage`
             Matplotlib image artist object
 
         """
@@ -101,7 +101,7 @@ class CellPlot(object):
 
         Returns
         -------
-        image : :class:`matplotlib.image.AxesImage`
+        image : :class:`~matplotlib.image.AxesImage`
             Matplotlib image artist object
 
         """
@@ -130,7 +130,7 @@ class CellPlot(object):
 
         Returns
         -------
-        image : :class:`matplotlib.image.AxesImage`
+        image : :class:`~matplotlib.image.AxesImage`
             Matplotlib image artist object.
         """
 
@@ -215,7 +215,7 @@ class CellPlot(object):
 
         return line
 
-    def plot_r_dist(self, ax=None, data_name='', norm_x=False, norm_y=False, storm_weight=False, limit_l=None,
+    def plot_r_dist(self, ax=None, data_name='', norm_x=False, norm_y=False, zero=False, storm_weight=False, limit_l=None,
                     method='gauss', dist_kwargs=None, **kwargs):
         """
         Plots the radial distribution of a given data element.
@@ -226,10 +226,12 @@ class CellPlot(object):
             Matplotlib axes to use for plotting.
         data_name : :obj:`str`
             Name of the data element to use.
-        norm_x : :obj:`bool`:
+        norm_x : :obj:`bool`
             If `True` the output distribution will be normalized along the length axis.
-        norm_y: : :obj:`bool`:
+        norm_y: : :obj:`bool`
             If `True` the output data will be normalized in the y (intensity).
+        zero : :obj:`bool`
+            If `True` the output data will be zeroed.
         storm_weight : :obj:`bool`
             If *True* the datapoints of the specified STORM-type data will be weighted by their intensity.
         limit_l : :obj:`str`
@@ -238,14 +240,14 @@ class CellPlot(object):
             longitudinal coordinate around the midpoint of the cell.
         method : :obj:`str`
             Method of averaging datapoints to calculate the final distribution curve.
-        dist_kwargs : :obj:`dict:
+        dist_kwargs : :obj:`dict
             Additional kwargs to be passed to :meth:`~colicoords.cell.Cell.r_dist`
         **kwargs
             Optional kwargs passed to ax.plot().
 
         Returns
         -------
-        line : :class:`matplotlib.lines.Line2D`
+        line : :class:`~matplotlib.lines.Line2D`
             Matplotlib line artist object
         """
 
@@ -280,6 +282,9 @@ class CellPlot(object):
                     raise IndexError('No valid data element found')
         else:
             data_elem = self.cell_obj.data.data_dict[data_name]
+
+        if zero:
+            y -= y.min()
 
         if norm_y:
             y = y.astype(float) / y.max()
@@ -325,7 +330,7 @@ class CellPlot(object):
 
         return x, y
 
-    def plot_l_dist(self, ax=None, data_name='', r_max=None, norm_x=False, norm_y=False, storm_weight=False,
+    def plot_l_dist(self, ax=None, data_name='', r_max=None, norm_x=False, norm_y=False, zero=False, storm_weight=False,
                     method='gauss', dist_kwargs=None, **kwargs):
         """
         Plots the longitudinal distribution of a given data element.
@@ -343,6 +348,8 @@ class CellPlot(object):
             If `True` the output distribution will be normalized along the length axis.
         norm_y: : :obj:`bool`
             If `True` the output data will be normalized in the y (intensity).
+        zero : :obj:`bool`
+            If `True` the output data will be zeroed.
         storm_weight : :obj:`bool`
             If `True` the datapoints of the specified STORM-type data will be weighted by their intensity.
         method : :obj:`str`:
@@ -352,7 +359,7 @@ class CellPlot(object):
 
         Returns
         -------
-        line : :class:`matplotlib.lines.Line2D`
+        line : :class:`~matplotlib.lines.Line2D`
             Matplotlib line artist object.
         """
 
@@ -374,6 +381,9 @@ class CellPlot(object):
         dist_kwargs = dist_kwargs if dist_kwargs is not None else {}
         x, y = self.cell_obj.l_dist(nbins, data_name=data_name, norm_x=norm_x, r_max=r_max, storm_weight=storm_weight,
                                     method=method, sigma=sigma, **dist_kwargs)
+
+        if zero:
+            y -= y.min()
 
         if norm_y:
             y = y.astype(float) / y.max()
@@ -883,7 +893,7 @@ class CellListPlot(object):
         return n, bins, patches
 
     #todo put r_dist call kwargs in dedicated dict?
-    def plot_r_dist(self, ax=None, data_name='', norm_x=False,  norm_y=False, storm_weight=False, limit_l=None,
+    def plot_r_dist(self, ax=None, data_name='', norm_x=False,  norm_y=False, zero=False, storm_weight=False, limit_l=None,
                     method='gauss', band_func=np.std, **kwargs):
         #todo dist_kwargs, -> adjust docs
         """
@@ -897,11 +907,13 @@ class CellListPlot(object):
             Name of the data element to use.
         norm_x: : :obj:`bool`
             If `True` the output distribution will be normalized along the length axis.
-        norm_y: : :obj:`bool`:
+        norm_y: : :obj:`bool`
             If `True` the output data will be normalized in the y (intensity).
-        storm_weight : :obj:`bool`:
+        zero : :obj:`bool`
+            If `True` the output data will be zeroed.
+        storm_weight : :obj:`bool`
             If `True` the datapoints of the specified STORM-type data will be weighted by their intensity.
-        xlim : :obj:`str`:
+        xlim : :obj:`str`
             If `None`, all datapoints are taking into account. This can be limited by providing the value `full`
             (omit poles only), 'poles' (include only poles), or a float value which will limit the data points with
             around the midline where xmid - xlim < x < xmid + xlim.
@@ -912,7 +924,7 @@ class CellListPlot(object):
 
         Returns
         -------
-        :class:`matplotlib.lines.Line2D`
+        :class:`~matplotlib.lines.Line2D`
             Matplotlib line artist object
         """
 
@@ -931,6 +943,10 @@ class CellListPlot(object):
         x, out_arr = self.cell_list.r_dist(stop, step, data_name=data_name, norm_x=norm_x, storm_weight=storm_weight,
                                            limit_l=limit_l, method=method, sigma=sigma)
         out_arr = np.nan_to_num(out_arr)
+
+        if zero:
+            mins = np.min(out_arr, axis=1)
+            out_arr -= mins[:, np.newaxis]
 
         if norm_y:
             #todo test for storm / sparse
@@ -987,11 +1003,11 @@ class CellListPlot(object):
         step = kwargs.pop('step', step)
         sigma = kwargs.pop('sigma', sigma)
         x, y = self.cell_list.r_dist(stop, step, data_name=data_name, norm_x=norm_x, storm_weight=storm_weight,
-                                    limit_l=limit_l, method=method, sigma=sigma)
+                                     limit_l=limit_l, method=method, sigma=sigma)
 
         return x, y
 
-    def plot_l_dist(self, ax=None, data_name='', r_max=None, norm_y=False, storm_weight=False, band_func=np.std,
+    def plot_l_dist(self, ax=None, data_name='', r_max=None, norm_y=False, zero=False, storm_weight=False, band_func=np.std,
                     method='gauss', **kwargs):
         """
         Plots the longitudinal distribution of a given data element.
@@ -1009,6 +1025,8 @@ class CellListPlot(object):
             system will be used.
         norm_y : :obj:`bool`
             If `True` the output data will be normalized in the y (intensity).
+        zero : :obj:`bool`
+            If `True` the output data will be zeroed.
         storm_weight : :obj:`bool`
             If `True` the datapoints of the specified STORM-type data will be weighted by their intensity.
         band_func : :obj:`callable`
@@ -1018,7 +1036,7 @@ class CellListPlot(object):
 
         Returns
         -------
-        line :class:`matplotlib.lines.Line2D`
+        line :class:`~matplotlib.lines.Line2D`
             Matplotlib line artist object
         """
 
@@ -1029,6 +1047,11 @@ class CellListPlot(object):
         x_arr, out_arr = self.cell_list.l_dist(nbins, data_name=data_name, norm_x=True, r_max=r_max,
                                                storm_weight=storm_weight, method=method, sigma=sigma_arr)
         x = x_arr[0]
+
+
+        if zero:
+            mins = np.min(out_arr, axis=1)
+            out_arr -= mins[:, np.newaxis]
 
         if norm_y:
             maxes = np.max(out_arr, axis=1)
