@@ -657,8 +657,8 @@ class Coordinates(object):
         # a: float, b: float, c: array, d: array
         discr = 18 * a * b * c * d - 4 * b ** 3 * d + b ** 2 * c ** 2 - 4 * a * c ** 3 - 27 * a ** 2 * d ** 2
 
-        if np.any(discr == 0):
-            raise ValueError('Discriminant equal to zero encountered. This should never happen. Please make an issue.')
+        # if np.any(discr == 0):
+        #     raise ValueError('Discriminant equal to zero encountered. This should never happen. Please make an issue.')
 
         if np.all(discr < 0):
             x_c = solve_general(a, b, c, d)
