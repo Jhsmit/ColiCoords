@@ -1370,7 +1370,7 @@ class CellList(object):
             If `True` the datapoints of the specified STORM-type data will be weighted by their intensity.
         method : :obj:`str`
             Method of averaging datapoints to calculate the final distribution curve.
-        sigma : :obj:`float` or :obj:`list`/:class:`~numpy.ndarray`
+        sigma : :obj:`float` or array_like
             Applies only when `method` is set to 'gauss'. `sigma` gives the width of the gaussian used for convoluting
             datapoints. To use a different sigma for each cell `sigma` can be given as a list or array.
 
@@ -1386,9 +1386,9 @@ class CellList(object):
         x_arr = np.zeros((len(self), nbins))
         for i, c in enumerate(self):
             if len(sigma) == len(self):
-                sigma = sigma[i]
+                _sigma = sigma[i]
             xvals, yvals = c.l_dist(nbins, start=start, stop=stop, data_name=data_name, norm_x=norm_x, method=method,
-                                    r_max=r_max, storm_weight=storm_weight, sigma=sigma)
+                                    r_max=r_max, storm_weight=storm_weight, sigma=_sigma)
             x_arr[i] = xvals
             y_arr[i] = yvals
 
@@ -1411,7 +1411,7 @@ class CellList(object):
         Returns
         -------
         array : :class:`~numpy.ndarray`
-            Array of tuples  with number of spots in poles, between and mid classes, respectively.
+            Array of tuples with number of spots in poles, between and mid classes, respectively.
         """
 
         return np.array([c.l_classify(data_name=data_name) for c in self])

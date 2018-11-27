@@ -212,6 +212,7 @@ class CellPlot(object):
         ax = plt.gca() if ax is None else ax
         color = 'r' if 'color' not in kwargs else kwargs.pop('color')
         line, = ax.plot(x_all, y_all, color=color, **kwargs)
+        #todo check comma
 
         return line
 
@@ -509,7 +510,7 @@ class CellPlot(object):
 
             x_coords = np.repeat(xi, len(yi)).reshape(len(xi), len(yi)).T
             y_coords = np.repeat(yi, len(xi)).reshape(len(yi), len(xi))
-
+            print(x_coords.shape)
             img = np.zeros_like(x_coords)
 
             for _sigma, _int, _x, _y in zip(sigma, intensities, x, y):
@@ -532,7 +533,7 @@ class CellPlot(object):
             normed = Normalize()(img)
             colors = cmap(normed)
             colors[..., -1] = alphas
-
+            print(colors.shape)
             artist = ax.imshow(colors, cmap=cmap, extent=extent, interpolation=interpolation, **kwargs)
 
         elif method == 'gauss_old':
@@ -913,10 +914,12 @@ class CellListPlot(object):
             If `True` the output data will be zeroed.
         storm_weight : :obj:`bool`
             If `True` the datapoints of the specified STORM-type data will be weighted by their intensity.
-        xlim : :obj:`str`
+        limit_l : :obj:`str`
             If `None`, all datapoints are taking into account. This can be limited by providing the value `full`
             (omit poles only), 'poles' (include only poles), or a float value which will limit the data points with
-            around the midline where xmid - xlim < x < xmid + xlim.
+            around the midline where xmid - xlim < x < xmid + xlim.method : :obj:`str`, either 'gauss' or 'box'
+        method : :obj:`str`, either 'gauss' or 'box'
+            Method of averaging datapoints to calculate the final distribution curve.
         band_func : :obj:`callable`
             Callable to determine the fill area around the graph. Default is standard deviation.
         **kwargs
@@ -1031,6 +1034,8 @@ class CellListPlot(object):
             If `True` the datapoints of the specified STORM-type data will be weighted by their intensity.
         band_func : :obj:`callable`
             Callable to determine the fill area around the graph. Default is standard deviation.
+        method : :obj:`str`, either 'gauss' or 'box'
+            Method of averaging datapoints to calculate the final distribution curve.
         **kwargs
             Optional kwargs passed to ax.plot()
 
