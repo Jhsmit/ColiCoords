@@ -1,10 +1,59 @@
 import mahotas as mh
 import numpy as np
+from numpy.lib.polynomial import RankWarning
+import warnings
 from colicoords.cell import Cell, CellList
+
+
+def filter_binaries(bin_arr, remove_bordering=True, min_size=250, max_size=1000, max_minor=10, max_major=45):
+    """
+    Filters and labels a stack of binary images.
+
+    Parameters
+    ----------
+    bin_arr : :class:`~numpy.ndarray`
+        Input binary array.
+    remove_bordering : :obj:`bool`
+        Remove regions at the image border.
+    min_size : :obj:`int`
+        Minimum size of binary regions.
+    max_size : :ojb:`int`
+        Maximum size of binary regions.
+    max_minor : :obj:`int`
+        Maximum length of the semiminor ellipse axes of the binary region.
+    max_major : :obj:`int`
+        Maximum length of the simimajor ellipse axes of the binary region.
+
+    Returns
+    -------
+    out : :class:`~numpy.ndarray`
+        Output filtered and labeled binary image.
+    """
+
+
+    out = np.empty_like(bin_arr)
+    for i, img in enumerate(bin_arr):
+        labeled, n = mh.labeled.label(img)
+        labeled, n = mh.labeled.filter_labeled(labeled, remove_bordering=remove_bordering, min_size=min_size, max_size=max_size)
+        out[i] = labeled
+
+    for j, img in enumerate(out):
+        for i in np.unique(img)[1:]:
+            selected_binary = (img == i).astype('int')
+            min1, max1, min2, max2 = mh.bbox(selected_binary)
+            selection = img[min1:max1, min2:max2]
+            major, minor = mh.features.ellipse_axes(selection)
+
+            if minor > max_minor:
+                img[img == i] = 0
+            if major > max_major:
+                img[img == i] = 0
+
+    return out
 
 #todo split into filter binary and data to cells
 def data_to_cells(input_data, initial_crop=5, final_crop=7, rotate='binary', remove_bordering=True,
-                  remove_multiple_cells=True, init_coords=True, verbose=True):
+                  remove_multiple_cells=True, remove_poor_fit=True, init_coords=True, verbose=True):
     """
     Create ``Cell`` objects from input ``Data`` object.
 
@@ -26,6 +75,9 @@ def data_to_cells(input_data, initial_crop=5, final_crop=7, rotate='binary', rem
         If `True` cells at the border will not be added.
     remove_multiple_cells : :obj:`bool`
         If `True` when a selection is made around a cell object but this selection contains another cell, it is skipped.
+    remove_poor_fit : :obj:`bool`
+        If `True` when initializing coordinate system for the cell raises a ``RankWarning`` due to poor polyfit, the
+        cell is skipped.
     init_coords : :obj:`bool`
         If `False` the coordinate system of the ``Cell`` objects will not be initialized.
     verbose : :obj:`bool`
@@ -109,7 +161,15 @@ def data_to_cells(input_data, initial_crop=5, final_crop=7, rotate='binary', rem
                 final_data = rotated_data
             #Make cell object and add all the data
             #todo change cell initation and data adding interface
-            c = Cell(final_data, init_coords=init_coords)
+
+            if remove_poor_fit:
+                #Might want to move this context manager outside of for loop
+                with warnings.catch_warnings(record=True) as w:
+                    c = Cell(final_data, init_coords=init_coords)
+                if w and w[0].category == RankWarning:
+                    continue
+            else:
+                c = Cell(final_data, init_coords=init_coords)
 
             c.name = 'img{}c{}'.format(str(i).zfill(i_fill), str(l).zfill(l_fill))
             cell_list.append(c)
