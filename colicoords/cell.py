@@ -187,20 +187,6 @@ class Cell(object):
                 raise ValueError('Chosen data not found')
 
         bins = np.linspace(start, stop, num=nbins, endpoint=True)
-        if method == 'gauss' and data_elem.dclass == 'storm':
-            print("Warning: method 'gauss' is not a storm-compatible method, method was set to 'box'")
-            method = 'box'
-
-        if method == 'gauss':
-            bin_func = running_mean
-            bin_kwargs = {'sigma': sigma}
-            xvals = bins
-        elif method == 'box':
-            bin_func = box_mean
-            bin_kwargs = {'storm_weight': storm_weight}
-            xvals = bins + 0.5 * np.diff(bins)[0]
-        else:
-            raise ValueError('Invalid method')
 
         if data_elem.ndim == 1:
             assert data_elem.dclass == 'storm'
@@ -223,12 +209,30 @@ class Cell(object):
         x_len = calc_lc(self.coords.xl, xc[bools].flatten(), self.coords.coeff)
         x_len = x_len / self.length if norm_x else x_len
 
+        if method == 'gauss' and data_elem.dclass == 'storm':
+            print("Warning: method 'gauss' is not a storm-compatible method, method was set to 'box'")
+            method = 'box'
+
+        if method == 'gauss':
+            bin_func = running_mean
+            bin_kwargs = {'sigma': sigma}
+            xvals = bins
+        elif method == 'box':
+            bools = (x_len > bins.min()) * (x_len < bins.max())  # Remove values outside of bins range
+            x_len = x_len[bools]
+
+            bin_func = box_mean
+            bin_kwargs = {'storm_weight': storm_weight}
+            xvals = bins + 0.5 * np.diff(bins)[0]
+        else:
+            raise ValueError('Invalid method')
+
         if data_elem.ndim == 1:
             y_weight = data_elem['intensity'][bools] if storm_weight else None
             yvals = bin_func(x_len, y_weight, bins, **bin_kwargs)
 
         elif data_elem.ndim == 2:
-            y_weight = np.clip(data_elem[bools].flatten(), 0, None)
+            y_weight = np.clip(data_elem[bools].flatten(), 0, None)  # Negative values are set to zero
             yvals = bin_func(x_len, y_weight, bins, **bin_kwargs)
 
         elif data_elem.ndim == 3:
@@ -1385,6 +1389,7 @@ class CellList(object):
         y_arr = np.zeros((len(self), nbins))
         x_arr = np.zeros((len(self), nbins))
         for i, c in enumerate(self):
+
             if len(sigma) == len(self):
                 _sigma = sigma[i]
             xvals, yvals = c.l_dist(nbins, start=start, stop=stop, data_name=data_name, norm_x=norm_x, method=method,
