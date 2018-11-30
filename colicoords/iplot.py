@@ -23,7 +23,7 @@ class IterRedrawAxes(Axes):
     # new_additions = []
 
     def __init__(self, *args, **kwargs):
-        super(IterAxes, self).__init__(*args, **kwargs)
+        super(IterRedrawAxes, self).__init__(*args, **kwargs)
         self.redraw_register = []
 
     def iter_plot(self, *args, **kwargs):
@@ -339,7 +339,7 @@ class IterCellPlot(object):
 
         """
         x = [np.linspace(cell_obj.coords.xl, cell_obj.coords.xr, 100) for cell_obj in self.cell_list]
-        y = [cell_obj.coords.p(x) for cell_obj in self.cell_list]
+        y = [cell_obj.coords.p(xi) for xi, cell_obj in zip(x, self.cell_list)]
         if 'color' not in kwargs:
             kwargs['color'] = 'r'
 
