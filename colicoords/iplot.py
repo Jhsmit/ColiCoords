@@ -269,10 +269,10 @@ class IterFigure(Figure):
 
     def set_length(self, length):
         self.length = length
-        self._int_box.max = length
+        self._int_box.max = length - 1
 
     def handle_int_box(self, change):
-        self.idx = int(change.new)
+        self.idx = change.new
         self.update_graph()
 
     def on_first(self, b):
@@ -280,11 +280,11 @@ class IterFigure(Figure):
 
     def on_prev(self, b):
         val = self.idx - 1
-        self._int_box.value = 0 if val < 0 else val
+        self._int_box.value = val #= 0 if val < 0 else val
 
     def on_next(self, b):
         val = self.idx + 1
-        self._int_box.value = self.length - 1 if val >= self.length else val
+        self._int_box.value = val # self.length - 1 if val >= self.length else val
 
     def on_last(self, b):
         self._int_box.value = self.length - 1
