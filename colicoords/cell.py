@@ -129,7 +129,7 @@ class Cell(object):
     def a_dist(self):
         raise NotImplementedError()
 
-    def l_dist(self, nbins, start=None, stop=None, data_name='', norm_x=False, r_max=None, storm_weight=False,
+    def l_dist(self, nbins, start=None, stop=None, data_name='', norm_x=False, l_mean=None, r_max=None, storm_weight=False,
                method='gauss', sigma=0.5):
         """
         Calculates the longitudinal distribution of signal for a given data element.
@@ -144,10 +144,16 @@ class Cell(object):
         stop : :obj:`float`
             Distance from `xr` as end point for the distribution, units are are either pixels or normalized units
             if `norm_x=True`.
+        bins : :class:`~numpy.ndarray`
+            Array of bin edges to use. Overrrides `nbin`, `start` and `stop`.
         data_name : :obj:`str`
             Name of the data element to use.
         norm_x : :obj:`bool`
-            If *True* the output distribution will be normalized.
+            If `True` the output distribution will be normalized.
+        l_mean : :obj:`float`, optional
+            When `norm_x` is `True`, all length coordinates are divided by the length of the cell to normalize it. If
+            `l_mean` is given, the length coordinates at the poles are divided by `l_mean` instead to allow equal scaling
+            of all pole regions.
         r_max : :obj:`float`, optional
             Datapoints within r_max from the cell midline will be included. If `None` the value from the cell's
             coordinate system will be used.
@@ -170,7 +176,7 @@ class Cell(object):
         length = 1 if norm_x else self.length
         r_max = r_max if r_max else self.coords.r
         stop = 1.25 * length if not stop else stop
-        start = -0.25 * length if not start else start
+        start = -0.25 * length if not start else start  # also needs to be uniform with l_mean? no
 
         if not data_name:
             try:
@@ -207,7 +213,16 @@ class Cell(object):
 
         # todo update to calc_lc
         x_len = calc_lc(self.coords.xl, xc[bools].flatten(), self.coords.coeff)
-        x_len = x_len / self.length if norm_x else x_len
+        if norm_x:
+            if l_mean:
+
+                len_norm = x_len / self.length
+                len_norm[x_len < 0] = x_len[x_len < 0] / l_mean
+                len_norm[x_len > self.length] = ((x_len[x_len > self.length] - self.length) / l_mean) + 1
+                
+                x_len = len_norm
+            else:
+                x_len = x_len / self.length
 
         if method == 'gauss' and data_elem.dclass == 'storm':
             print("Warning: method 'gauss' is not a storm-compatible method, method was set to 'box'")
@@ -1389,11 +1404,12 @@ class CellList(object):
         y_arr = np.zeros((len(self), nbins))
         x_arr = np.zeros((len(self), nbins))
         for i, c in enumerate(self):
-
             if len(sigma) == len(self):
                 _sigma = sigma[i]
-            xvals, yvals = c.l_dist(nbins, start=start, stop=stop, data_name=data_name, norm_x=norm_x, method=method,
-                                    r_max=r_max, storm_weight=storm_weight, sigma=_sigma)
+
+            xvals, yvals = c.l_dist(nbins, start=start, stop=stop, data_name=data_name, norm_x=norm_x,
+                                    l_mean=self.length.mean(), method=method, r_max=r_max, storm_weight=storm_weight,
+                                    sigma=_sigma)
             x_arr[i] = xvals
             y_arr[i] = yvals
 
