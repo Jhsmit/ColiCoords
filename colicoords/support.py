@@ -59,10 +59,16 @@ def box_mean(x_in, y_in, bins, storm_weight=False):
     """Bins xvals in given bins using y_weight as weights"""
     i_sort = x_in.argsort()
     r_sorted = x_in[i_sort]
-    y_in = y_in[i_sort] if y_in is not None else y_in
-    bin_inds = np.digitize(r_sorted,
+    b = (r_sorted > bins.min()) * (r_sorted < bins.max())
+
+    y_in = y_in[i_sort][b] if y_in is not None else y_in
+
+    # Remove points out of bounds of bins
+
+    bin_inds = np.digitize(r_sorted[b],
                            bins) - 1  # -1 to assure points between 0 and step are in bin 0 (the first)
     y_out = np.bincount(bin_inds, weights=y_in, minlength=len(bins))
+
     if y_in is not None and not storm_weight:
         y_out /= np.bincount(bin_inds, minlength=len(bins))
     return np.nan_to_num(y_out)
