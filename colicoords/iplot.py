@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from colicoords.cell import CellList
+from colicoords.cell import CellList, calc_lc
 from colicoords.plot import cmap_default
 from colicoords.support import pad_cell
 from colicoords.config import cfg
@@ -636,6 +636,7 @@ class IterCellPlot(object):
             Matplotlib line artist object.
         """
 
+        dist_kwargs = {} if dist_kwargs is None else dist_kwargs
         if not data_name:
             try:
                 data_elem = list(self.cell_list[0].data.flu_dict.values())[0]  # yuck
@@ -652,11 +653,9 @@ class IterCellPlot(object):
         scf = self.cell_list.length if norm_x else np.ones(len(self.cell_list))
 
         sigma_arr = sigma / scf
-        print(len(sigma_arr))
-        print(type(sigma_arr))
 
         x_arr, out_arr = self.cell_list.l_dist(nbins, data_name=data_name, norm_x=True, r_max=r_max,
-                                               storm_weight=storm_weight, method=method, sigma=sigma_arr)
+                                               storm_weight=storm_weight, method=method, sigma=sigma_arr, **dist_kwargs)
 
         if zero:
             mins = np.min(out_arr, axis=1)
@@ -914,6 +913,158 @@ class IterCellPlot(object):
         ax.set_ylabel('Number of spots')
 
         return container
+
+    def hist_l_storm(self, data_name='', ax=None, norm_x=True, **kwargs):
+        """
+        Makes a histogram of the longitudinal distribution of localizations.
+
+        Parameters
+        ----------
+        data_name : :obj:`str`, optional
+            Name of the STORM data element to histogram. If omitted, the first STORM element is used.
+        ax : :class:`matplotlib.axes.Axes`
+            Matplotlib axes to use for plotting.
+        norm_x : :obj:`bool`
+            Normalizes the longitudinal distribution by dividing by the length of the cell.
+        **kwargs
+            Additional kwargs passed to `ax.hist()`
+
+        Returns
+        -------
+        n : :class:`~numpy.ndarray`
+            The values of the histogram bins as produced by :func:`~matplotlib.pyplot.hist`
+        bins : :class:`~numpy.ndarray`
+            The edges of the bins.
+        patches : :obj:`list`
+            Silent list of individual patches used to create the histogram.
+        """
+
+        if not data_name:
+            data_name = list(self.cell_list[0].data.storm_dict.keys())[0]
+
+        assert self.cell_list[0].data.data_dict[data_name].dclass == 'storm'
+
+        l_coords = []
+        for cell_obj in self.cell_list:
+            storm_table = cell_obj.data.data_dict[data_name]
+
+            xp, yp = storm_table['x'], storm_table['y']
+
+            idx_left, idx_right, xc = cell_obj.coords.get_idx_xc(xp, yp)
+            x_len = calc_lc(cell_obj.coords.xl, xc.flatten(), cell_obj.coords.coeff)
+
+            if norm_x:
+                x_len /= cell_obj.length
+
+            l_coords.append(x_len)
+
+        ax = plt.gca() if ax is None else ax
+        ax.set_xlabel('Distance (norm)')
+        ax.set_ylabel('Number of localizations')
+        ax.set_title('Longitudinal Distribution')
+
+        bins = kwargs.pop('bins', 'fd')
+        return ax.iter_hist(l_coords, bins=bins, **kwargs)
+
+    def hist_r_storm(self, data_name='', ax=None, norm_x=True, **kwargs):
+        """
+        Makes a histogram of the radial distribution of localizations.
+
+        Parameters
+        ----------
+        data_name : :obj:`str`, optional
+            Name of the STORM data element to histogram. If omitted, the first STORM element is used.
+        ax : :class:`matplotlib.axes.Axes`
+            Matplotlib axes to use for plotting.
+        norm_x : :obj:`bool`
+            If `True` all radial distances are normalized by dividing by the radius of the individual cells.
+        **kwargs
+            Additional kwargs passed to `ax.hist()`
+
+        Returns
+        -------
+        n : :class:`~numpy.ndarray`
+            The values of the histogram bins as produced by :func:`~matplotlib.pyplot.hist`
+        bins : :class:`~numpy.ndarray`
+            The edges of the bins.
+        patches : :obj:`list`
+            Silent list of individual patches used to create the histogram.
+        """
+
+        if not data_name:
+            data_name = list(self.cell_list[0].data.storm_dict.keys())[0]
+
+        assert self.cell_list[0].data.data_dict[data_name].dclass == 'storm'
+
+        r_coords = []
+        for cell_obj in self.cell_list:
+            storm_table = cell_obj.data.data_dict[data_name]
+
+            xp, yp = storm_table['x'], storm_table['y']
+
+            r = cell_obj.coords.calc_rc(xp, yp)
+            if norm_x:
+                r /= cell_obj.coords.r
+
+            r_coords.append(r)
+
+        ax = plt.gca() if ax is None else ax
+
+        ax.set_xlabel('Distance (norm)')
+        ax.set_ylabel('Number of localizations')
+        ax.set_title('Radial Distribution')
+        bins = kwargs.pop('bins', 'fd')
+        h = ax.iter_hist(r_coords, bins=bins, **kwargs)
+        ax.set_xlim(0, None)
+
+        return h
+
+    def hist_phi_storm(self, ax=None, data_name='', **kwargs):
+        """
+        Makes a histogram of the angular distribution of localizations at the poles.
+
+        Parameters
+        ----------
+        data_name : :obj:`str`, optional
+            Name of the STORM data element to histogram. If omitted, the first STORM element is used.
+        ax : :class:`matplotlib.axes.Axes`
+            Matplotlib axes to use for plotting.
+        **kwargs
+            Additional kwargs passed to `ax.hist()`
+
+        Returns
+        -------
+        n : :class:`~numpy.ndarray`
+            The values of the histogram bins as produced by :func:`~matplotlib.pyplot.hist`
+        bins : :class:`~numpy.ndarray`
+            The edges of the bins.
+        patches : :obj:`list`
+            Silent list of individual patches used to create the histogram.
+        """
+
+        if not data_name:
+            data_name = list(self.cell_list[0].data.storm_dict.keys())[0]
+
+        assert self.cell_list[0].data.data_dict[data_name].dclass == 'storm'
+
+        phi_coords = []
+        for cell_obj in self.cell_list:
+            storm_table = cell_obj.data.data_dict[data_name]
+
+            xp, yp = storm_table['x'], storm_table['y']
+            phi = cell_obj.coords.calc_phi(xp, yp)
+            bools = (phi == 0.) + (phi == 180.)
+            phi_coords.append(phi[~bools])
+
+        ax = plt.gca() if ax is None else ax
+
+        ax.set_xlabel('Angle (degrees)')
+        ax.set_ylabel('Number of localizations')
+        ax.set_title('Angular Distribution')
+        bins = kwargs.pop('bins', 'fd')
+        h = ax.iter_hist(phi_coords, bins=bins, **kwargs)
+
+        return h
 
     def _plot_storm(self, storm_table, ax=None, kernel=None, bw_method=0.05, upscale=2, alpha_cutoff=None, **kwargs):
         raise DeprecationWarning("")
