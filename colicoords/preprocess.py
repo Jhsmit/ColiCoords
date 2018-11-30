@@ -17,7 +17,7 @@ def filter_binaries(bin_arr, remove_bordering=True, min_size=250, max_size=1000,
         Remove regions at the image border.
     min_size : :obj:`int`
         Minimum size of binary regions.
-    max_size : :ojb:`int`
+    max_size : :obj:`int`
         Maximum size of binary regions.
     max_minor : :obj:`int`
         Maximum length of the semiminor ellipse axes of the binary region.
@@ -50,6 +50,7 @@ def filter_binaries(bin_arr, remove_bordering=True, min_size=250, max_size=1000,
                 img[img == i] = 0
 
     return out
+
 
 #todo split into filter binary and data to cells
 def data_to_cells(input_data, initial_crop=5, final_crop=7, rotate='binary', remove_bordering=True,
