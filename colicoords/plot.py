@@ -858,7 +858,6 @@ class CellPlot(object):
         phi = self.cell_obj.coords.calc_phi(xp, yp)
         bools = (phi == 0.) + (phi == 180.)
 
-
         ax = plt.gca() if ax is None else ax
 
         ax.set_xlabel('Angle (degrees)')
