@@ -36,7 +36,7 @@ class BinaryImage(np.ndarray):
 
     def __array_wrap__(self, out_arr, context=None):
         return np.ndarray.__array_wrap__(self, out_arr, context)
-    
+
     def __reduce__(self):
         # Get the parent's __reduce__ tuple
         pickled_state = super(BinaryImage, self).__reduce__()
