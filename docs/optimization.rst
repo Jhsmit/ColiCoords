@@ -60,14 +60,6 @@ The default minimizer, ``Powell`` is fast but does not always converge to the gl
 find the global minimum, the minimizer ``DifferentialEvolution`` is used. This minimizer searches the parameter space
 defined by bounds on ``Parameter`` objects defined in the model scan for candidate solutions.
 
-The minimizers can be chained together to first do a course optimization followed by global optimization:
-
-.. code-block:: python
-
-  cell.optimize('brightfield', minimizer=[Powell, DifferentialEvolution])
-
-The code above will optimize the coordinate system based on the brightfield image, first by using the ``Powell`` minimizer,
-and second by using the ``DifferentialEvolution`` minimizer.
 
 Multiprocessing and high-performance computing
 ----------------------------------------------
