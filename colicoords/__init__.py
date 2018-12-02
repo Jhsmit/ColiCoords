@@ -9,7 +9,10 @@ from colicoords.fitting import LinearModelFit, CellFit
 from colicoords.synthetic_data import SynthCell, SynthCellList
 
 import pkg_resources
-__version__ = pkg_resources.get_distribution('colicoords').version
+try:
+    __version__ = pkg_resources.get_distribution('colicoords').version
+except pkg_resources.DistributionError:
+    __version__ = '0.1.1'
 
 try:
     from colicoords.models import Memory
