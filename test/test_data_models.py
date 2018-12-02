@@ -1,6 +1,6 @@
 from colicoords.data_models import BinaryImage, BrightFieldImage, FluorescenceImage, STORMTable, Data
 from colicoords.fileIO import load_thunderstorm, load
-from colicoords import Cell, CellList
+from colicoords.cell import Cell, CellList
 from test.testcase import ArrayTestCase
 from test.test_functions import load_testdata
 from scipy.ndimage.interpolation import rotate as scipy_rotate

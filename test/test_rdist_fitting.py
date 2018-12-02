@@ -1,7 +1,7 @@
 import unittest
 import os
 from symfit import Fit
-from colicoords import load
+from colicoords.fileIO import load
 from colicoords.models import PSF, RDistModel, Memory
 from colicoords.fitting import LinearModelFit
 from colicoords.minimizers import *

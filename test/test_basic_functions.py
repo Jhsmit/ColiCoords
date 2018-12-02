@@ -1,9 +1,9 @@
+import hashlib
+import unittest
 from colicoords.cell import Cell, CellList
+from colicoords.preprocess import data_to_cells
 from test import testcase
 from test.test_functions import load_testdata
-import hashlib
-from colicoords.preprocess import data_to_cells
-import unittest
 
 
 class DataTest(testcase.ArrayTestCase):

@@ -1,8 +1,7 @@
 import unittest
 import os
-from symfit import Fit, Eq
 from test.testcase import ArrayTestCase
-from colicoords import CellFit, load
+from colicoords.fileIO import load
 from colicoords.minimizers import *
 import platform
 

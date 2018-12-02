@@ -1,7 +1,5 @@
 from colicoords.synthetic_data import SynthCell
 from test import testcase
-
-
 import unittest
 import numpy as np
 

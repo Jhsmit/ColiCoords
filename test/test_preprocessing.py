@@ -1,7 +1,7 @@
 import tifffile
 from colicoords.data_models import Data
 from colicoords.fileIO import load_thunderstorm
-from colicoords import data_to_cells
+from colicoords.preprocess import data_to_cells
 from test.testcase import ArrayTestCase
 
 
