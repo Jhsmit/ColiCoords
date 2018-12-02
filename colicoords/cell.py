@@ -219,7 +219,7 @@ class Cell(object):
                 len_norm = x_len / self.length
                 len_norm[x_len < 0] = x_len[x_len < 0] / l_mean
                 len_norm[x_len > self.length] = ((x_len[x_len > self.length] - self.length) / l_mean) + 1
-                
+
                 x_len = len_norm
             else:
                 x_len = x_len / self.length
