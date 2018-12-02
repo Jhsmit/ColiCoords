@@ -376,9 +376,9 @@ class CellPlot(object):
         else:
             data_elem = self.cell_obj.data.data_dict[data_name]
 
-        nbins = kwargs.pop('nbins', cfg.L_DIST_NBINS)
+        nbins = dist_kwargs.pop('nbins', cfg.L_DIST_NBINS)
         scf = self.cell_obj.length if norm_x else 1
-        sigma = kwargs.pop('sigma', cfg.L_DIST_SIGMA) / scf
+        sigma = dist_kwargs.pop('sigma', cfg.L_DIST_SIGMA) / scf
 
         dist_kwargs = dist_kwargs if dist_kwargs is not None else {}
         x, y = self.cell_obj.l_dist(nbins, data_name=data_name, norm_x=norm_x, r_max=r_max, storm_weight=storm_weight,
@@ -514,7 +514,7 @@ class CellPlot(object):
             img = np.zeros_like(x_coords)
 
             for _sigma, _int, _x, _y in zip(sigma, intensities, x, y):
-                    img += _int * np.exp(-(((_x - x_coords) / _sigma) ** 2 + ((_y - y_coords) / _sigma) ** 2) / 2)
+                img += _int * np.exp(-(((_x - x_coords) / _sigma) ** 2 + ((_y - y_coords) / _sigma) ** 2) / 2)
 
             # cmap = kwargs.pop('cmap', 'viridis')
             # artist = ax.imshow(img, interpolation=interpolation, cmap=cmap, extent=extent, **kwargs)
@@ -1187,11 +1187,10 @@ class CellListPlot(object):
             Matplotlib line artist object
         """
 
-        #todo deal with sigma
         dist_kwargs = {} if dist_kwargs is None else dist_kwargs
 
-        nbins = kwargs.pop('nbins', cfg.L_DIST_NBINS)
-        sigma = kwargs.pop('sigma', cfg.L_DIST_SIGMA)
+        nbins = dist_kwargs.pop('nbins', cfg.L_DIST_NBINS)
+        sigma = dist_kwargs.pop('sigma', cfg.L_DIST_SIGMA)
         sigma_arr = sigma / self.cell_list.length
         x_arr, out_arr = self.cell_list.l_dist(nbins, data_name=data_name, norm_x=True, r_max=r_max,
                                                storm_weight=storm_weight, method=method, sigma=sigma_arr, **dist_kwargs)

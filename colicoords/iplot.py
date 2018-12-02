@@ -648,8 +648,8 @@ class IterCellPlot(object):
         else:
             data_elem = self.cell_list[0].data.data_dict[data_name]
 
-        nbins = kwargs.pop('nbins', cfg.L_DIST_NBINS)
-        sigma = kwargs.pop('sigma', cfg.L_DIST_SIGMA)
+        nbins = dist_kwargs.pop('nbins', cfg.L_DIST_NBINS)
+        sigma = dist_kwargs.pop('sigma', cfg.L_DIST_SIGMA)
         scf = self.cell_list.length if norm_x else np.ones(len(self.cell_list))
 
         sigma_arr = sigma / scf
