@@ -3,14 +3,17 @@ from colicoords.data_models import Data
 from colicoords.fileIO import load_thunderstorm
 from colicoords.preprocess import data_to_cells
 from test.testcase import ArrayTestCase
+import os
 
 
 class TestDataToCells(ArrayTestCase):
 
     def setUp(self):
-        storm = load_thunderstorm(r'test_data/ds3/storm_table.csv')
-        binary = tifffile.imread(r'test_data/ds3/binary.tif')
-        fluorescence = tifffile.imread(r'test_data/ds3/flu.tif')
+        f_path = os.path.dirname(os.path.realpath(__file__))
+
+        storm = load_thunderstorm(os.path.join(f_path, r'test_data/ds3/storm_table.csv'))
+        binary = tifffile.imread(os.path.join(f_path, r'test_data/ds3/binary.tif'))
+        fluorescence = tifffile.imread(os.path.join(f_path, r'test_data/ds3/flu.tif'))
 
         self.storm_ds = Data()
         self.storm_ds.add_data(binary, 'binary')
