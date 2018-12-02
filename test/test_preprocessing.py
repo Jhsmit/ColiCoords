@@ -22,8 +22,6 @@ class TestDataToCells(ArrayTestCase):
         cells = data_to_cells(data)
         self.assertEqual(sum([len(c.data.data_dict['storm']) for c in cells]), 40)
 
-
-
         data_copy = data.copy()
         storm_ds = data_copy.data_dict['storm']
         storm_ds['frame'][storm_ds['frame'] == 4] = 5

@@ -82,8 +82,9 @@ class TestMakeData(ArrayTestCase):
 class TestData(ArrayTestCase):
     def setUp(self):
         self.data = load_testdata('ds1')
-        self.storm_cells_1 = load('test_data/test_single_spot_storm.hdf5')
-        self.storm_cells_2 = load('test_data/test_double_spot_storm.hdf5')
+        f_path = os.path.dirname(os.path.realpath(__file__))
+        self.storm_cells_1 = load(os.path.join(f_path, 'test_data/test_single_spot_storm.hdf5'))
+        self.storm_cells_2 = load(os.path.join(f_path, 'test_data/test_double_spot_storm.hdf5'))
 
         cells_no_flu = []
         for c in self.storm_cells_2:
@@ -127,6 +128,7 @@ class TestData(ArrayTestCase):
                 self.assertAlmostEqual(x[0], np.array(x_fl), 2)
                 self.assertAlmostEqual(y[0], np.array(y_fl), 2)
 
+        # https://stackoverflow.com/questions/2827393/angles-between-two-n-dimensional-vectors-in-python/13849249#13849249
         for cell in self.storm_cells_2_no_flu:
             storm = cell.data.data_dict['storm_1']
             x1, y1 = storm['x'][0], storm['y'][0]

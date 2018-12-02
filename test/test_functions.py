@@ -56,41 +56,5 @@ def load_escvdata():
 
     return data
 
-
-def generate_stormdata():
-    x = np.array([10, 30, 30, 40, 40.25, 30, 25, 20, 15, 10]) + 0.5
-    y = np.array([25, 25, 10, 30, 30, 30, 30, 30, 30, 30]) + 0.5
-    frame = np.ones(10)
-
-    storm_data = np.zeros((10, ), dtype=[('frame', int), ('x', float), ('y', float)])
-    storm_data['x'] = x
-    storm_data['y'] = y
-    storm_data['frame'] = frame
-
-    f_path = os.path.dirname(os.path.realpath(__file__))
-    binary_img = tifffile.imread(os.path.join(f_path, r'test_data/ds6/binary_1.tif'))
-
-    data = Data()
-    data.add_data(binary_img, 'binary')
-    data.add_data(storm_data, 'storm')
-
-    return data
-
-
 def load_testdata(dataset):
     return load_data(dataset)
-    # if dataset == 'ds2':
-    #     return load_stormdata()
-    # elif dataset in ['ds1', 'ds2', 'ds4']:
-    #     return load_data(dataset)
-    # elif dataset is 'ds5':
-    #     return load_escvdata()
-    # elif dataset == 'ds6':
-    #     return generate_stormdata()
-    #
-
-if __name__ == '__main__':
-    data = load_testdata('ds4')
-    tifffile.imsave('binary_stack_2.tif', data.binary_img)
-    tifffile.imsave('brightfield_stack_2.tif', data.brightfield_img)
-    tifffile.imsave('fluorescence_stack_2.tif', data.data_dict['fluorescence'])

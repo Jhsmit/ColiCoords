@@ -11,7 +11,6 @@ class DataTest(testcase.ArrayTestCase):
         self.data = load_testdata('ds1')
 
     def test_data_slicing(self):
-        print(self.data.shape)
         sl1 = self.data[2:5, :, :]
         self.assertEqual(sl1.shape, (3, 512, 512))
 
