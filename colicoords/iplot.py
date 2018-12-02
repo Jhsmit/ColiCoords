@@ -1142,7 +1142,7 @@ class IterCellPlot(object):
         extent = kwargs.pop('extent', [0, xmax, ymax, 0])
         interpolation = kwargs.pop('interpolation', 'none')
         try:
-            cmap = kwargs.pop('cmap', cmap_default[img.dclass] if img.dclass else 'viridis')
+            cmap = kwargs.pop('cmap', cmap_default[img[0].dclass] if img[0].dclass else 'viridis')
         except AttributeError:
             cmap = kwargs.pop('cmap', 'viridis')
 
