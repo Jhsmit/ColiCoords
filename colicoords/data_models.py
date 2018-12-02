@@ -34,6 +34,9 @@ class BinaryImage(np.ndarray):
         self.metadata = getattr(obj, 'metadata', None)
         self.dclass = getattr(obj, 'dclass', 'binary')
 
+    def __array_wrap__(self, out_arr, context=None):
+        return np.ndarray.__array_wrap__(self, out_arr, context)
+    
     def __reduce__(self):
         # Get the parent's __reduce__ tuple
         pickled_state = super(BinaryImage, self).__reduce__()
@@ -80,6 +83,9 @@ class BrightFieldImage(np.ndarray):
         self.metadata = getattr(obj, 'metadata', None)
         self.dclass = getattr(obj, 'dclass', 'brightfield')
 
+    def __array_wrap__(self, out_arr, context=None):
+        return np.ndarray.__array_wrap__(self, out_arr, context)
+
     def __reduce__(self):
         # Get the parent's __reduce__ tuple
         pickled_state = super(BrightFieldImage, self).__reduce__()
@@ -125,6 +131,9 @@ class FluorescenceImage(np.ndarray):
         self.name = getattr(obj, 'name', None)
         self.metadata = getattr(obj, 'metadata', None)
         self.dclass = getattr(obj, 'dclass', 'fluorescence')
+
+    def __array_wrap__(self, out_arr, context=None):
+        return np.ndarray.__array_wrap__(self, out_arr, context)
 
     def __reduce__(self):
         # Get the parent's __reduce__ tuple
@@ -173,6 +182,9 @@ class STORMTable(np.ndarray):
         self.metadata = getattr(obj, 'metadata', None)
         self.dclass = getattr(obj, 'dclass', 'storm')
 
+    def __array_wrap__(self, out_arr, context=None):
+        return np.ndarray.__array_wrap__(self, out_arr, context)
+
     def __reduce__(self):
         # Get the parent's __reduce__ tuple
         pickled_state = super(STORMTable, self).__reduce__()
@@ -184,17 +196,6 @@ class STORMTable(np.ndarray):
     def __setstate__(self, state):
         self.name, self.metadata, self.dclass = state[-3:]
         super(STORMTable, self).__setstate__(state[0:-3])
-
-    @property
-    def image(self):
-        raise NotImplementedError()
-        #
-        # assert 'storm_img' not in self.data_dict
-        # img = self._get_storm_img(data)
-        # name = 'storm_img' if name is 'storm' else name + '_img'
-        # self.storm_img = STORMImage(img, name=name, metadata=metadata)
-        # self.data_dict['storm_img'] = self.storm_img
-        # self.name_dict[name] = self.storm_img
 
 
 #todo this shoud be a dict? (use open microscopy format?) (XML)
