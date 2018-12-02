@@ -30,7 +30,6 @@ def filter_binaries(bin_arr, remove_bordering=True, min_size=250, max_size=1000,
         Output filtered and labeled binary image.
     """
 
-
     out = np.empty_like(bin_arr)
     for i, img in enumerate(bin_arr):
         labeled, n = mh.labeled.label(img)
