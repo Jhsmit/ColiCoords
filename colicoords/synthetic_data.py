@@ -1,5 +1,5 @@
-from .cell import Cell, Coordinates, CellList
-from .data_models import Data
+from colicoords.cell import Cell, Coordinates, CellList
+from colicoords.data_models import Data
 import numpy as np
 import mahotas as mh
 from scipy.integrate import quad

@@ -3,8 +3,7 @@ from matplotlib.colors import Normalize
 from matplotlib.ticker import MaxNLocator
 import numpy as np
 from colicoords.config import cfg
-from colicoords.cell import calc_lc
-from colicoords import CellList
+from colicoords.cell import calc_lc, CellList
 import seaborn as sns
 from scipy import stats
 

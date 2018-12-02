@@ -1,5 +1,4 @@
 from functools import wraps
-import colicoords
 import numpy as np
 from symfit.core.fit import FitResults
 

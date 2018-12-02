@@ -1,6 +1,7 @@
 from test.testcase import ArrayTestCase
 from test.test_functions import load_testdata
-from colicoords import SynthCell, data_to_cells
+from colicoords.synthetic_data import SynthCell
+from colicoords.preprocess import data_to_cells
 from colicoords.models import PSF, RDistModel
 import unittest
 
