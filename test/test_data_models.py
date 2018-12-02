@@ -113,7 +113,6 @@ class TestData(ArrayTestCase):
         self.assertEqual(len(data_rotated), 2)
 
     def test_rotation_storm(self):
-
         for cell in self.storm_cells_1:
             for th in np.arange(90, 370, 90):
                 data_r = cell.data.copy().rotate(th)
@@ -130,26 +129,30 @@ class TestData(ArrayTestCase):
 
         for cell in self.storm_cells_2_no_flu:
             storm = cell.data.data_dict['storm_1']
-            x1, y1 = storm['x'], storm['y']
+            x1, y1 = storm['x'][0], storm['y'][0]
 
             storm = cell.data.data_dict['storm_2']
-            x2, y2 = storm['x'], storm['y']
+            x2, y2 = storm['x'][0], storm['y'][0]
 
             d = np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+            angle = np.arctan2(y1-y2, x1-x2)
 
             data = cell.data.copy()
             for th in range(0, 740, 20):
                 data_r = data.rotate(th)
 
                 storm = data_r.data_dict['storm_1']
-                x1, y1 = storm['x'], storm['y']
+                x1, y1 = storm['x'][0], storm['y'][0]
 
                 storm = data_r.data_dict['storm_2']
-                x2, y2 = storm['x'], storm['y']
+                x2, y2 = storm['x'][0], storm['y'][0]
 
                 d1 = np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
-                self.assertAlmostEqual(d[0], d1[0], 5)
+                self.assertAlmostEqual(d, d1, 5)
 
+                angle1 = np.arctan2(y1-y2, x1-x2)
+                rounded = np.round((angle - angle1)*(180/np.pi) + th, 10)
+                self.assertAlmostEqual(rounded % 360, 0)
 
     def test_iteration(self):
         for i, d in enumerate(self.data):
