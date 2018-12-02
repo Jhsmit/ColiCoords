@@ -1,5 +1,6 @@
 from colicoords.data_models import BinaryImage, BrightFieldImage, FluorescenceImage, STORMTable, Data
-from colicoords.fileIO import load_thunderstorm
+from colicoords.fileIO import load_thunderstorm, load
+from colicoords import Cell, CellList
 from test.testcase import ArrayTestCase
 from test.test_functions import load_testdata
 from scipy.ndimage.interpolation import rotate as scipy_rotate
@@ -81,6 +82,19 @@ class TestMakeData(ArrayTestCase):
 class TestData(ArrayTestCase):
     def setUp(self):
         self.data = load_testdata('ds1')
+        self.storm_cells_1 = load('test_data/test_single_spot_storm.hdf5')
+        self.storm_cells_2 = load('test_data/test_double_spot_storm.hdf5')
+
+        cells_no_flu = []
+        for c in self.storm_cells_2:
+            d = Data()
+            d.add_data(c.data.binary_img, 'binary')
+            d.add_data(c.data.data_dict['storm_1'], 'storm', 'storm_1')
+            d.add_data(c.data.data_dict['storm_2'], 'storm', 'storm_2')
+            cell = Cell(d)
+            cells_no_flu.append(cell)
+
+        self.storm_cells_2_no_flu = CellList(cells_no_flu)
 
     def test_copying(self):
         data_copy = self.data.copy()
@@ -97,6 +111,45 @@ class TestData(ArrayTestCase):
         rotated = scipy_rotate(self.data.binary_img[:2], -60, mode='nearest', axes=(-1, -2))
         self.assertArrayEqual(rotated, data_rotated.binary_img)
         self.assertEqual(len(data_rotated), 2)
+
+    def test_rotation_storm(self):
+
+        for cell in self.storm_cells_1:
+            for th in np.arange(90, 370, 90):
+                data_r = cell.data.copy().rotate(th)
+                flu = data_r.data_dict['fluorescence']
+                storm = data_r.data_dict['storm']
+                x, y = storm['x'], storm['y']
+
+                nc = Cell(data_r, init_coords=True)
+                x_fl = np.sum(nc.coords.x_coords * flu) / np.sum(flu)
+                y_fl = np.sum(nc.coords.y_coords * flu) / np.sum(flu)
+
+                self.assertAlmostEqual(x[0], np.array(x_fl), 2)
+                self.assertAlmostEqual(y[0], np.array(y_fl), 2)
+
+        for cell in self.storm_cells_2_no_flu:
+            storm = cell.data.data_dict['storm_1']
+            x1, y1 = storm['x'], storm['y']
+
+            storm = cell.data.data_dict['storm_2']
+            x2, y2 = storm['x'], storm['y']
+
+            d = np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+
+            data = cell.data.copy()
+            for th in range(0, 740, 20):
+                data_r = data.rotate(th)
+
+                storm = data_r.data_dict['storm_1']
+                x1, y1 = storm['x'], storm['y']
+
+                storm = data_r.data_dict['storm_2']
+                x2, y2 = storm['x'], storm['y']
+
+                d1 = np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+                self.assertAlmostEqual(d[0], d1[0], 5)
+
 
     def test_iteration(self):
         for i, d in enumerate(self.data):
