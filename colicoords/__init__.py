@@ -8,6 +8,8 @@ from colicoords.models import RDistModel, PSF
 from colicoords.fitting import LinearModelFit, CellFit
 from colicoords.synthetic_data import SynthCell, SynthCellList
 
+import pkg_resources
+__version__ = pkg_resources.get_distribution('colicoords').version
 
 try:
     from colicoords.models import Memory
