@@ -16,8 +16,9 @@
     :target: https://opensource.org/licenses/MIT
 .. |doi| image:: https://zenodo.org/badge/92830488.svg
    :target: https://zenodo.org/badge/latestdoi/92830488
-  
-  
+
+
+Preliminary docs: https://colicoords.readthedocs.io/
 
 Project Goals
 =============
@@ -39,10 +40,8 @@ Although `ColiCoords` features automated testing, there are likely to be bugs. U
 
 Contact: jhsmit@gmail.com
 
-Documentation and Examples
-==========================
-
-Preliminary docs: https://colicoords.readthedocs.io/en/latest/index.html
+Examples
+========
 
 Several examples of `ColiCoords` usage can be found in the examples directory. More examples will be added in time. 
 
