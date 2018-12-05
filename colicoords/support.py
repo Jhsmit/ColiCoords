@@ -1,6 +1,7 @@
 from functools import wraps
 import numpy as np
 from symfit.core.fit import FitResults
+import colicoords
 
 
 class ArrayFitResults(FitResults):
@@ -100,7 +101,7 @@ def pad_data(data, shape, mode='mean'):
 
     Parameters
     ----------
-    data : :class:`~colicoords.data_moels.Data`
+    data : :class:`~colicoords.data_models.Data`
         ``Data`` class to pad to `shape`
     shape : :obj:`tuple`
         Shape to pad the data to
