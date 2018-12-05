@@ -3,6 +3,8 @@ from test.test_functions import load_testdata
 from colicoords.synthetic_data import SynthCell
 from colicoords.preprocess import data_to_cells
 from colicoords.models import PSF, RDistModel
+from colicoords.cell import CellList, Cell
+import numpy as np
 import unittest
 
 
@@ -26,6 +28,25 @@ class TestCell(ArrayTestCase):
 
         self.assertEqual(r_max, 9.0)
         self.assertAlmostEqual(r_mid, 6.49, 2)
+
+
+class TestCellList(ArrayTestCase):
+    def setUp(self):
+        #todo update this
+        self.data = load_testdata('ds2')
+        self.cell_list = data_to_cells(self.data, initial_crop=2, rotate='binary')
+        self.cell_obj = self.cell_list[0]
+        self.cell_obj.optimize()
+
+    def test_indexing(self):
+        cell_list = self.cell_list[2:10]
+        self.assertIsInstance(cell_list, CellList)
+
+        cell = self.cell_list[5]
+        self.assertEqual(np.where(self.cell_list.name == cell.name)[0][0], 5)
+        self.assertIsInstance(cell, Cell)
+
+        self.assertTrue(cell in self.cell_list)
 
 
 class TestSynthCell(ArrayTestCase):

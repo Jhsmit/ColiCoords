@@ -1554,13 +1554,11 @@ class CellList(object):
         if isinstance(key, numbers.Integral):
             return self.cell_list.__getitem__(key)
         else:
-            return CellList(self.cell_list.__getitem__(key))
+            return self.__class__(self.cell_list.__getitem__(key))
 
     def __setitem__(self, key, value):
+        assert isinstance(Cell, value)
         self.cell_list.__setitem__(key, value)
-
-    def __delitem__(self, key):
-        self.cell_list.__delitem__(key)
 
     def __contains__(self, item):
         return self.cell_list.__contains__(item)
