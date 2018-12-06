@@ -9,33 +9,34 @@ Cell
 ----
 
 .. automodule:: colicoords.cell
-   :members:
+    :members:
 
 
 Data
 ----
 
 .. automodule:: colicoords.data_models
-   :members:
+    :members:
 
 
 Plot
 ----
 
 .. automodule:: colicoords.plot
-   :members:
+    :members:
 
 
 Optimizers
 ----------
 
 .. automodule:: colicoords.fitting
-   :members:
+    :members:
 
 
 FileIO
 ------
 
 .. automodule:: colicoords.fileIO
-   :members:
+    :members:
 
+    
