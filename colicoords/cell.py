@@ -640,8 +640,8 @@ class Coordinates(object):
         """
         Substitute the values in `par_dict` as the coordinate systems parameters.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         par_dict : :obj:`dict`
             Dictionary with parameters which values are set to the attributes.
         """
@@ -654,8 +654,8 @@ class Coordinates(object):
         
         All coordinates are cartesian. Solutions are found by solving the cubic equation.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         xp : :obj:`float` or :class:`~numpy.ndarray`
             Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
         yp : :obj:`float` : or :class:`~numpy.ndarray`
@@ -700,8 +700,8 @@ class Coordinates(object):
 
         Returned values are 1 for left pole, 2 for middle, 3 for right pole.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         xp : :obj:`float` or :class:`~numpy.ndarray`
             Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
         yp : :obj:`float` or :class:`~numpy.ndarray`
@@ -725,8 +725,8 @@ class Coordinates(object):
         """
         Calculates the coordinate xc on p(x) closest to (xp, yp), where xl < xc < xr
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         xp : :obj:`float`: or :class:`~numpy.ndarray`:
             Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
         yp : :obj:`float`: or :class:`~numpy.ndarray`:
@@ -750,8 +750,8 @@ class Coordinates(object):
 
         The returned value is the distance from the points (xp, yp) to the midline of the cell.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         xp : :obj:`float` or :class:`~numpy.ndarray`
             Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
         yp : :obj:`float` or :class:`~numpy.ndarray`
@@ -774,8 +774,8 @@ class Coordinates(object):
 
         The returned value is the distance from the points (xp, yp) to the midline of the cell.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         xp : :`obj`:float: or :class:`~numpy.ndarray`
             Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
         yp :`obj`:float: or :class:`~numpy.ndarray`
@@ -799,8 +799,8 @@ class Coordinates(object):
         (yp < p(xp)), running from 180 to zero along the right polar region, 180 degrees in the lower half and running back to
         0 degrees along the left polar region.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         xp :obj:`float` or :class:`~numpy.ndarray`
             Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
         yp :obj:`float` or :class:`~numpy.ndarray`
@@ -834,8 +834,8 @@ class Coordinates(object):
         Finds the indices of the arrays xp an yp where they either belong to the left or right polar regions, as well as
         coordinates xc
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         xp : :class:`~numpy.ndarray`
             Input  x-coordinates. Must be the same shape as yp
         yp : :class:`~numpy.ndarray`
@@ -869,8 +869,8 @@ class Coordinates(object):
         """
         Transforms image coordinates (xp, yp) to cell coordinates (lc, rc, psi)
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         xp : :obj:`float` or :class:`~numpy.ndarray`
             Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
         yp : :obj:`float` or :class:`~numpy.ndarray`
@@ -893,8 +893,8 @@ class Coordinates(object):
         """
         Transforms image coordinates (xp, yp) to cell coordinates (lc, rc, psi)
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         xp : :obj:`float` or :class:`~numpy.ndarray`
             Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
         yp : :obj:`float` or :class:`~numpy.ndarray`
@@ -1069,8 +1069,8 @@ class Coordinates(object):
 
         The function p(x) describes the midline of the cell.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         x_arr :class:`~numpy.ndarray`
             Input x values.
 
@@ -1086,8 +1086,8 @@ class Coordinates(object):
         """
         Calculate the derivative p'(x) evaluated at x.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         x_arr :class:`~numpy.ndarray`:
             Input x values.
 
@@ -1110,8 +1110,8 @@ class Coordinates(object):
 
         Used for determining the initial guesses for the coefficients of p(x).
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         xl : :obj:`float`, optional
             Starting point x of where to get the 'core' points.
         xr : :obj:`float`, optional
