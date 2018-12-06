@@ -70,13 +70,14 @@ be conveniently executed on normal desktop PCs. ``ColiCoords`` therefore support
 take advantage of parallel high-performance computing. To perform optimization in parallel:
 
 .. code-block:: python
+
   cells.optimize_mp()
 
 Where `cells` is a :class:`~colicoords.cell.CellList` object. The cells to be divided is equally distributed among the
 spawned processes, which is by default equal to the number of physical cores present on the host machine.
 
 Models and advanced usage
-------
+-------------------------
 
 The default model used is :class:`~colicoords.data_models.NumericalCellModel`. Contrary to typical ``symfit`` workflow,
 the :class:`~symfit.Parameter` objects are defined and initialized by the model itself, and then used to make up the
@@ -96,7 +97,7 @@ object instead of calling :func:`~colicoords.cell.Cell.optimize`.
 The fitting can then be executed by calling ``fit.execute()`` as usual.
 
 Custom minimization functions
--------
+-----------------------------
 
 The minimization function `cell_function` is a subclass of :class:`~colicoords.fitting.CellMinimizeFunctionBase` by default.
 This when this object is used it is initialized by ``CellFit`` with the instance of the cell object and the name of the
