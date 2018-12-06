@@ -34,7 +34,7 @@ class CellPlot(object):
         Plot the cell's coordinate system midline.
 
         Parameters
-        ---------
+        ----------
         ax : :class:`~matplotlib.axes.Axes`, optional
             Matplotlib axes to use for plotting.
         **kwargs
@@ -65,7 +65,7 @@ class CellPlot(object):
         Equivalent to CellPlot.imshow('binary').
 
         Parameters
-        ---------
+        ----------
         ax : :class:`matplotlib.axes.Axes`, optional
             Optional matplotlib axes to use for plotting
         **kwargs
@@ -93,7 +93,7 @@ class CellPlot(object):
         Plot the cell's binary image calculated from the coordinate system.
 
         Parameters
-        ---------
+        ----------
         ax : :class:`matplotlib.axes.Axes`, optional.
             Matplotlib axes to use for plotting.
         **kwargs
@@ -122,7 +122,7 @@ class CellPlot(object):
         Plot the cell's binary image together with the calculated binary image from the coordinate system.
 
         Parameters
-        ---------
+        ----------
         ax : :class:`matplotlib.axes.Axes`, optional
             Matplotlib axes to use for plotting.
         **kwargs
@@ -151,7 +151,7 @@ class CellPlot(object):
         The outline consists of two semicircles and two offset lines to the central parabola.[1]_[2]_
 
         Parameters
-        ---------
+        ----------
         ax : :class:`~matplotlib.axes.Axes`, optional
             Matplotlib axes to use for plotting.
         **kwargs
@@ -222,7 +222,7 @@ class CellPlot(object):
         Plots the radial distribution of a given data element.
 
         Parameters
-        ---------
+        ----------
         ax : :class:`~matplotlib.axes.Axes`, optional
             Matplotlib axes to use for plotting.
         data_name : :obj:`str`
@@ -423,7 +423,7 @@ class CellPlot(object):
         Graphically represent STORM data.
 
         Parameters
-        ---------
+        ----------
         ax : :class:`~matplotlib.axes.Axes`
             Optional matplotlib axes to use for plotting.
         data_name : :obj:`str`
@@ -1008,9 +1008,9 @@ class CellListPlot(object):
         mask : :obj:`str`
             Either 'binary' or 'coords' to specify the source of the mask used 'binary' uses the binary images as mask,
             'coords' uses reconstructed binary from coordinate system.
-        data_name :obj:`str`
+        data_name : :obj:`str`
             The name of the image data element to get the intensity values from.
-        ax :class:`matplotlib.axes.Axes`, optinal
+        ax : :class:`matplotlib.axes.Axes`, optinal
             Matplotlib axes to use for plotting.
         **kwargs
             Additional kwargs passed to ax.hist().
@@ -1194,7 +1194,6 @@ class CellListPlot(object):
         x_arr, out_arr = self.cell_list.l_dist(nbins, data_name=data_name, norm_x=True, r_max=r_max,
                                                storm_weight=storm_weight, method=method, sigma=sigma_arr, **dist_kwargs)
         x = x_arr[0]
-
 
         if zero:
             mins = np.min(out_arr, axis=1)

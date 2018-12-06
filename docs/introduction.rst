@@ -100,6 +100,7 @@ the following result:
 To plot the radial distribution of the ``flu_514`` fluorescence channel:
 
 .. code-block:: python
+
   f, (ax1, ax2) = plt.subplots(1, 2)
   cp.plot_r_dist(ax=ax1)
   cp.plot_r_dist(ax=ax2, norm_x=True, norm_y=True)

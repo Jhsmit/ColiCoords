@@ -88,6 +88,7 @@ Plotting
 When using :class:`~colicoords.cell.CellList` the function :func:`~colicoords.cell.CellList.r_dist` returns the radial distributions of all cells in the list. 
 
 .. code-block:: python
+
   x, y = cell_list.r_dist(20, 1)
 
 Here, the arguments given are the `stop` and `step` parameters for the x-axis, respectively. The returned `y` is an array
