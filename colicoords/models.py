@@ -51,8 +51,8 @@ try:
             args = (cfg.CACHE_DIR,) + args
             super(Memory, self).__init__(*args, **kwargs)
 
-except (ImportError, ModuleNotFoundError):
-    'Package joblib not found, cached memory not available'
+except ImportError:
+    pass
 
 
 class PSF(object):
