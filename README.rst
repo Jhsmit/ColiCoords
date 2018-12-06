@@ -29,11 +29,12 @@ ColiCoords is a python project for analysis of fluorescence microscopy data from
 Installation
 ============
 
-`ColiCoords` is in its initial realease phase and will in time be distributed via conda/pip. For the moment, to install `ColiCoords`, a python 3.6 installation is required as well as dependencies listed in `requirements.txt`. Then download the latest release, and then to install:
+``ColiCoords`` is available on PyPi. To install, python 3.6 is required. A C++ compiler is required for installing the dependency `mahotas  <https://mahotas.readthedocs.io/en/latest/index.html>`_. Alternatively, ``mahotas`` can be install seperately from `Conda <https://conda.io/docs/>`_. 
+To install ``ColiCoords`` from pypi:
 
 .. code:: bash
 
-    python setup.py install
+    pip install colicoords
 
 
 Although `ColiCoords` features automated testing, there are likely to be bugs. Users are encouraged to report them via the Issues page on GitHub. 
