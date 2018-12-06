@@ -22,9 +22,10 @@ import sys
 import re
 
 
-#sys.path.insert(0, os.path.join(os.path.abspath('.'), os.pardir))
+sys.path.insert(0, os.path.join(os.path.abspath('.'), os.pardir))
 sys.path.insert(0, os.path.abspath('..'))
-#print(os.path.abspath('..'))
+sys.path.insert(os.path.abspath('../..'))
+print(os.path.join(os.path.abspath('.'), os.pardir))
 
 # -- General configuration ------------------------------------------------
 
