@@ -47,8 +47,8 @@ extensions = [
 ]
 
 numpydoc_show_inherited_class_members = False
-numpydoc_show_class_members = True
-class_members_toctree = False
+#numpydoc_show_class_members = True
+#class_members_toctree = False
 
 
 # Napoleon settings
