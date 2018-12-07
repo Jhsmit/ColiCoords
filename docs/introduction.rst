@@ -94,7 +94,7 @@ the following result:
 .. figure:: figures/introduction_coordinates_final.png
   :scale: 25 %
 
-    Brightfield image with optimized coordinate system.
+Brightfield image with optimized coordinate system.
 
 
 To plot the radial distribution of the ``flu_514`` fluorescence channel:
