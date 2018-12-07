@@ -22,10 +22,11 @@ import sys
 import re
 
 
-sys.path.insert(0, os.path.join(os.path.abspath('.'), os.pardir))
-sys.path.insert(0, os.path.abspath('..'))
-sys.path.insert(0, os.path.abspath('../..'))
-print(os.path.join(os.path.abspath('.'), os.pardir))
+# sys.path.insert(0, os.path.join(os.path.abspath('.'), os.pardir))
+# sys.path.insert(0, os.path.abspath('..'))
+# sys.path.insert(0, os.path.abspath('../..'))
+pth = os.path.abspath(os.path.join(os.path.abspath(__file__), '..', '..'))
+sys.path.insert(0, pth)
 
 # -- General configuration ------------------------------------------------
 
@@ -46,6 +47,9 @@ extensions = [
 ]
 
 numpydoc_show_inherited_class_members = False
+numpydoc_show_class_members = True
+class_members_toctree = False
+
 
 # Napoleon settings
 # napoleon_include_init_with_doc = True
