@@ -3,6 +3,7 @@ from colicoords.cell import Cell, CellList
 from colicoords.preprocess import data_to_cells
 from colicoords.postprocess import align_cells, align_images, align_storm
 from colicoords.plot import CellPlot, CellListPlot
+from colicoords.iplot import iter_subplots, IterCellPlot
 from colicoords.fileIO import load, save, load_thunderstorm
 from colicoords.models import RDistModel, PSF
 from colicoords.fitting import LinearModelFit, CellFit
