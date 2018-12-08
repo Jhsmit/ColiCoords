@@ -19,29 +19,24 @@ class Cell(object):
 
     Parameters
     ----------
-
     data_object : :class:`~colicoords.data_models.Data`
         Holds all data describing this single cell.
     coords : :class:`Coordinates`
         Calculates transformations from/to cartesian and cellular coordinates.
     name : :obj:`str`
-        Name identifying the cell (optional)
+        Name identifying the cell (optional).
 
 
     Attributes
     ----------
-
     data : :class:`~colicoords.data_models.Data`
         Holds all data describing this single cell.
     coords : :class:`Coordinates`
         Calculates and optimizes the cell's coordinate system.
     name : :obj:`str`
-        Name identifying the cell (optional)
-
-
+        Name identifying the cell (optional).
     """
     def __init__(self, data_object, name=None, init_coords=True):
-
         self.data = data_object
         self.coords = Coordinates(self.data, initialize=init_coords)
         self.name = name
@@ -50,8 +45,8 @@ class Cell(object):
         """
         Optimize the cell's coordinate system.
 
-        The optimization is performed on the data element given by ``data_name``
-        using objective function `objective`. A default depending on the data class is used of objective is omitted.
+        The optimization is performed on the data element given by ``data_name`` using the function `cell_function`.
+        A default function depending on the data class is used of objective is omitted.
 
         Parameters
         ----------
@@ -66,8 +61,8 @@ class Cell(object):
 
         Returns
         -------
-        :class:`~symfit.core.fit_results.FitResults`
-            `symfit` ``FitResults`` object.
+        result : :class:`~symfit.core.fit_results.FitResults`
+            ``symfit`` fit results object.
 
 
         """
@@ -163,14 +158,14 @@ class Cell(object):
             Method of averaging datapoints to calculate the final distribution curve.
         sigma : :obj:`float`
             Applies only when `method` is set to 'gauss'. `sigma` gives the width of the gaussian used for convoluting
-            datapoints
+            datapoints.
 
         Returns
         -------
         xvals : :class:`~numpy.ndarray`
-            Array of distances along the cell midline, values are the middle of the bins/kernel
+            Array of distances along the cell midline, values are the middle of the bins/kernel.
         yvals : :class:`~numpy.ndarray`
-            Array of bin heights
+            Array of bin heights.
 
         """
         length = 1 if norm_x else self.length
@@ -262,7 +257,7 @@ class Cell(object):
         The spots are classified into 3 categories: 'poles', 'between' and 'mid'. The pole category are spots who are to
         the left and right of xl and xr, respectively. The class 'mid' is a section in the middle of the cell with a
         total length of half the cell's length, the class 'between' is the remaining two quarters between 'mid' and
-        'poles'
+        'poles'.
 
         Parameters
         ----------
@@ -271,7 +266,7 @@ class Cell(object):
 
         Returns
         -------
-        :obj:`tuple`
+        l_classes : :obj:`tuple`
             Tuple with number of spots in poles, between and mid classes, respectively.
         """
 
@@ -305,11 +300,11 @@ class Cell(object):
         Parameters
         ----------
         stop : :obj:`float`
-            Until how far from the cell spine the radial distribution should be calculated
+            Until how far from the cell spine the radial distribution should be calculated.
         step : :obj:`float`
-            The binsize of the returned radial distribution
+            The binsize of the returned radial distribution.
         data_name : :obj:`str`
-            The name of the data element on which to calculate the radial distribution
+            The name of the data element on which to calculate the radial distribution.
         norm_x : :obj:`bool`
             If `True` the returned distribution will be normalized with the cell's radius set to 1.
         limit_l : :obj:`str`
@@ -323,14 +318,14 @@ class Cell(object):
             Method of averaging datapoints to calculate the final distribution curve.
         sigma : :obj:`float`
             Applies only when `method` is set to 'gauss'. `sigma` gives the width of the gaussian used for convoluting
-            datapoints
+            datapoints.
 
         Returns
         -------
         xvals : :class:`~numpy.ndarray`
-            Array of distances from the cell midline, values are the middle of the bins
+            Array of distances from the cell midline, values are the middle of the bins.
         yvals : :class:`~numpy.ndarray`
-            Array of in bin heights
+            Array of in bin heights.
         """
 
         if not data_name:
@@ -428,7 +423,7 @@ class Cell(object):
 
         Returns
         -------
-        :obj:`float`
+        radius : :obj:`float`
             The measured radius `r` if `in_place` is `False`, otherwise `None`.
         """
 
@@ -487,7 +482,7 @@ class Cell(object):
         Returns
         -------
         img : :class:`~numpy.ndarray`
-            Image of the reconstructed cell
+            Image of the reconstructed cell.
         """
 
         stop = kwargs.pop('stop', np.ceil(np.max(self.data.shape) / 2))
@@ -503,13 +498,13 @@ class Cell(object):
         Returns the mean fluorescence intensity.
 
         Mean fluorescence intensity either in the region masked by the binary image or reconstructed binary image derived
-        from the cell's coordinate system
+        from the cell's coordinate system.
 
         Parameters
         ----------
         mask : :obj:`str`
             Either 'binary' or 'coords' to specify the source of the mask used. 'binary' uses the binary image as mask,
-            'coords' uses reconstructed binary from coordinate system
+            'coords' uses reconstructed binary from coordinate system.
         data_name : :obj:`str`:
             The name of the image data element to get the intensity values from.
         func : :obj:`callable`
@@ -518,7 +513,7 @@ class Cell(object):
 
         Returns
         -------
-        :obj:`float`:
+        value : :obj:`float`:
             Mean fluorescence pixel value.
         """
 
@@ -562,7 +557,7 @@ class Cell(object):
         Returns
         -------
         cell : :class:`~colicoords.cell.Cell`:
-            Copied cell object
+            Copied cell object.
 
         """
         # todo needs testing (this is done?) arent there more properties to copy?
@@ -574,25 +569,28 @@ class Cell(object):
 
 
 class Coordinates(object):
-    """Cell's coordinate system described by the polynomial p(x) and associated functions
+    """
+    Cell's coordinate system described by the polynomial p(x) and associated functions.
 
     Parameters
     ----------
     data : :class:`~colicoords.data_models.Data`
-        The `data` object defining the shape
+        The `data` object defining the shape.
     initialize : :obj:`bool`, optional
-        If `False` the coordinate system parameters are not initialized with initial guesses
+        If `False` the coordinate system parameters are not initialized with initial guesses.
     **kwargs
-        Can be used to manually supply parameter values if `initialize` is `False`
+        Can be used to manually supply parameter values if `initialize` is `False`.
 
     Attributes
     ----------
-        xl (float): Left cell pole x-coordinate
-        xr (float): Right cell pole x-coordinate
-        r (float): Cell radius
-        coeff (:class: ~numpy.ndarray): Coefficients [a0, a1, a2] of the polynomial a0 + a1*x + a2*x**2 which describes
-        the cell's shape
-
+    xl : :obj:`float`
+        Left cell pole x-coordinate.
+    xr : :obj:`float`
+        Right cell pole x-coordinate.
+    r : :obj:`float`
+        Cell radius.
+    coeff : :class:`~numpy.ndarray`
+        Coefficients [a0, a1, a2] of the polynomial a0 + a1*x + a2*x**2 which describes the cell's shape.
     """
 
     parameters = ['r', 'xl', 'xr', 'a0', 'a1', 'a2']
@@ -611,7 +609,7 @@ class Coordinates(object):
 
     @property
     def a0(self):
-        """float: Polynomial p(x) 0th degree coefficient"""
+        """float: Polynomial p(x) 0th degree coefficient."""
         return self.coeff[0]
 
     @a0.setter
@@ -620,7 +618,7 @@ class Coordinates(object):
 
     @property
     def a1(self):
-        """float: Polynomial p(x) 1st degree coefficient"""
+        """float: Polynomial p(x) 1st degree coefficient."""
         return self.coeff[1]
 
     @a1.setter
@@ -629,7 +627,7 @@ class Coordinates(object):
 
     @property
     def a2(self):
-        """float: Polynomial p(x) 2nd degree coefficient"""
+        """float: Polynomial p(x) 2nd degree coefficient."""
         return self.coeff[2]
 
     @a2.setter
@@ -650,20 +648,21 @@ class Coordinates(object):
 
     @allow_scalars
     def calc_xc(self, xp, yp):
-        """ Calculates the coordinate xc on p(x) closest to xp, yp
+        """
+        Calculates the coordinate xc on p(x) closest to xp, yp.
         
         All coordinates are cartesian. Solutions are found by solving the cubic equation.
 
         Parameters
         ----------
         xp : :obj:`float` or :class:`~numpy.ndarray`
-            Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
+            Input scalar or vector/matrix x-coordinate. Must be the same shape as yp.
         yp : :obj:`float` : or :class:`~numpy.ndarray`
-            Input scalar or vector/matrix x-coordinate. Must be the same shape as xp
+            Input scalar or vector/matrix x-coordinate. Must be the same shape as xp.
 
         Returns
         -------
-        :obj:`float` or :class:`~numpy.ndarray`
+        xc : :obj:`float` or :class:`~numpy.ndarray`
             Cellular x-coordinate for point(s) xp, yp
         """
 
@@ -703,13 +702,13 @@ class Coordinates(object):
         Parameters
         ----------
         xp : :obj:`float` or :class:`~numpy.ndarray`
-            Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
+            Input scalar or vector/matrix x-coordinate. Must be the same shape as yp.
         yp : :obj:`float` or :class:`~numpy.ndarray`
-            Input scalar or vector/matrix x-coordinate. Must be the same shape as xp
+            Input scalar or vector/matrix x-coordinate. Must be the same shape as xp.
 
         Returns
         -------
-        :obj:`float`: or :class:`~numpy.ndarray`:
+        xc_mask : :obj:`float`: or :class:`~numpy.ndarray`:
             Array to mask different cellular regions.
         """
 
@@ -723,19 +722,19 @@ class Coordinates(object):
     @allow_scalars
     def calc_xc_masked(self, xp, yp):
         """
-        Calculates the coordinate xc on p(x) closest to (xp, yp), where xl < xc < xr
+        Calculates the coordinate xc on p(x) closest to (xp, yp), where xl < xc < xr.
 
         Parameters
         ----------
         xp : :obj:`float`: or :class:`~numpy.ndarray`:
-            Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
+            Input scalar or vector/matrix x-coordinate. Must be the same shape as yp.
         yp : :obj:`float`: or :class:`~numpy.ndarray`:
-            Input scalar or vector/matrix x-coordinate. Must be the same shape as xp
+            Input scalar or vector/matrix x-coordinate. Must be the same shape as xp.
 
         Returns
         -------
-        :obj:`float` or :class:`~numpy.ndarray`
-            Cellular x-coordinate for point(s) xp, yp, where xl < xc < xr
+        xc_mask : :obj:`float` or :class:`~numpy.ndarray`
+            Cellular x-coordinate for point(s) xp, yp, where xl < xc < xr.
         """
         idx_left, idx_right, xc = self.get_idx_xc(xp, yp)
         xc[idx_left] = self.xl
@@ -753,13 +752,13 @@ class Coordinates(object):
         Parameters
         ----------
         xp : :obj:`float` or :class:`~numpy.ndarray`
-            Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
+            Input scalar or vector/matrix x-coordinate. Must be the same shape as yp.
         yp : :obj:`float` or :class:`~numpy.ndarray`
-            Input scalar or vector/matrix x-coordinate. Must be the same shape as xp
+            Input scalar or vector/matrix x-coordinate. Must be the same shape as xp.
 
         Returns
         -------
-        :obj:`float` or :class:`~numpy.ndarray`
+        rc : :obj:`float` or :class:`~numpy.ndarray`
             Distance to the midline of the cell.
         """
 
@@ -776,14 +775,14 @@ class Coordinates(object):
 
         Parameters
         ----------
-        xp : :`obj`:float: or :class:`~numpy.ndarray`
-            Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
-        yp :`obj`:float: or :class:`~numpy.ndarray`
-            Input scalar or vector/matrix x-coordinate. Must be the same shape as xp
+        xp : :obj:`float`: or :class:`~numpy.ndarray`
+            Input scalar or vector/matrix x-coordinate. Must be the same shape as yp.
+        yp : :obj:`float` or :class:`~numpy.ndarray`
+            Input scalar or vector/matrix x-coordinate. Must be the same shape as xp.
 
         Returns
         -------
-        :obj:`float` or :class:`~numpy.ndarray`
+        lc : :obj:`float` or :class:`~numpy.ndarray`
             Distance along the midline of the cell.
         """
 
@@ -793,22 +792,23 @@ class Coordinates(object):
     @allow_scalars
     def calc_phi(self, xp, yp):
         """
-        Calculates the angle between the line perpendical to the cell midline and the line between (xp, yp) and (xc, p(xc).
+        Calculates the angle between the line perpendical to the cell midline and the line between (xp, yp)
+        and (xc, p(xc)).
 
-        The returned values are in degrees. The angle is defined to be 0 degrees for values in the upper half of the image
-        (yp < p(xp)), running from 180 to zero along the right polar region, 180 degrees in the lower half and running back to
-        0 degrees along the left polar region.
+        The returned values are in degrees. The angle is defined to be 0 degrees for values in the upper half of the
+        image (yp < p(xp)), running from 180 to zero along the right polar region, 180 degrees in the lower half and
+        running back to 0 degrees along the left polar region.
 
         Parameters
         ----------
-        xp :obj:`float` or :class:`~numpy.ndarray`
-            Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
-        yp :obj:`float` or :class:`~numpy.ndarray`
-            Input scalar or vector/matrix x-coordinate. Must be the same shape as xp
+        xp : :obj:`float` or :class:`~numpy.ndarray`
+            Input scalar or vector/matrix x-coordinate. Must be the same shape as yp.
+        yp : :obj:`float` or :class:`~numpy.ndarray`
+            Input scalar or vector/matrix x-coordinate. Must be the same shape as xp.
 
         Returns
         -------
-        :obj:`float` or :class:`~numpy.ndarray`
+        phi : :obj:`float` or :class:`~numpy.ndarray`
             Angle phi for (xp, yp).
         """
         idx_left, idx_right, xc = self.get_idx_xc(xp, yp)
@@ -831,22 +831,22 @@ class Coordinates(object):
 
     def get_idx_xc(self, xp, yp):
         """
-        Finds the indices of the arrays xp an yp where they either belong to the left or right polar regions, as well as
-        coordinates xc
+        Finds the indices of the arrays xp an yp where they either belong to the left or right polar regions,
+        as well as coordinates xc.
 
         Parameters
         ----------
         xp : :class:`~numpy.ndarray`
-            Input  x-coordinates. Must be the same shape as yp
+            Input  x-coordinates. Must be the same shape as yp.
         yp : :class:`~numpy.ndarray`
-            Input y-coordinates. Must be the same shape as xp
+            Input y-coordinates. Must be the same shape as xp.
 
         Returns
         -------
         idx_left : :class:`~numpy.ndarray`
-            Index array of elements in the area of the cell's left pole
+            Index array of elements in the area of the cell's left pole.
         idx_right : :class:`~numpy.ndarray`
-            Index array of elements in the area of cell's right pole
+            Index array of elements in the area of cell's right pole.
         xc : :class:`~numpy.ndarray`
             Cellular coordinates `xc` corresponding to `xp`, `yp`, extending into the polar regions.
         """
@@ -878,7 +878,7 @@ class Coordinates(object):
 
         Returns
         -------
-        :obj:`tuple`
+        coordinates : :obj:`tuple`
             Tuple of cellular coordinates lc, rc, psi
         """
 
@@ -891,19 +891,19 @@ class Coordinates(object):
     @allow_scalars
     def full_transform(self, xp, yp):
         """
-        Transforms image coordinates (xp, yp) to cell coordinates (lc, rc, psi)
+        Transforms image coordinates (xp, yp) to cell coordinates (xc, lc, rc, psi).
 
         Parameters
         ----------
         xp : :obj:`float` or :class:`~numpy.ndarray`
-            Input scalar or vector/matrix x-coordinate. Must be the same shape as yp
+            Input scalar or vector/matrix x-coordinate. Must be the same shape as yp.
         yp : :obj:`float` or :class:`~numpy.ndarray`
-            Input scalar or vector/matrix x-coordinate. Must be the same shape as xp
+            Input scalar or vector/matrix x-coordinate. Must be the same shape as xp.
 
         Returns
         -------
-        :obj:`tuple`
-            Tuple of cellular coordinates xc, lc, rc, psi
+        coordinates : :obj:`tuple`
+            Tuple of cellular coordinates xc, lc, rc, psi.
         """
 
         xc = self.calc_xc_masked(xp, yp)
@@ -1065,18 +1065,18 @@ class Coordinates(object):
 
     def p(self, x_arr):
         """
-        Calculate p(x)
+        Calculate p(x).
 
         The function p(x) describes the midline of the cell.
 
         Parameters
         ----------
-        x_arr :class:`~numpy.ndarray`
+        x_arr : :class:`~numpy.ndarray`
             Input x values.
 
         Returns
         -------
-        :class:`~numpy.ndarray`
+        p : :class:`~numpy.ndarray`
             Evaluated polynomial p(x)
         """
         a0, a1, a2 = self.coeff
@@ -1093,15 +1093,15 @@ class Coordinates(object):
 
         Returns
         -------
-        :class:`~numpy.ndarray`
-            Evaluated function p'(x)
+        p_dx : :class:`~numpy.ndarray`
+            Evaluated function p'(x).
         """
 
         a0, a1, a2 = self.coeff
         return a1 + 2 * a2 * x_arr
 
     def q(self, x, xp):
-        """Returns q(x) where q(x) is the line perpendicular to p(x) at xp"""
+        """array_like: Returns q(x) where q(x) is the line perpendicular to p(x) at xp"""
         return (-x / self.p_dx(xp)) + self.p(xp) + (xp / self.p_dx(xp))
 
     def get_core_points(self, xl=None, xr=None):
@@ -1167,7 +1167,7 @@ def worker(cell, **kwargs):
 
     Returns
     -------
-    :class:`~symit.core.fit import FitResults
+    result : :class:`~symit.core.fit import FitResults
     """
     res = cell.optimize(**kwargs)
     return res
@@ -1215,7 +1215,7 @@ class CellList(object):
 
         Returns
         -------
-        res_list: :obj:`list` of :class:`~symfit.core.fit_results.FitResults`
+        res_list : :obj:`list` of :class:`~symfit.core.fit_results.FitResults`
             List of `symfit` ``FitResults`` object.
         """
 
@@ -1241,8 +1241,8 @@ class CellList(object):
 
         Returns
         -------
-        res_list: :obj:`list` of :class:`~symfit.core.fit_results.FitResults`
-            List of `symfit` ``FitResults`` object.`
+        res_list : :obj:`list` of :class:`~symfit.core.fit_results.FitResults`
+            List of `symfit` ``FitResults`` object.
         """
 
         kwargs = {'data_name': data_name, 'cell_function': cell_function, 'minimizer': minimizer, **kwargs}
@@ -1284,7 +1284,7 @@ class CellList(object):
         ----------
         worker : :obj:`callable`
             Worker function to be executed on all cell objects.
-        processes : :obj`int`
+        processes : :obj:`int`
             Number of parallel processes to spawn. Default is the number of logical processors on the host machine.
 
         Returns
@@ -1307,7 +1307,7 @@ class CellList(object):
 
         Parameters
         ----------
-        cell_obj : :class:`~colicoords.cell.Cell
+        cell_obj : :class:`~colicoords.cell.Cell`
             Cell object to append to current cell list.
         """
 
@@ -1453,7 +1453,7 @@ class CellList(object):
         mask : :obj:`str`
             Either 'binary' or 'coords' to specify the source of the mask used. 'binary' uses the binary image as mask,
             'coords' uses reconstructed binary from coordinate system
-        data_name : :obj:`str`:
+        data_name : :obj:`str`
             The name of the image data element to get the intensity values from.
         func : :obj:`callable`
             This function is applied to the data elements pixels selected by the masking operation. The default is
@@ -1461,7 +1461,7 @@ class CellList(object):
 
         Returns
         -------
-        :obj:`float`:
+        value : :obj:`float`
             Mean fluorescence pixel value.
         """
 
@@ -1487,7 +1487,7 @@ class CellList(object):
 
         Returns
         -------
-        :obj:`list`
+        radius : :class:`np.ndarray`
             The measured radius `r` values if `in_place` is `False`, otherwise `None`.
         """
 
@@ -1566,7 +1566,8 @@ class CellList(object):
 
 def solve_general(a, b, c, d):
     """
-    Solve cubic polynomial in the form a*x^3 + b*x^2 + c*x + d
+    Solve cubic polynomial in the form a*x^3 + b*x^2 + c*x + d.
+
     Only works if polynomial discriminant < 0, then there is only one real root which is the one that is returned. [1]_
 
 
@@ -1650,7 +1651,7 @@ def solve_trig(a, b, c, d):
 
 def calc_lc(xl, xr, coeff):
     """
-    Calculate `lc`
+    Calculate `lc`.
 
     The returned length is the arc length from `xl` to `xr` integrated along the polynomial p(x) described by `coeff`.
 
@@ -1692,13 +1693,13 @@ def solve_length(xr, xl, coeff, length):
     xl  : :obj:`float`
         Left boundary x coordinate of calculated arc length.
     coeff : :obj:`list` or :class:`~numpy.ndarray`
-        Coefficients a0, a1, a2 describing the coordinate system
+        Coefficients a0, a1, a2 describing the coordinate system.
     length : :obj:`float`
-        Target length
+        Target length.
 
     Returns
     -------
-    diff : :obj`float`:
+    diff : :obj:`float`
         Difference between calculated length and specified length.
     """
 

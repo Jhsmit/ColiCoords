@@ -23,7 +23,7 @@ TYPES = {
 #todo add colicoords' version to the files
 def save(file_path, cell_obj):
     """
-    Save ``ColiCoords`` Cell objects to disk as hdf5-files
+    Save ``ColiCoords`` Cell objects to disk as hdf5-files.
 
     Parameters
     ----------
@@ -97,7 +97,7 @@ def _load_cell(cell_grp):
 
 
 def load(file_path):
-    """"
+    """
     Load ``Cell`` or ``CellList`` from disk.
 
     Parameters

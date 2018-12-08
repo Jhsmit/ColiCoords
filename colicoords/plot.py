@@ -62,7 +62,7 @@ class CellPlot(object):
         """
         Plot the cell's binary image.
 
-        Equivalent to CellPlot.imshow('binary').
+        Equivalent to ``CellPlot.imshow('binary')``.
 
         Parameters
         ----------
@@ -241,10 +241,10 @@ class CellPlot(object):
             longitudinal coordinate around the midpoint of the cell.
         method : :obj:`str`
             Method of averaging datapoints to calculate the final distribution curve.
-        dist_kwargs : :obj:`dict
-            Additional kwargs to be passed to :meth:`~colicoords.cell.Cell.r_dist`
+        dist_kwargs : :obj:`dict`
+            Additional kwargs to be passed to :meth:`colicoords.cell.Cell.r_dist`
         **kwargs
-            Optional kwargs passed to ax.plot().
+            Optional kwargs passed to ``ax.plot()``.
 
         Returns
         -------
@@ -444,11 +444,11 @@ class CellPlot(object):
             name of the field in the STORM array to use. Otherwise, sigma can be an array with equal length to the
             number of datapoints.
         **kwargs
-            Additional kwargs passed to ax.plot() or ax.imshow()
+            Additional kwargs passed to ax.plot() or ax.imshow().
 
         Returns
         -------
-        artist :class:`~matplotlib.image.AxesImage` or :class:`~matplotlib.lines.Line2D`
+        artist : :class:`~matplotlib.image.AxesImage` or :class:`~matplotlib.lines.Line2D`
             Matplotlib artist object.
         """
         #todo alpha cutoff docstirng and adjustment / testing
@@ -687,7 +687,7 @@ class CellPlot(object):
             Additional kwargs passed to the function getting the distribution.
         norm_y : :obj:`bool`
             If `True` the output kymograph is normalized frame-wise.
-        aspect : :obj:`float'
+        aspect : :obj:`float`
             Aspect ratio of output kymograph image.
         **kwargs
             Additional keyword arguments passed to ax.imshow()
@@ -779,7 +779,7 @@ class CellPlot(object):
 
         Parameters
         ----------
-        data_name : :obj:`str', optional
+        data_name : :obj:`str`, optional
             Name of the STORM data element to histogram. If omitted, the first STORM element is used.
         ax : :class:`matplotlib.axes.Axes`
             Matplotlib axes to use for plotting.
@@ -830,7 +830,7 @@ class CellPlot(object):
 
         Parameters
         ----------
-        data_name : :obj:`str', optional
+        data_name : :obj:`str`, optional
             Name of the STORM data element to histogram. If omitted, the first STORM element is used.
         ax : :class:`matplotlib.axes.Axes`
             Matplotlib axes to use for plotting.
@@ -950,7 +950,7 @@ class CellListPlot(object):
 
         Parameters
         ----------
-        prop : :obj:`str`:
+        prop : :obj:`str`
             Property to histogram. This can be one of 'length', radius, 'circumference', 'area', 'surface' or 'volume'.
         ax : :class:`~matplotlib.axes.Axes`, optional
             Matplotlib axes to use for plotting.
@@ -959,10 +959,10 @@ class CellListPlot(object):
 
         Returns
         -------
-
-            #todo
-
+        tuple : :obj:`tuple`
+            Return value is a tuple with `n`, `bins`, `patches` as returned by :meth:`~matplotlib.pyplot.hist`.
         """
+
         if prop == 'length':
             values = self.cell_list.length * (cfg.IMG_PIXELSIZE / 1000)
             title = 'Cell length'
@@ -990,18 +990,18 @@ class CellListPlot(object):
 
         ax = plt.gca() if ax is None else ax
         bins = kwargs.pop('bins', 'fd')
-        ax.hist(values, bins=bins, **kwargs)
+        h = ax.hist(values, bins=bins, **kwargs)
 
         ax.set_title(title)
         ax.set_xlabel(xlabel)
         ax.set_ylabel('Cell count')
 
-        return None
+        return h
 
     def hist_intensity(self, mask='binary', data_name='', ax=None, **kwargs):
         """
         Histogram all cell's mean fluorescence intensity. Intensities values are calculated by calling
-        `Cell.get_intensity()`
+        ``Cell.get_intensity()``
 
         Parameters
         ----------
@@ -1013,12 +1013,12 @@ class CellListPlot(object):
         ax : :class:`matplotlib.axes.Axes`, optinal
             Matplotlib axes to use for plotting.
         **kwargs
-            Additional kwargs passed to ax.hist().
+            Additional kwargs passed to ``ax.hist()``.
 
         Returns
         -------
         tuple : :obj:`tuple`
-            Return value is a tuple with `n`, `bins`, `patches` as returned by :meth:`~matplotlib.pyplot.hist`
+            Return value is a tuple with `n`, `bins`, `patches` as returned by :meth:`~matplotlib.pyplot.hist`.
         """
 
         values = self.cell_list.get_intensity(mask=mask, data_name=data_name)
@@ -1300,7 +1300,7 @@ class CellListPlot(object):
             Additional kwargs passed to the function getting the distribution.
         norm_y : :obj:`bool`
             If `True` the output kymograph is normalized frame-wise.
-        aspect : :obj:`float'
+        aspect : :obj:`float`
             Aspect ratio of output kymograph image.
         **kwargs
             Additional keyword arguments passed to ax.imshow()
@@ -1340,7 +1340,7 @@ class CellListPlot(object):
         ax : :class:`matplotlib.axes.Axes`
             Matplotlib axes to use for plotting.
         **kwargs
-            Additional kwargs passed to `ax.hist()`
+            Additional kwargs passed to ``ax.hist()``
 
         Returns
         -------
@@ -1350,8 +1350,8 @@ class CellListPlot(object):
             The edges of the bins.
         patches : :obj:`list`
             Silent list of individual patches used to create the histogram.
-
         """
+
         if not data_name:
             data_name = list(self.cell_list[0].data.storm_dict.keys())[0]
 
@@ -1397,7 +1397,7 @@ class CellListPlot(object):
         norm_x : :obj:`bool`
             If `True` all radial distances are normalized by dividing by the radius of the individual cells.
         **kwargs
-            Additional kwargs passed to `ax.hist()`
+            Additional kwargs passed to ``ax.hist()``
 
         Returns
         -------
@@ -1407,7 +1407,6 @@ class CellListPlot(object):
             The edges of the bins.
         patches : :obj:`list`
             Silent list of individual patches used to create the histogram.
-
         """
         if not data_name:
             data_name = list(self.cell_list[0].data.storm_dict.keys())[0]
@@ -1450,12 +1449,12 @@ class CellListPlot(object):
         ax : :class:`matplotlib.axes.Axes`
             Matplotlib axes to use for plotting.
         **kwargs
-            Additional kwargs passed to `ax.hist()`
+            Additional kwargs passed to ``ax.hist()``
 
         Returns
         -------
         n : :class:`~numpy.ndarray`
-            The values of the histogram bins as produced by :func:`~matplotlib.pyplot.hist`
+            The values of the histogram bins as produced by :func:`~matplotlib.pyplot.hist`.
         bins : :class:`~numpy.ndarray`
             The edges of the bins.
         patches : :obj:`list`

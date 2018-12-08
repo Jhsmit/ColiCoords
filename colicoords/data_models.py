@@ -51,7 +51,7 @@ class BinaryImage(np.ndarray):
 
     @property
     def orientation(self):
-        """float: The main image axis orientation in degrees"""
+        """:obj:`float`: The main image axis orientation in degrees"""
         return _calc_orientation(self)
 
 
@@ -100,13 +100,13 @@ class BrightFieldImage(np.ndarray):
 
     @property
     def orientation(self):
-        """float: The main image axis orientation in degrees"""
+        """:obj:`float`: The main image axis orientation in degrees"""
         return _calc_orientation(self)
 
 
 class FluorescenceImage(np.ndarray):
     """
-    Fluorescence image data class
+    Fluorescence image data class.
 
     Attributes
     ----------
@@ -149,7 +149,7 @@ class FluorescenceImage(np.ndarray):
 
     @property
     def orientation(self):
-        """float: The main image axis orientation in degrees"""
+        """:obj:`float`: The main image axis orientation in degrees"""
         return _calc_orientation(self)
 
 
@@ -341,7 +341,7 @@ class Data(object):
 
         Parameters
         ----------
-        theta :obj:`float`
+        theta : :obj:`float`
             Rotation angle in degrees.
 
         Returns

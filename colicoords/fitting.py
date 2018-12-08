@@ -305,6 +305,10 @@ class LinearModelFit(Fit):
     """
     Fitting of a model with linear parameters where the linear parameters are not fitted by ``symfit`` but instead
     solved as a system of linear equations.
+
+    Parameters
+    ----------
+    model : :
     """
     def __init__(self, model, *args, **kwargs):
         objective = kwargs.pop('objective', None)

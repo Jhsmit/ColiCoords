@@ -1133,7 +1133,10 @@ class IterCellPlot(object):
         """
 
         if type(img) == str:
+            cmap = kwargs.pop('cmap', cmap_default[self.cell_list[0].data.data_dict[img].dclass])
             img = np.stack([cell_obj.data.data_dict[img] for cell_obj in self.cell_list])
+        else:
+            cmap = kwargs.pop('cmap', 'viridis')
         assert img.ndim == 3
 
         xmax = self.cell_list[0].data.shape[1]
@@ -1141,10 +1144,12 @@ class IterCellPlot(object):
 
         extent = kwargs.pop('extent', [0, xmax, ymax, 0])
         interpolation = kwargs.pop('interpolation', 'none')
-        try:
-            cmap = kwargs.pop('cmap', cmap_default[img[0].dclass] if img[0].dclass else 'viridis')
-        except AttributeError:
-            cmap = kwargs.pop('cmap', 'viridis')
+        # print(img[0].dclass)
+        # print(cmap_default[img[0].dclass])
+        # try:
+        #     cmap = kwargs.pop('cmap', cmap_default[img[0].dclass] if img[0].dclass else 'viridis')
+        # except AttributeError:
+        #     cmap = kwargs.pop('cmap', 'viridis')
 
         ax = plt.gca() if ax is None else ax
         image = ax.iter_imshow(img, extent=extent, interpolation=interpolation, cmap=cmap, **kwargs)
