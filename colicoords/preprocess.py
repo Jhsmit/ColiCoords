@@ -5,7 +5,7 @@ import warnings
 from colicoords.cell import Cell, CellList
 
 
-def filter_binaries(bin_arr, remove_bordering=True, min_size=250, max_size=1000, max_minor=10, max_major=45):
+def filter_binaries(bin_arr, remove_bordering=True, min_size=None, max_size=None, max_minor=None, max_major=None):
     """
     Filters and labels a stack of binary images.
 
