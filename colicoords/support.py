@@ -178,12 +178,13 @@ def pad_cell(cell, shape, mode='mean'):
     pad_v_t = int(np.floor(pad_v/2))
 
     d_out = pad_data(cell.data, shape, mode=mode)
-    c_out = colicoords.Cell(d_out)
+    c_out = colicoords.Cell(d_out, init_coords=False)
     c_out.name = cell.name
+    c_out.coords.shape = d_out.shape
 
     c_out.coords.a0 = cell.coords.a0 - cell.coords.a1*pad_h_l + cell.coords.a2*pad_h_l**2 + pad_v_t
     c_out.coords.a1 = cell.coords.a1 - 2*cell.coords.a2*pad_h_l
-    c_out.coords.a2 = cell.coords.a2  # redundant
+    c_out.coords.a2 = cell.coords.a2
 
     c_out.coords.xl = cell.coords.xl + pad_h_l
     c_out.coords.xr = cell.coords.xr + pad_h_l
@@ -263,12 +264,13 @@ def crop_cell(cell, shape):
     crop_v_t = int(np.floor(crop_v/2))
 
     d_out = crop_data(cell.data, shape)
-    c_out = colicoords.Cell(d_out)
+    c_out = colicoords.Cell(d_out, init_coords=False)
     c_out.name = cell.name
+    c_out.coords.shape = d_out.shape
 
     c_out.coords.a0 = cell.coords.a0 + cell.coords.a1*crop_h_l + cell.coords.a2*crop_h_l**2 - crop_v_t
     c_out.coords.a1 = cell.coords.a1 + 2*cell.coords.a2*crop_h_l
-    c_out.coords.a2 = cell.coords.a2  # redundant
+    c_out.coords.a2 = cell.coords.a2
 
     c_out.coords.xl = cell.coords.xl - crop_h_l
     c_out.coords.xr = cell.coords.xr - crop_h_l
