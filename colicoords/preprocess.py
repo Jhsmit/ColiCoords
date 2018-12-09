@@ -130,7 +130,7 @@ def data_to_cells(input_data, initial_crop=5, final_crop=7, rotate='binary', rem
             max2f = np.min((max2p, data.shape[1]))
 
             output_data = data[min1f:max1f, min2f:max2f].copy()
-            output_data.binary_img //= output_data.binary_img.max()
+            output_data.data_dict['binary'] = (output_data.binary_img == l).astype(int)
 
             # Calculate rotation angle and rotate selections
             if rotate:

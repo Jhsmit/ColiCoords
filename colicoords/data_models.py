@@ -268,7 +268,6 @@ class Data(object):
                 raise TypeError('Invalid data type {} for data class binary'.format(data.dtype))
 
             self._check_shape(data.shape, data.ndim)
-            self.binary_img = BinaryImage(data, name=name, metadata=metadata)
             self.data_dict[name] = self.binary_img
         elif dclass == 'brightfield':
             self._check_shape(data.shape, data.ndim)
@@ -334,6 +333,22 @@ class Data(object):
     def names(self):
         """:obj:`list`: List of all data names in the ``Data`` object."""
         return [d.name for d in self.data_dict.values()]
+
+    @property
+    def binary_img(self):
+        """:class:`~np.ndarray`: Returns the binary image if present, else ``None``"""
+        try:
+            return self.data_dict['binary']
+        except KeyError:
+            return None
+
+    @property
+    def bf_img(self):
+        """:class:`~np.ndarray`: Returns the brightfield image if present, else ``None``"""
+        try:
+            return self.data_dict['brightfield']
+        except KeyError:
+            return None
 
     def rotate(self, theta):
         """
