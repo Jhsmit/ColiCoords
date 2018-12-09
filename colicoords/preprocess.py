@@ -144,6 +144,8 @@ def data_to_cells(input_data, initial_crop=5, final_crop=7, rotate='binary', rem
                 except AssertionError:
                     vprint('Cell {} on image {} {}: invalid orientation'.format(l, data.binary_img.name, i))
                     pass
+            else:
+                rotated_data = output_data
 
             if final_crop:
                 min1, max1, min2, max2 = mh.bbox(rotated_data.binary_img)
