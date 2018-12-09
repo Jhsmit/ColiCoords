@@ -1,6 +1,6 @@
 from colicoords.data_models import Data
 from colicoords.cell import Cell, CellList
-from colicoords.preprocess import data_to_cells
+from colicoords.preprocess import data_to_cells, filter_binaries
 from colicoords.postprocess import align_cells, align_images, align_storm
 from colicoords.plot import CellPlot, CellListPlot
 from colicoords.iplot import iter_subplots, IterCellPlot
