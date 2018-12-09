@@ -599,9 +599,6 @@ class Coordinates(object):
     def __init__(self, data, initialize=True, **kwargs):
         self.data = data
         self.coeff = np.array([1., 1., 1.])
-        self.r = 1
-        self.xl = 1
-        self.xr = 2
 
         if initialize:
             self.xl, self.xr, self.r, self.coeff = self._initial_guesses(data)  # refactor to class method
@@ -609,7 +606,7 @@ class Coordinates(object):
             self.shape = data.shape
         else:
             for p in self.parameters + ['shape']:
-                setattr(self, p, kwargs.pop(p, None))
+                setattr(self, p, kwargs.pop(p, 1))
 
     @property
     def a0(self):
