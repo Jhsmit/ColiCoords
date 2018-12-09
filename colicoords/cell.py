@@ -25,7 +25,8 @@ class Cell(object):
         Calculates transformations from/to cartesian and cellular coordinates.
     name : :obj:`str`
         Name identifying the cell (optional).
-
+    **kwargs:
+        Additional kwargs passed to :class:`~colicoords.cell.Coordinates`.
 
     Attributes
     ----------
@@ -36,9 +37,9 @@ class Cell(object):
     name : :obj:`str`
         Name identifying the cell (optional).
     """
-    def __init__(self, data_object, name=None, init_coords=True):
+    def __init__(self, data_object, name=None, init_coords=True, **kwargs):
         self.data = data_object
-        self.coords = Coordinates(self.data, initialize=init_coords)
+        self.coords = Coordinates(self.data, initialize=init_coords, **kwargs)
         self.name = name
 
     def optimize(self, data_name='binary', cell_function=None, minimizer=Powell, **kwargs):
@@ -561,9 +562,9 @@ class Cell(object):
 
         """
         # todo needs testing (this is done?) arent there more properties to copy?
-        new_cell = Cell(data_object=self.data.copy(), name=self.name)
-        for par in self.coords.parameters:
-            setattr(new_cell.coords, par, getattr(self.coords, par))
+        parameters = {par: getattr(self.coords, par) for par in self.coords.parameters}
+        parameters['shape'] = self.coords.shape
+        new_cell = Cell(data_object=self.data.copy(), name=self.name, init_coords=False, **parameters)
 
         return new_cell
 
@@ -598,6 +599,9 @@ class Coordinates(object):
     def __init__(self, data, initialize=True, **kwargs):
         self.data = data
         self.coeff = np.array([1., 1., 1.])
+        self.r = 1
+        self.xl = 1
+        self.xr = 2
 
         if initialize:
             self.xl, self.xr, self.r, self.coeff = self._initial_guesses(data)  # refactor to class method
