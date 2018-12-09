@@ -16,13 +16,13 @@ def filter_binaries(bin_arr, remove_bordering=True, min_size=250, max_size=1000,
     remove_bordering : :obj:`bool`
         Remove regions at the image border.
     min_size : :obj:`int`
-        Minimum size of binary regions.
+        Minimum size of binary regions. ``None`` to ignore.
     max_size : :obj:`int`
-        Maximum size of binary regions.
+        Maximum size of binary regions. ``None`` to ignore.
     max_minor : :obj:`int`
-        Maximum length of the semiminor ellipse axes of the binary region.
+        Maximum length of the semiminor ellipse axes of the binary region. ``None`` to ignore.
     max_major : :obj:`int`
-        Maximum length of the simimajor ellipse axes of the binary region.
+        Maximum length of the simimajor ellipse axes of the binary region. ``None`` to ignore.
 
     Returns
     -------
@@ -43,9 +43,9 @@ def filter_binaries(bin_arr, remove_bordering=True, min_size=250, max_size=1000,
             selection = img[min1:max1, min2:max2]
             major, minor = mh.features.ellipse_axes(selection)
 
-            if minor > max_minor:
+            if max_minor and minor > max_minor:
                 img[img == i] = 0
-            if major > max_major:
+            if max_major and major > max_major:
                 img[img == i] = 0
 
     return out
