@@ -210,8 +210,8 @@ class Data(object):
     The data class is designed to combine and organize all different channels (brightfield, binary, fluorescence, storm)
     into one object. The class provides basic functionality such as rotation and slicing.
 
-    Data elements can be accessed from `data_dict` or by attribute '<class>_<name>', where class can be either 'bf',
-    'flu', 'storm'.
+    Data elements can be accessed from `data_dict` or by attribute '<class>_<name>', where class can be either 'flu',
+    'storm'. Binary and brightfield can bre accessed as properties.
 
     Attributes
     ----------
@@ -228,9 +228,6 @@ class Data(object):
         self.flu_dict = {}
         self.bf_dict = {}
         self.storm_dict = {}
-
-        self.binary_img = None
-        self.brightfield_img = None
 
         self.shape = None
         self.ndim = None
@@ -272,7 +269,6 @@ class Data(object):
         elif dclass == 'brightfield':
             self._check_shape(data.shape, data.ndim)
             b = BrightFieldImage(data, name=name, metadata=metadata)
-            setattr(self, 'bf_' + name, b)
             self.bf_dict[name] = b
         elif dclass == 'fluorescence':
             assert name
