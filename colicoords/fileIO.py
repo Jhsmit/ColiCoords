@@ -82,13 +82,14 @@ def _load_cell(cell_grp):
         dclass = grp.attrs.get('dclass').decode('UTF-8')
         data_obj.add_data(data_arr, dclass=dclass, name=key)
 
-    c = Cell(data_obj)
+    c = Cell(data_obj, init_coords=False)
 
     attr_grp = cell_grp['attributes']
     attr_dict = dict(attr_grp.attrs.items())
 
     for a in ['r', 'xl', 'xr', 'coeff']:
         setattr(c.coords, a, attr_dict.get(a))
+    c.coords.shape = c.data.shape
 
     name = attr_dict.get('name').decode('UTF-8')
     c.name = name if name is not 'None' else None

@@ -26,6 +26,7 @@ class FileIOTest(ArrayTestCase):
         for p1, p2 in zip(self.cell_obj.coords.coeff, cell_obj_load.coords.coeff):
             self.assertEqual(p1, p2)
 
+        self.assertEqual(self.cell_obj.coords.shape, cell_obj_load.coords.shape)
         self.assertArrayEqual(self.cell_obj.data.binary_img, cell_obj_load.data.binary_img)
         self.assertArrayEqual(self.cell_obj.data.flu_fluorescence, cell_obj_load.data.flu_fluorescence)
 
