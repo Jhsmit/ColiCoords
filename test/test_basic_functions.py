@@ -21,7 +21,7 @@ class DataTest(testcase.ArrayTestCase):
         m0 = self.data.binary_img.mean()
         data_copy = self.data.copy()
         self.assertEqual(m0, self.data.binary_img.mean())
-        data_copy.binary_img += 20
+        data_copy.data_dict['binary'] += 20
 
         self.assertEqual(m0, self.data.binary_img.mean())
         self.assertEqual(data_copy.binary_img.mean(), m0 + 20)
