@@ -1171,6 +1171,46 @@ class IterCellPlot(object):
         plt.savefig(*args, **kwargs)
 
 
+class AutoIterCellPlot(IterCellPlot):
+    default_order = {
+        'binary': 0,
+        'brightfield': 1,
+        'fluorescence': 2
+    }
+
+    def __init__(self, cell_list, pad=True):
+        super(AutoIterCellPlot, self).__init__(cell_list, pad=pad)
+
+        #check equal data object for all cells? or assume?
+        self.dclasses = self.cell_list[0].data.dclasses
+        self.names = self.cell_list[0].data.names
+        for c in self.cell_list:
+            assert set(self.dclasses) == set(c.data.dclasses), 'All cell must have equal data elements'
+
+        self.num_img = len([d for d in self.dclasses if d != 'storm'])
+
+        self.fig = None
+        self.axes = None
+
+    def plot(self, cols=3, **kwargs):
+        rows = int(np.ceil(self.num_img / cols))
+        cols = min(cols, self.num_img)
+
+        self.fig, self.axes = iter_subplots(rows, cols, figsize=(9.5, 3), **kwargs)
+        names = sorted([name for name, dclass in zip(self.names, self.dclasses) if dclass != 'storm'],
+                       key=lambda x: self.default_order[x])
+
+        for ax, name in zip(self.axes.flatten(), names):
+            self.imshow(name, ax=ax)
+            self.plot_outline(ax=ax, alpha=0.5)
+
+        if self.dclasses.count('storm') == 1:
+            self.plot_storm(ax=self.axes.flatten()[-1], alpha=0.5)
+
+        plt.tight_layout()
+        self.fig.display()
+
+
 def iter_subplots(*args, **kwargs):
     subplot_kw = kwargs.pop('subplot_kw', {'projection': 'iter_update'})
 
