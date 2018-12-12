@@ -1,14 +1,14 @@
 import numpy as np
 from colicoords.support import gauss_2d
 from scipy.spatial import distance
-
+from tqdm.auto import tqdm
 #todo make align cells function which aligns all data elements
 
 
 #todo refactor to align alement
-def align_cells(model_cell, data_cells, data_name, r_norm=True, sigma=1):
+def align_data_element(model_cell, data_cells, data_name, r_norm=True, sigma=1):
     """
-    Align cells with respect to the shape of `model_cell`.
+    Align a data element from a set of cells with respect to the shape of `model_cell`.
 
     The returned data element has the same shape as the model Cell's data. Returned image data is aligned and averaged
     by a gaussian kernel. Returned STORM data element consists of all aligned individual data element.
@@ -71,7 +71,7 @@ def align_storm(model_cell, data_cells, data_name, r_norm=True):
     output = np.zeros(dpts, dtype=data_cells[0].data.data_dict[data_name].dtype)
 
     curr_index = 0
-    for cell in data_cells:
+    for cell in tqdm(data_cells, desc='Align STORM'):
         data_elem = cell.data.data_dict[data_name]
         curr_dpts = len(data_elem)
 
@@ -124,7 +124,7 @@ def align_images(model_cell, data_cells, data_name, r_norm=True):
     z = np.empty(dpts, dtype=float)
 
     curr_index = 0
-    for cell in data_cells:
+    for cell in tqdm(data_cells, desc='Align images'):
         curr_dpts = np.product(cell.data.shape)
 
         lc = cell.coords.lc / cell.length
@@ -166,7 +166,7 @@ def gauss_kernel(model_cell, x, y, z, sigma=1):
 
     output = np.empty(model_cell.data.shape)
     coords = np.array([x, y])
-    for index in np.ndindex(model_cell.data.shape):
+    for index in tqdm(np.ndindex(model_cell.data.shape), desc='Gaussian kernel', total=np.product(model_cell.data.shape)):
         xi, yi = index
         xp, yp = model_cell.coords.x_coords[xi, yi], model_cell.coords.y_coords[xi, yi]
 
