@@ -1175,7 +1175,8 @@ class AutoIterCellPlot(IterCellPlot):
     default_order = {
         'binary': 0,
         'brightfield': 1,
-        'fluorescence': 2
+        'fluorescence': 2,
+        'storm': 3
     }
 
     def __init__(self, cell_list, pad=True):
@@ -1196,16 +1197,18 @@ class AutoIterCellPlot(IterCellPlot):
         rows = int(np.ceil(self.num_img / cols))
         cols = min(cols, self.num_img)
 
-        self.fig, self.axes = iter_subplots(rows, cols, figsize=(9.5, 3), **kwargs)
-        names = sorted([name for name, dclass in zip(self.names, self.dclasses) if dclass != 'storm'],
-                       key=lambda x: self.default_order[x])
+        figsize = kwargs.pop('figsize', (9.5, 3))
+        self.fig, self.axes = iter_subplots(rows, cols, figsize=figsize, **kwargs)
+        names, dclasses = zip(*[pair for pair in sorted(zip(self.names, self.dclasses), key=lambda pair: self.default_order[pair[1]])])
 
-        for ax, name in zip(self.axes.flatten(), names):
-            self.imshow(name, ax=ax)
-            self.plot_outline(ax=ax, alpha=0.5)
-
-        if self.dclasses.count('storm') == 1:
-            self.plot_storm(ax=self.axes.flatten()[-1], alpha=0.5)
+        for ax, name, dclass in zip(self.axes.flatten(), names, dclasses):
+            if dclass == 'storm':
+                self.plot_storm(ax=ax, method='gauss')
+                self.plot_storm(ax=ax, alpha=0.5)
+            else:
+                self.imshow(name, ax=ax)
+                self.plot_outline(ax=ax, alpha=0.5)
+            ax.set_title(name)
 
         plt.tight_layout()
         self.fig.display()
