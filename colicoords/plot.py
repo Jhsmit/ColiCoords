@@ -6,7 +6,7 @@ from colicoords.config import cfg
 from colicoords.cell import calc_lc, CellList
 import seaborn as sns
 from scipy import stats
-
+from tqdm.auto import tqdm
 
 sns.set_style('white')
 cmap_default = {'fluorescence': 'viridis', 'binary': 'gray_r', 'brightfield': 'gray'}
@@ -512,11 +512,9 @@ class CellPlot(object):
             y_coords = np.repeat(yi, len(xi)).reshape(len(yi), len(xi))
             img = np.zeros_like(x_coords)
 
-            for _sigma, _int, _x, _y in zip(sigma, intensities, x, y):
+            pbar = tqdm if len(sigma) > 1500 else lambda i, total=None: i
+            for _sigma, _int, _x, _y in pbar(zip(sigma, intensities, x, y), total=len(sigma)):
                 img += _int * np.exp(-(((_x - x_coords) / _sigma) ** 2 + ((_y - y_coords) / _sigma) ** 2) / 2)
-
-            # cmap = kwargs.pop('cmap', 'viridis')
-            # artist = ax.imshow(img, interpolation=interpolation, cmap=cmap, extent=extent, **kwargs)
 
             img_norm = img / img.max()
 
