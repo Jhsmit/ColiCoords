@@ -8,7 +8,7 @@ import operator
 from functools import partial
 from scipy.integrate import quad
 from scipy.optimize import brentq
-import multiprocessing as mp
+import multiprocess as mp
 from tqdm.auto import tqdm
 
 
@@ -1155,7 +1155,7 @@ class Coordinates(object):
         return np.polyfit(x, y, 2)[::-1]
 
 
-def worker(cell, **kwargs):
+def optimize_worker(cell, **kwargs):
     """
     Worker object for optimize multiprocessing.
 
@@ -1249,7 +1249,7 @@ class CellList(object):
         kwargs = {'data_name': data_name, 'cell_function': cell_function, 'minimizer': minimizer, **kwargs}
         pool = mp.Pool(processes=processes)
 
-        f = partial(worker, **kwargs)
+        f = partial(optimize_worker, **kwargs)
 
         res = list(tqdm(pool.imap(f, self), total=len(self)))
 
@@ -1260,7 +1260,7 @@ class CellList(object):
 
     def execute(self, worker):
         """
-        Apply worker function `worker` to all cell objects and returns the results
+        Apply worker function `worker` to all cell objects and returns the results.
 
         Parameters
         ----------
@@ -1276,10 +1276,9 @@ class CellList(object):
 
         return res
 
-    def execute_mp(self, worker, processes=None):
-        #todo add test
+    def execute_mp(self, worker, processes=None, **kwargs):
         """
-        Apply worker function `worker` to all cell objects and returns the results
+        Apply worker function `worker` to all cell objects and returns the results.
 
         Parameters
         ----------
@@ -1288,17 +1287,15 @@ class CellList(object):
         processes : :obj:`int`
             Number of parallel processes to spawn. Default is the number of logical processors on the host machine.
 
+
         Returns
         -------
         res : :obj:`list`
-            List of results returned from `worker`
+            List of results returned from ``worker``.
         """
 
-        pool = mp.Pool(processes=processes)
+        pool = mp.Pool(processes, **kwargs)
         res = list(tqdm(pool.imap(worker, self), total=len(self)))
-
-        pool.close()
-        pool.join()
 
         return res
 
@@ -1555,10 +1552,12 @@ class CellList(object):
         if isinstance(key, numbers.Integral):
             return self.cell_list.__getitem__(key)
         else:
-            return self.__class__(self.cell_list.__getitem__(key))
+            out = self.__class__.__new__(self.__class__)
+            out.cell_list = self.cell_list.__getitem__(key)
+            return out
 
     def __setitem__(self, key, value):
-        assert isinstance(Cell, value)
+        assert isinstance(value, Cell)
         self.cell_list.__setitem__(key, value)
 
     def __contains__(self, item):
