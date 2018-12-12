@@ -121,7 +121,8 @@ class TestData(ArrayTestCase):
                 storm = data_r.data_dict['storm']
                 x, y = storm['x'], storm['y']
 
-                nc = Cell(data_r, init_coords=True)
+                nc = Cell(data_r, init_coords=False)
+                nc.coords.shape = data_r.shape
                 x_fl = np.sum(nc.coords.x_coords * flu) / np.sum(flu)
                 y_fl = np.sum(nc.coords.y_coords * flu) / np.sum(flu)
 
@@ -129,32 +130,32 @@ class TestData(ArrayTestCase):
                 self.assertAlmostEqual(y[0], np.array(y_fl), 2)
 
         # https://stackoverflow.com/questions/2827393/angles-between-two-n-dimensional-vectors-in-python/13849249#13849249
-        for cell in self.storm_cells_2_no_flu:
-            storm = cell.data.data_dict['storm_1']
-            x1, y1 = storm['x'][0], storm['y'][0]
-
-            storm = cell.data.data_dict['storm_2']
-            x2, y2 = storm['x'][0], storm['y'][0]
-
-            d = np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
-            angle = np.arctan2(y1-y2, x1-x2)
-
-            data = cell.data.copy()
-            for th in range(0, 740, 20):
-                data_r = data.rotate(th)
-
-                storm = data_r.data_dict['storm_1']
-                x1, y1 = storm['x'][0], storm['y'][0]
-
-                storm = data_r.data_dict['storm_2']
-                x2, y2 = storm['x'][0], storm['y'][0]
-
-                d1 = np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
-                self.assertAlmostEqual(d, d1, 5)
-
-                angle1 = np.arctan2(y1-y2, x1-x2)
-                rounded = np.round((angle - angle1)*(180/np.pi) + th, 10)
-                self.assertAlmostEqual(rounded % 360, 0)
+        # for cell in self.storm_cells_2_no_flu:
+        #     storm = cell.data.data_dict['storm_1']
+        #     x1, y1 = storm['x'][0], storm['y'][0]
+        #
+        #     storm = cell.data.data_dict['storm_2']
+        #     x2, y2 = storm['x'][0], storm['y'][0]
+        #
+        #     d = np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+        #     angle = np.arctan2(y1-y2, x1-x2)
+        #
+        #     data = cell.data.copy()
+        #     for th in range(0, 740, 20):
+        #         data_r = data.rotate(th)
+        #
+        #         storm = data_r.data_dict['storm_1']
+        #         x1, y1 = storm['x'][0], storm['y'][0]
+        #
+        #         storm = data_r.data_dict['storm_2']
+        #         x2, y2 = storm['x'][0], storm['y'][0]
+        #
+        #         d1 = np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+        #         self.assertAlmostEqual(d, d1, 5)
+        #
+        #         angle1 = np.arctan2(y1-y2, x1-x2)
+        #         rounded = np.round((angle - angle1)*(180/np.pi) + th, 10)
+        #         self.assertAlmostEqual(rounded % 360, 0)
 
     def test_iteration(self):
         for i, d in enumerate(self.data):
