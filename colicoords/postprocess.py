@@ -5,7 +5,6 @@ from tqdm.auto import tqdm
 #todo make align cells function which aligns all data elements
 
 
-#todo refactor to align alement
 def align_data_element(model_cell, data_cells, data_name, r_norm=True, sigma=1):
     """
     Align a data element from a set of cells with respect to the shape of `model_cell`.
