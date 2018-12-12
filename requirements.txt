@@ -2,6 +2,7 @@ numpy
 matplotlib >= 2.2.0
 seaborn
 mahotas
+multiprocess
 scipy
 h5py
 tifffile
