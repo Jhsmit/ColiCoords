@@ -1,4 +1,4 @@
-|travis| |appveyor| |docs| |license| |doi|
+|travis| |appveyor| |docs| |binder| |license| |doi| 
 
 |test|
 
@@ -12,10 +12,13 @@
 .. |docs| image:: https://readthedocs.org/projects/colicoords/badge/?version=latest
     :target: https://colicoords.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
+.. |binder| image:: https://mybinder.org/badge_logo.svg 
+    :target: https://mybinder.org/v2/gh/Jhsmit/ColiCoords/master
 .. |license| image:: https://img.shields.io/badge/License-MIT-yellow.svg
     :target: https://opensource.org/licenses/MIT
 .. |doi| image:: https://zenodo.org/badge/92830488.svg
    :target: https://zenodo.org/badge/latestdoi/92830488
+
 
 
 Preliminary docs: https://colicoords.readthedocs.io/
