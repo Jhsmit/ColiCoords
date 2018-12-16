@@ -47,7 +47,7 @@ Contact: jhsmit@gmail.com
 Examples
 ========
 
-Several examples of `ColiCoords` usage can be found in the examples directory. More examples will be added in time. 
+Several examples of `ColiCoords` usage can be found in the examples directory.
 
 
 |pipeline|
