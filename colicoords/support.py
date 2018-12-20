@@ -1,5 +1,6 @@
 from functools import wraps
 import numpy as np
+import mahotas as mh
 from symfit.core.fit import FitResults
 import colicoords
 
@@ -192,6 +193,7 @@ def pad_cell(cell, shape, mode='mean'):
 
     return c_out
 
+#todo make function that crops or pads cells to uniform shape no matter the shape
 
 #todo tests
 def crop_data(data, shape):
@@ -234,6 +236,22 @@ def crop_data(data, shape):
         d_out.add_data(v_out, v.dclass, v.name)
 
     return d_out
+
+
+def multi_erode(img, x):
+    img = img.astype(bool)
+    for i in range(x):
+        img = mh.erode(img)
+
+    return img
+
+
+def multi_dilate(img, x):
+    img = img.astype(bool)
+    for i in range(x):
+        img = mh.dilate(img)
+
+    return img
 
 
 #todo tests
