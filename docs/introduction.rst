@@ -20,19 +20,19 @@ Binary (left), brightfield (middle) and fluorescence (right) input images.
 
 .. code-block:: python
 
-  import tifffile
-  from colicoords import Data, Cell
+    import tifffile
+    from colicoords import Data, Cell
 
-  binary_img = tifffile.imread('data/01_binary.tif')
-  brightfield_img = tifffile.imread('data/01_brightfield.tif')
-  fluorescence_img = tifffile.imread('data/01_fluorescence.tif')
+    binary_img = tifffile.imread('data/01_binary.tif')
+    brightfield_img = tifffile.imread('data/01_brightfield.tif')
+    fluorescence_img = tifffile.imread('data/01_fluorescence.tif')
 
-  data = Data()
-  data.add_data(binary_img, 'binary')
-  data.add_data(brightfield_img, 'brightfield')
-  data.add_data(fluorescence_img, 'fluorescence', name='flu_514')
+    data = Data()
+    data.add_data(binary_img, 'binary')
+    data.add_data(brightfield_img, 'brightfield')
+    data.add_data(fluorescence_img, 'fluorescence', name='flu_514')
 
-  cell = Cell(data)
+    cell = Cell(data)
 
 The :py:class:`~colicoords.cell.Cell` object has two main attributes: :attr:`~colicoords.cell.Cell.data` and :attr:`~colicoords.cell.Cell.coords`. The :attr:`~colicoords.data_models.Data.data_dict` attribute is 
 the instance of :class:`~colicoords.data_models.Data` used to initialize the ``Cell`` object and holds all images as
@@ -44,7 +44,7 @@ on the binary image but can be optimized iteratively:
 
 .. code-block:: python
 
-  cell.optimize()
+    cell.optimize()
 
 More details on optimization of the coordinate system can be found in the section :doc:`optimization`. The cells 
 coordinate system allows for the conversion of carthesian input coordinates to be transformed to cell coordinates. The
@@ -59,21 +59,21 @@ along both the longitudinal or radial axis.
 
 .. code-block:: python
 
-  from colicoords.plot import CellPlot
-  import matplotlib.pyplot as plt
+    from colicoords.plot import CellPlot
+    import matplotlib.pyplot as plt
 
-  cp = CellPlot(cell)
+    cp = CellPlot(cell)
 
-  plt.figure()
-  cp.imshow('flu_514', cmap='viridis', interpolation='nearest')
-  cp.plot_outline()
-  cp.plot_midline()
-  plt.show()
+    plt.figure()
+    cp.imshow('flu_514', cmap='viridis', interpolation='nearest')
+    cp.plot_outline()
+    cp.plot_midline()
+    plt.show()
 
 .. figure:: figures/introduction_coordinates_initial.png
-  :scale: 25 %
+    :scale: 25 %
 
-  Brightfield image with cell midline and outline.
+    Brightfield image with cell midline and outline.
 
 This shows the brightfield image together with the cell outline and midline optimized from the binary image, which was 
 derived from the brightfield image. As can be seen the coordinate system does not completely match the fluorescence image of the cell. This is because the binary image is only a crude estimation of the actual cell position and shape. The coordinate system 
@@ -81,8 +81,8 @@ can be optimize based on the brightfield image to refine the coordinate system. 
 
 .. code-block:: python
 
-  cell.optimize('brightfield')
-  cell.measure_r('brightfield', mode='min')
+    cell.optimize('brightfield')
+    cell.measure_r('brightfield', mode='min')
 
 Here, the first line optimizes the coordinate system to match the shape of the cell as its measured in the brightfield image
 through an iterative bootstrapping process. Then, in the second line, the radius of the cell is determined from the 
@@ -92,25 +92,24 @@ coordinates from carthesian to cell coordinates but only in geometrical properti
 the following result:
 
 .. figure:: figures/introduction_coordinates_final.png
-  :scale: 25 %
+    :scale: 25 %
 
-Brightfield image with optimized coordinate system.
+    Brightfield image with optimized coordinate system.
 
 
 To plot the radial distribution of the ``flu_514`` fluorescence channel:
 
 .. code-block:: python
 
-  f, (ax1, ax2) = plt.subplots(1, 2)
-  cp.plot_r_dist(ax=ax1)
-  cp.plot_r_dist(ax=ax2, norm_x=True, norm_y=True)
-  plt.tight_layout()
+    f, (ax1, ax2) = plt.subplots(1, 2)
+    cp.plot_r_dist(ax=ax1)
+    cp.plot_r_dist(ax=ax2, norm_x=True, norm_y=True)
+    plt.tight_layout()
 
 .. figure:: figures/introduction_flu_rdist.png
-  :scale: 75 %
+    :scale: 75 %
 
-
-Radial distribution curve of fluorescence as measured (left) and normalized (right).
+    Radial distribution curve of fluorescence as measured (left) and normalized (right).
 
 The displayed curve is constructed by calcuating the radials distance for every the (x, y) coordinates pair for each pixels.
 The final curve is calculated from all datapoints by smoothing with a gaussian kernel. 

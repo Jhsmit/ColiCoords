@@ -27,17 +27,17 @@ A :class:`~colicoords.data_models.Data` object can be prepares as follows:
 
 .. code-block:: python
 
-  import tifffile
-  from colicoords import Data, data_to_cells
+    import tifffile
+    from colicoords import Data, data_to_cells
 
-  binary_stack = tifffile.imread('data/02_binary_stack.tif')
-  flu_stack = tifffile.imread('data/02_brightfield_stack.tif')
-  brightfield_stack = tifffile.imread('data/02_fluorescence_stack.tif')
+    binary_stack = tifffile.imread('data/02_binary_stack.tif')
+    flu_stack = tifffile.imread('data/02_brightfield_stack.tif')
+    brightfield_stack = tifffile.imread('data/02_fluorescence_stack.tif')
 
-  data = Data()
-  data.add_data(binary_stack, 'binary')
-  data.add_data(flu_stack, 'fluorescence')
-  data.add_data(brightfield_stack, 'brightfield')
+    data = Data()
+    data.add_data(binary_stack, 'binary')
+    data.add_data(flu_stack, 'fluorescence')
+    data.add_data(brightfield_stack, 'brightfield')
 
 
 The :class:`~colicoords.data_models.Data` class supports iteration and Numpy-like indexing. This indexing capability is 
@@ -55,9 +55,9 @@ Cell objects and optimization
 
 .. code-block:: python
 
-  cell_list = data_to_cells(data)
-  cell_list.optimize('brightfield')
-  cell_list.measure_r('brightfield', mode='mid')
+    cell_list = data_to_cells(data)
+    cell_list.optimize('brightfield')
+    cell_list.measure_r('brightfield', mode='mid')
 
 High-performance computing is supported for timely optimizing many cell object though calling :func:`~colicoords.cell.CellList.optimize_mp` (see :doc:`optimization`). 
 
@@ -72,15 +72,15 @@ Plotting
 
 .. code-block:: python
 
-  from colicoords import CellListPlot
+    from colicoords import CellListPlot
 
-  clp = CellListPlot(cell_list)
-  fig, axes = plt.subplots(2, 2)
-  clp.hist_property(ax=axes[0,0], tgt='radius')
-  clp.hist_property(ax=axes[0,1], tgt='length')
-  clp.hist_property(ax=axes[1,0], tgt='area')
-  clp.hist_property(ax=axes[1,1], tgt='volume')
-  plt.tight_layout()
+    clp = CellListPlot(cell_list)
+    fig, axes = plt.subplots(2, 2)
+    clp.hist_property(ax=axes[0,0], tgt='radius')
+    clp.hist_property(ax=axes[0,1], tgt='length')
+    clp.hist_property(ax=axes[1,0], tgt='area')
+    clp.hist_property(ax=axes[1,1], tgt='volume')
+    plt.tight_layout()
 
 
 .. figure:: figures/batch_processing_properties.png
@@ -89,7 +89,7 @@ When using :class:`~colicoords.cell.CellList` the function :func:`~colicoords.ce
 
 .. code-block:: python
 
-  x, y = cell_list.r_dist(20, 1)
+    x, y = cell_list.r_dist(20, 1)
 
 Here, the arguments given are the `stop` and `step` parameters for the x-axis, respectively. The returned `y` is an array
 where each row holds the radial distribution for a given cell. 
@@ -98,11 +98,11 @@ To plot the radial distributions via :class:`~colicoords.plot.CellListPlot`:
 
 .. code-block:: python
 
-  f, axes = plt.subplots(1, 2)
-  clp.plot_r_dist(ax=axes[0])
-  axes[0].set_ylim(0, 35000)
-  clp.plot_r_dist(ax=axes[1], norm_y=True, norm_x=True)
-  plt.tight_layout()
+    f, axes = plt.subplots(1, 2)
+    clp.plot_r_dist(ax=axes[0])
+    axes[0].set_ylim(0, 35000)
+    clp.plot_r_dist(ax=axes[1], norm_y=True, norm_x=True)
+    plt.tight_layout()
 
 
 .. figure:: figures/batch_processing_r_dist.png

@@ -5,6 +5,7 @@ Module Documentation
 
 This page contains the full API docs of ``ColiCoords``
 
+
 Cell
 ----
 
@@ -39,4 +40,3 @@ FileIO
 .. automodule:: colicoords.fileIO
     :members:
 
-    

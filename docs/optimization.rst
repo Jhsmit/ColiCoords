@@ -10,7 +10,7 @@ The shorthand approach for optimizing the coordinate system is:
 
 .. code-block:: python
 
-  cell.optimize()
+    cell.optimize()
 
 By calling :func:`~colicoords.cell.optimize()` the coordinate system is optimized for the current ``Cell`` object by
 using the default settings. This means the optimization is performed on the binary image using the ``Powell`` minimizer
@@ -28,7 +28,7 @@ For example, optimimzation based on the brightfield image can be done as follows
 
 .. code-block:: python
 
-  cell.optimize('brightfield')
+    cell.optimize('brightfield')
 
 Where it is assumed that the brightfield data element is named `'brightfield'`. The appropriate function that is used for
 the optimization is chosen automatically based on the data class and can be supplied optionally by the `cell_function`
@@ -71,7 +71,7 @@ take advantage of parallel high-performance computing. To perform optimization i
 
 .. code-block:: python
 
-  cells.optimize_mp()
+    cells.optimize_mp()
 
 Where `cells` is a :class:`~colicoords.cell.CellList` object. The cells to be divided is equally distributed among the
 spawned processes, which is by default equal to the number of physical cores present on the host machine.
@@ -86,13 +86,13 @@ object instead of calling :func:`~colicoords.cell.Cell.optimize`.
 
 .. code-block:: python
 
-  from colicoords import CellFit
-  fit = CellFit(cell)
-  print(fit.model.params) # [a0, a1, a2, r, xl, xr]
-  # Set the minimum bound of the `a0` parameter to 5.
-  fit.model.params[0].min = 5
-  # Se the value of the `r`parameter to 8.
-  fit.model.params[3].value = 8
+    from colicoords import CellFit
+    fit = CellFit(cell)
+    print(fit.model.params) # [a0, a1, a2, r, xl, xr]
+    # Set the minimum bound of the `a0` parameter to 5.
+    fit.model.params[0].min = 5
+    # Se the value of the `r`parameter to 8.
+    fit.model.params[3].value = 8
 
 The fitting can then be executed by calling ``fit.execute()`` as usual.
 
