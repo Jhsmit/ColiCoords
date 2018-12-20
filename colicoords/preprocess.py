@@ -51,7 +51,7 @@ def filter_binaries(bin_arr, remove_bordering=True, min_size=None, max_size=None
     return out
 
 
-#todo split into filter binary and data to cells
+#todo check input binary labeled or not
 def data_to_cells(input_data, initial_crop=5, final_crop=7, rotate='binary', remove_bordering=True,
                   remove_multiple_cells=True, remove_poor_fit=True, init_coords=True, verbose=True):
     """

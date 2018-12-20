@@ -617,8 +617,47 @@ class CellPlot(object):
 
         return container
 
-    def _plot_storm(self, storm_table, ax=None, kernel=None, bw_method=0.05, upscale=2, alpha_cutoff=None, **kwargs):
-        raise DeprecationWarning("")
+    def _plot_storm(self, ax=None, data_name='', method='plot', upscale=5, storm_weight=True,
+                   sigma=0.25, **kwargs):
+        # temporary function
+        """
+        Graphically represent STORM data.
+
+        Parameters
+        ----------
+        ax : :class:`~matplotlib.axes.Axes`
+            Optional matplotlib axes to use for plotting.
+        data_name : :obj:`str`
+            Name of the data element to plot. Must be of data class 'storm'.
+        method : :obj:`str`
+            Method of visualization. Options are 'plot', 'hist', or 'gauss' just plotting points, histogram plot or
+            gaussian kernel plot.
+        upscale : :obj:`int`
+            Upscale factor for the output image. Number of pixels is increased w.r.t. data.shape with a factor upscale**2
+        alpha_cutoff : :obj:`float`
+            Values (normalized) below `alpha_cutoff` are transparent, where the alpha is linearly scaled between 0 and
+            `alpha_cutoff`
+        storm_weight : :obj:`bool`
+            If `True` the STORM data points are weighted by their intensity.
+        sigma : :obj:`float` or :obj:`string` or :class:`~numpy.ndarray`
+            Only applies for method 'gauss'. The value is the sigma which describes the gaussian kernel. If `sigma` is a
+            scalar, the same sigma value is used for all data points. If `sigma` is a string it is interpreted as the
+            name of the field in the STORM array to use. Otherwise, sigma can be an array with equal length to the
+            number of datapoints.
+        **kwargs
+            Additional kwargs passed to ax.plot() or ax.imshow().
+
+        Returns
+        -------
+        image
+        """
+        # todo alpha cutoff docstirng and adjustment / testing
+        if not data_name:
+            storm_table = list(self.cell_obj.data.storm_dict.values())[0]
+        else:
+            storm_table = self.cell_obj.data.data_dict[data_name]
+            assert storm_table.dclass == 'storm'
+
         x, y = storm_table['x'], storm_table['y']
 
         if self.cell_obj.data.shape:
@@ -628,39 +667,59 @@ class CellPlot(object):
             xmax = int(storm_table['x'].max())
             ymax = int(storm_table['y'].max())
 
-        x_bins = np.linspace(0, xmax, num=xmax * upscale, endpoint=True)
-        y_bins = np.linspace(0, ymax, num=ymax * upscale, endpoint=True)
-
-        h, xedges, yedges = np.histogram2d(x, y, bins=[x_bins, y_bins])
+        try:
+            intensities = storm_table['intensity'] if storm_weight else np.ones_like(x)
+        except ValueError:
+            print("Warning: The field 'intensity' was not found, all weights are set to one")
+            intensities = np.ones_like(x)
 
         ax = plt.gca() if ax is None else ax
-        if not kernel:
+        if method == 'plot':
+            color = kwargs.pop('color', 'r')
+            marker = kwargs.pop('marker', '.')
+            linestyle = kwargs.pop('linestyle', 'None')
+            artist, = ax.plot(x, y, color=color, marker=marker, linestyle=linestyle, **kwargs)
+
+        elif method == 'hist':
+            x_bins = np.linspace(0, xmax, num=xmax * upscale, endpoint=True)
+            y_bins = np.linspace(0, ymax, num=ymax * upscale, endpoint=True)
+
+            h, xedges, yedges = np.histogram2d(x, y, bins=[x_bins, y_bins])
+
             cm = plt.cm.get_cmap('Blues')
             cmap = cm if not 'cmap' in kwargs else kwargs.pop('cmap')
 
             img = h.T
-            ax.imshow(img, interpolation='nearest', cmap=cmap, extent=[0, xmax, ymax, 0], **kwargs)
+            return img
+
+        elif method == 'gauss':
+            if type(sigma) == str:
+                sigma = storm_table[sigma]
+            elif isinstance(sigma, np.ndarray):
+                assert sigma.shape == x.shape
+            elif np.isscalar(sigma):
+                sigma = sigma * np.ones_like(x)
+            else:
+                raise ValueError('Invalid sigma')
+
+            step = 1 / upscale
+            xi = np.arange(step / 2, xmax, step)
+            yi = np.arange(step / 2, ymax, step)
+
+            x_coords = np.repeat(xi, len(yi)).reshape(len(xi), len(yi)).T
+            y_coords = np.repeat(yi, len(xi)).reshape(len(yi), len(xi))
+            img = np.zeros_like(x_coords)
+
+            pbar = tqdm if len(sigma) > 1500 else lambda i, total=None: i
+            for _sigma, _int, _x, _y in pbar(zip(sigma, intensities, x, y), total=len(sigma)):
+                img += _int * np.exp(-(((_x - x_coords) / _sigma) ** 2 + ((_y - y_coords) / _sigma) ** 2) / 2)
+
+            return img
+
         else:
-            # https://jakevdp.github.io/PythonDataScienceHandbook/05.13-kernel-density-estimation.html
-            # todo check the mgrid describes the coords correctly
-            X, Y = np.mgrid[0:xmax:xmax * upscale * 1j, ymax:0:ymax * upscale * 1j]
-            positions = np.vstack([X.ravel(), Y.ravel()])
-            values = np.vstack([x, y])
-            k = stats.gaussian_kde(values, bw_method=bw_method)
-            Z = np.reshape(k(positions).T, X.shape)
-            img = np.rot90(Z)
+            raise ValueError('Invalid plotting method')
 
-            img_norm = img / img.max()
-            alphas = np.ones(img.shape)
-            if alpha_cutoff:
-                alphas[img_norm < 0.3] = img_norm[img_norm < 0.3] / 0.3
-
-            cmap = sns.light_palette("green", as_cmap=True) if not 'cmap' in kwargs else plt.cm.get_cmap(kwargs.pop('cmap'))
-            normed = Normalize()(img)
-            colors = cmap(normed)
-            colors[..., -1] = alphas
-
-            ax.imshow(colors, cmap=cmap, extent=[0, xmax, ymax, 0], interpolation='nearest', **kwargs)
+        return artist
 
     def plot_kymograph(self, ax=None, mode='r', data_name='', time_factor=1, time_unit='frames', dist_kwargs=None,
                        norm_y=True, aspect=1, **kwargs):
