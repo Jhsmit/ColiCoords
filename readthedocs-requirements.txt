@@ -9,5 +9,6 @@ h5py
 tifffile
 tqdm >= 4.27.0
 symfit >= 0.4.6
+multiprocess
 ipywidgets
 IPython
