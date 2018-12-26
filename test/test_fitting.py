@@ -4,7 +4,8 @@ from test.testcase import ArrayTestCase
 from colicoords.fileIO import load
 from colicoords.minimizers import *
 import platform
-
+from distutils.version import StrictVersion
+import scipy
 
 class TestCellFitting(ArrayTestCase):
     def setUp(self):
@@ -54,11 +55,18 @@ class TestCellFitting(ArrayTestCase):
 
     def test_fitting_brightfield_DE(self):
         cell_0 = self.cells[0].copy()
-        res_dict = {'a0': 1.762122e+01, 'a1': -2.272049e-02, 'a2': 4.457729e-04,
-                    'r': 9.243795e+00, 'xl': 1.517070e+01, 'xr': 3.638401e+01}
+        if StrictVersion(scipy.__version__) < StrictVersion('1.2.0'):
+            res_dict = {'a0': 1.762122e+01, 'a1': -2.272049e-02, 'a2': 4.457729e-04,
+                        'r': 9.243795e+00, 'xl': 1.517070e+01, 'xr': 3.638401e+01}
+            value = 8206601.073967202
+        else:
+            res_dict = {'a0': 1.804735702887220E+01, 'a1': -5.285406247108937E-02, 'a2': 9.726930458977879E-04,
+                        'r': 9.265014573271854E+00, 'xl': 1.520349136432933E+01, 'xr': 3.637929146737385E+01}
+            value = 8221057.758640378
 
         res = cell_0.optimize('brightfield', minimizer=DifferentialEvolution, **self.de_kwargs)
-        self.assertAlmostEqual(res.objective_value, 8206601.073967202, 6)
+        self.assertAlmostEqual(res.objective_value, value, 6)
+
         for k, v in res_dict.items():
             self.assertAlmostEqual(v, res.params[k], 5)
 
