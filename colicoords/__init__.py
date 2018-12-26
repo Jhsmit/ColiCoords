@@ -11,10 +11,11 @@ from colicoords.synthetic_data import SynthCell, SynthCellList
 
 import pkg_resources
 
-
-
-__version__ = pkg_resources.get_distribution('colicoords').version
-
+try:
+    __version__ = pkg_resources.get_distribution('colicoords').version
+except pkg_resources.DistributionNotFound:
+    __version__ = '0.0.0'
+    print('Warning: Version number not found.')
 
 try:
     from colicoords.models import Memory
