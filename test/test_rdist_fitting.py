@@ -1,5 +1,7 @@
 import unittest
 import os
+import scipy
+from distutils.version import StrictVersion
 from symfit import Fit
 from colicoords.fileIO import load
 from colicoords.models import PSF, RDistModel, Memory
@@ -69,12 +71,18 @@ class RDistModelFittingTest(unittest.TestCase):
         fit = LinearModelFit(rm, x, y, minimizer=DifferentialEvolution)
         res = fit.execute(**self.de_kwargs)
 
-        self.assertAlmostEqual(345643270.9300041, res.objective_value, 3)
+        if StrictVersion(scipy.__version__) < StrictVersion('1.2.0'):
+            self.assertAlmostEqual(345643270.9300041, res.objective_value, 3)
+        else:
+            self.assertAlmostEqual(345879265.1227611, res.objective_value, 3)
 
         fit = LinearModelFit(rm, x, y, minimizer=DifferentialEvolution, sigma_y=1/np.sqrt(y))
         res = fit.execute(**self.de_kwargs)
 
-        self.assertAlmostEqual(3040393780457.542, res.objective_value, 1)
+        if StrictVersion(scipy.__version__) < StrictVersion('1.2.0'):
+            self.assertAlmostEqual(3040393780457.542, res.objective_value, 1)
+        else:
+            self.assertAlmostEqual(3040175848399.3022, res.objective_value, 1)
 
 
 if __name__ == '__main__':
