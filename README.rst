@@ -1,4 +1,4 @@
-|travis| |appveyor| |docs| |binder| |license| |doi| 
+|travis| |appveyor| |docs| |binder| |codecov| |license| |doi| 
 
 |test|
 
@@ -14,6 +14,8 @@
     :alt: Documentation Status
 .. |binder| image:: https://mybinder.org/badge_logo.svg 
     :target: https://mybinder.org/v2/gh/Jhsmit/ColiCoords/master
+.. |codecov| image:: https://codecov.io/gh/Jhsmit/ColiCoords/branch/master/graph/badge.svg
+  :target: https://codecov.io/gh/Jhsmit/ColiCoords
 .. |license| image:: https://img.shields.io/badge/License-MIT-yellow.svg
     :target: https://opensource.org/licenses/MIT
 .. |doi| image:: https://zenodo.org/badge/92830488.svg
