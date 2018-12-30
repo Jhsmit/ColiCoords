@@ -8,6 +8,7 @@ python:
 install:
 - pip install --upgrade pip setuptools
 - pip install --upgrade pbr
+- pip install coveralls
 - pip install -r requirements.txt --prefer-binary
 - pip install joblib
   #- python setup.py install
@@ -15,6 +16,9 @@ install:
  # command to run tests
 script:
   - pytest
+
+after_success:
+  - coveralls
   
 before_deploy:
  - pbr --version
