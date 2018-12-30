@@ -8,8 +8,7 @@ python:
 install:
 - pip install --upgrade pip setuptools
 - pip install --upgrade pbr
-- pip install coveralls
-- pip install PyYAML
+- pip install codecov
 - pip install -r requirements.txt --prefer-binary
 - pip install joblib
   #- python setup.py install
@@ -19,7 +18,7 @@ script:
   - pytest
 
 after_success:
-  - coveralls
+  - codecov
   
 before_deploy:
  - pbr --version
