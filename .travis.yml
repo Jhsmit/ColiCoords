@@ -9,14 +9,15 @@ install:
 - pip install --upgrade pip setuptools
 - pip install --upgrade pbr
 - pip install codecov
-- pip install coverage
+- pip install pytest 
+- pip install pytest-cov
 - pip install -r requirements.txt --prefer-binary
 - pip install joblib
   #- python setup.py install
   
  # command to run tests
 script:
-  - pytest
+  - pytest --cov=./
 
 after_success:
   - codecov
