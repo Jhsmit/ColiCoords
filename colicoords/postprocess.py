@@ -2,7 +2,45 @@ import numpy as np
 from colicoords.support import gauss_2d
 from scipy.spatial import distance
 from tqdm.auto import tqdm
-#todo make align cells function which aligns all data elements
+
+
+def align_cells(model_cell, data_cells, r_norm=True, sigma=1):
+    """
+    Align all data element from a set of cells with respect to the shape of `model_cell`.
+
+    The returned ``Cell`` has the same shape as the model Cell's data. Returned image data is aligned and averaged
+    by a gaussian kernel. Returned STORM data element is a combination of all aligned individual data elements.
+
+    Parameters
+    ----------
+    model_cell : :class:`~colicoords.cell.Cell`
+        Model cell used to align `data_cells` to.
+    data_cells : :class:`~colicoords.cell.CellList`
+        ``CellList`` of data cells to align.
+
+    r_norm : :obj:`bool`, optional
+        Whether or not to normalize the cells with respect to their radius. Default is `True`.
+    sigma : :obj:`float`
+        Sigma of the gaussian kernel used to calculate output aligned images.
+
+    Returns
+    -------
+    output : :class:`~colicoords.cell.Cell`
+      Aligned output `Cell` object.
+    """
+
+    names = data_cells[0].data.names
+    for cell in data_cells:
+        assert cell.data.names == names, 'Cell with different data elements in `data_cells`'
+    dclasses = data_cells[0].data.dclasses
+
+    output_cell = model_cell.copy()
+    for name, dclass in zip(names, dclasses):
+        if dclass in ['storm', 'fluorescence', 'brightfield']:
+            elem = align_data_element(model_cell, data_cells, name, r_norm=r_norm, sigma=sigma)
+            output_cell.data.add_data(elem, dclass, name)
+
+    return output_cell
 
 
 def align_data_element(model_cell, data_cells, data_name, r_norm=True, sigma=1):
@@ -10,12 +48,12 @@ def align_data_element(model_cell, data_cells, data_name, r_norm=True, sigma=1):
     Align a data element from a set of cells with respect to the shape of `model_cell`.
 
     The returned data element has the same shape as the model Cell's data. Returned image data is aligned and averaged
-    by a gaussian kernel. Returned STORM data element consists of all aligned individual data element.
+    by a gaussian kernel. Returned STORM data element is a combination of all aligned individual data elements.
 
     Parameters
     ----------
     model_cell : :class:`~colicoords.cell.Cell`
-        Model cell used to align `data_cells` to
+        Model cell used to align `data_cells` to.
     data_cells : :class:`~colicoords.cell.CellList`
         ``CellList`` of data cells to align.
     data_name : :obj:`str`
