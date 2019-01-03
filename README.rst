@@ -7,7 +7,7 @@
 
 .. |travis| image:: https://travis-ci.org/Jhsmit/ColiCoords.svg?branch=master
     :target: https://travis-ci.org/Jhsmit/ColiCoords 
-.. |appveyor| image:: https://ci.appveyor.com/api/projects/status/801teey9fnm8kuc9?svg=true
+.. |appveyor| image:: https://ci.appveyor.com/api/projects/status/801teey9fnm8kuc9/branch/master?svg=true
     :target: https://ci.appveyor.com/project/Jhsmit/colicoords
 .. |docs| image:: https://readthedocs.org/projects/colicoords/badge/?version=latest
     :target: https://colicoords.readthedocs.io/en/latest/?badge=latest
