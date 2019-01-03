@@ -10,7 +10,7 @@ from scipy.integrate import quad
 from scipy.optimize import brentq
 import multiprocess as mp
 from tqdm.auto import tqdm
-
+from numba import jit
 
 class Cell(object):
     """ColiCoords' main single-cell object.
@@ -668,6 +668,11 @@ class Coordinates(object):
         """
 
         assert xp.shape == yp.shape
+        shape = xp.shape
+
+        xp = xp.flatten().astype(np.float32)
+        yp = yp.flatten().astype(np.float32)
+
         # https://en.wikipedia.org/wiki/Cubic_function#Algebraic_solution
         a0, a1, a2 = self.coeff
         # xp, yp = xp.astype('float32'), yp.astype('float32')
@@ -691,7 +696,7 @@ class Coordinates(object):
             x_c[mask] = general_part
             x_c[~mask] = trig_part
 
-        return x_c
+        return x_c.reshape(shape)
 
     @allow_scalars
     def calc_xc_mask(self, xp, yp):
@@ -1564,6 +1569,7 @@ class CellList(object):
         return self.cell_list.__contains__(item)
 
 
+@jit('float32[:](float64, float64, float32[:], float32[:])', nopython=True, cache=True)
 def solve_general(a, b, c, d):
     """
     Solve cubic polynomial in the form a*x^3 + b*x^2 + c*x + d.
@@ -1596,17 +1602,18 @@ def solve_general(a, b, c, d):
     # 32 32: 3.969 s
     # 64 64: 5.804 s
     # 8 8:
-    d0 = b ** 2. - 3. * a * c
-    d1 = 2. * b ** 3. - 9. * a * b * c + 27. * a ** 2. * d
+    d0 = b ** 2. - (3. * a) * c
+    d1 = 2. * b ** 3. - (9. * a * b) * c + (27. * a ** 2.) * d
 
     r0 = np.square(d1) - 4. * d0 ** 3.
     r1 = (d1 + np.sqrt(r0)) / 2
-    dc = np.cbrt(
-        r1)  # power (1/3) gives nan's for coeffs [1.98537881e+01, 1.44894594e-02, 2.38096700e+00]01, 1.44894594e-02, 2.38096700e+00]
+    # dc = np.cbrt(
+    #      r1)  # power (1/3) gives nan's for coeffs [1.98537881e+01, 1.44894594e-02, 2.38096700e+00]01, 1.44894594e-02, 2.38096700e+00]
+    dc = r1**(1/3)
     return -(1. / (3. * a)) * (b + dc + (d0 / dc))
     # todo hit a runtimewaring divide by zero on line above once
 
-
+@jit('float32[:](float64, float64, float32[:], float32[:])', nopython=True, cache=True)
 def solve_trig(a, b, c, d):
     """
     Solve cubic polynomial in the form a*x^3 + b*x^2 + c*x + d
@@ -1632,22 +1639,20 @@ def solve_trig(a, b, c, d):
 
     """
 
-    p = (3. * a * c - b ** 2.) / (3. * a ** 2.)
-    q = (2. * b ** 3. - 9. * a * b * c + 27. * a ** 2. * d) / (27. * a ** 3.)
-    assert (np.all(p < 0))
+    p = ((3. * a * c) - b ** 2.) * (1/(3. * a ** 2.))
+    q = (2. * b ** 3. - (9. * a * b )* c + (27. * a ** 2.) * d) * (1/(27. * a ** 3.))
     k = 0.
     t_k = 2. * np.sqrt(-p / 3.) * np.cos(
         (1 / 3.) * np.arccos(((3. * q) / (2. * p)) * np.sqrt(-3. / p)) - (2 * np.pi * k) / 3.)
     x_r = t_k - (b / (3 * a))
-    try:
-        assert (np.all(
-            x_r > 0))  # dont know if this is guaranteed otherwise boundaries need to be passed and choosing from 3 slns
-    except AssertionError:
-        pass
+    # try:
+    #     assert (np.all(
+    #         x_r > 0))  # dont know if this is guaranteed otherwise boundaries need to be passed and choosing from 3 slns
+    # except AssertionError:
+    #     pass
         # todo find out if this is bad or not
         # raise ValueError
     return x_r
-
 
 def calc_lc(xl, xr, coeff):
     """
