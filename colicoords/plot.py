@@ -2,13 +2,13 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 from matplotlib.ticker import MaxNLocator
 import numpy as np
-import cupy as gp
+# import cupy as gp
 from colicoords.config import cfg
 from colicoords.cell import calc_lc, CellList
 import seaborn as sns
 from scipy import stats
 from tqdm.auto import tqdm
-from numba import jit, cuda
+from numba import jit
 
 
 sns.set_style('white')
@@ -515,9 +515,11 @@ class CellPlot(object):
             y_coords = np.repeat(yi, len(xi)).reshape(len(yi), len(xi))
             img = np.zeros_like(x_coords)
 
-            pbar = tqdm if len(sigma) > 1500 else lambda i, total=None: i
-            for _sigma, _int, _x, _y in pbar(zip(sigma, intensities, x, y), total=len(sigma)):
-                img += _int * np.exp(-(((_x - x_coords) / _sigma) ** 2 + ((_y - y_coords) / _sigma) ** 2) / 2)
+            # pbar = tqdm if len(sigma) > 1500 else lambda i, total=None: i
+            # for _sigma, _int, _x, _y in pbar(zip(sigma, intensities, x, y), total=len(sigma)):
+            #     img += _int * np.exp(-(((_x - x_coords) / _sigma) ** 2 + ((_y - y_coords) / _sigma) ** 2) / 2)
+
+            img = render_storm(x_coords, y_coords, sigma, intensities, x, y)
 
             img_norm = img / img.max()
 
@@ -713,19 +715,22 @@ class CellPlot(object):
             y_coords = np.repeat(yi, len(xi)).reshape(len(yi), len(xi))
             
 
-            threadsperblock = 32
-            blockspergrid = (x_coords.size + (threadsperblock - 1)) // threadsperblock
+            # threadsperblock = 32
+            # blockspergrid = (x_coords.size + (threadsperblock - 1)) // threadsperblock
 
-            img = np.zeros_like(x_coords, dtype=np.float32)
-            g_img = cuda.to_device(img.astype(np.float32))
-            g_x_coords = cuda.to_device(x_coords.astype(np.float32))
-            g_y_coords = cuda.to_device(y_coords.astype(np.float32))
-            g_sigma = cuda.to_device(sigma.astype(np.float32))
-            g_intensities = cuda.to_device(intensities.astype(np.float32))
-            g_x = cuda.to_device(x.astype(np.float32))
-            g_y = cuda.to_device(y.astype(np.float32))
-            render_storm[blockspergrid, threadsperblock](g_img, g_x_coords, g_y_coords, g_sigma, g_intensities, g_x, g_y)
-            img = g_img.copy_to_host()
+            # img = np.zeros_like(x_coords, dtype=np.float32)
+            # g_img = cuda.to_device(img.astype(np.float32))
+            # g_x_coords = cuda.to_device(x_coords.astype(np.float32))
+            # g_y_coords = cuda.to_device(y_coords.astype(np.float32))
+            # g_sigma = cuda.to_device(sigma.astype(np.float32))
+            # g_intensities = cuda.to_device(intensities.astype(np.float32))
+            # g_x = cuda.to_device(x.astype(np.float32))
+            # g_y = cuda.to_device(y.astype(np.float32))
+            # render_storm[blockspergrid, threadsperblock](g_img, g_x_coords, g_y_coords, g_sigma, g_intensities, g_x, g_y)
+            # img = g_img.copy_to_host()
+
+            render_storm(x_coords, y_coords, sigma, intensities, x, y)
+
 
             # pbar = tqdm if len(sigma) > 1500 else lambda i, total=None: i
             # for _sigma, _int, _x, _y in pbar(zip(sigma, intensities, x, y), total=len(sigma)):
@@ -1619,14 +1624,22 @@ def kymograph(x, arr, ax=None, time_factor=1, time_unit='frames', norm_y=True, a
 
 
 
-@cuda.jit('void(float32[:,:], float32[:], float32[:], float32[:], float32[:], float32[:], float32[:])')
-def render_storm(img, x_coords, y_coords, sigma, intensities, x, y):
-    #img = np.zeros_lik(x_coords)          
+# @cuda.jit('void(float32[:,:], float32[:], float32[:], float32[:], float32[:], float32[:], float32[:])')
+# def render_storm(img, x_coords, y_coords, sigma, intensities, x, y):
+#     #img = np.zeros_lik(x_coords)          
+#     for _sigma, _int, _x, _y in zip(sigma, intensities, x, y):
+#         img += _int * 2.72**(-(((_x - x_coords) / _sigma) ** 2 ))#+ ((_y - y_coords) / _sigma) ** 2) / 2)
+
+
+@jit(nopython=True, parallel=True, cache=True)
+def render_storm(x_coords, y_coords, sigma, intensities, x, y):
+    img = np.zeros_like(x_coords)          
     for _sigma, _int, _x, _y in zip(sigma, intensities, x, y):
-        img += _int * 2.72**(-(((_x - x_coords) / _sigma) ** 2 ))#+ ((_y - y_coords) / _sigma) ** 2) / 2)
+        img += _int * np.exp(-(((_x - x_coords) / _sigma) ** 2 + ((_y - y_coords) / _sigma) ** 2) / 2)
 
+    return img
 
-# #@jit(nopython=True, parallel=True)
+#@jit(nopython=True, parallel=True)
 # def render_storm(x_coords, y_coords, sigma, intensities, x, y):
 #     x_coords = gp.array(x_coords, dtype=gp.float16)
 #     y_coords = gp.array(y_coords, dtype=gp.float16)
