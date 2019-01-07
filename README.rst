@@ -1,4 +1,4 @@
-|travis| |appveyor| |docs| |binder| |license| |doi| 
+|travis| |appveyor| |docs| |binder| |codecov| |license| |doi| 
 
 |test|
 
@@ -7,13 +7,15 @@
 
 .. |travis| image:: https://travis-ci.org/Jhsmit/ColiCoords.svg?branch=master
     :target: https://travis-ci.org/Jhsmit/ColiCoords 
-.. |appveyor| image:: https://ci.appveyor.com/api/projects/status/801teey9fnm8kuc9?svg=true
+.. |appveyor| image:: https://ci.appveyor.com/api/projects/status/801teey9fnm8kuc9/branch/master?svg=true
     :target: https://ci.appveyor.com/project/Jhsmit/colicoords
 .. |docs| image:: https://readthedocs.org/projects/colicoords/badge/?version=latest
     :target: https://colicoords.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 .. |binder| image:: https://mybinder.org/badge_logo.svg 
     :target: https://mybinder.org/v2/gh/Jhsmit/ColiCoords/master
+.. |codecov| image:: https://codecov.io/gh/Jhsmit/ColiCoords/branch/master/graph/badge.svg
+  :target: https://codecov.io/gh/Jhsmit/ColiCoords
 .. |license| image:: https://img.shields.io/badge/License-MIT-yellow.svg
     :target: https://opensource.org/licenses/MIT
 .. |doi| image:: https://zenodo.org/badge/92830488.svg
