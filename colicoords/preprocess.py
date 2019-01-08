@@ -32,9 +32,12 @@ def filter_binaries(bin_arr, remove_bordering=True, min_size=None, max_size=None
 
     out = np.empty_like(bin_arr)
     for i, img in enumerate(bin_arr):
-        labeled, n = mh.labeled.label(img)
+        if len(np.unique(img)) > 2:  # Image is already labeled
+            labeled = img
+        else:
+            labeled, n = mh.labeled.label(img)
         labeled, n = mh.labeled.filter_labeled(labeled, remove_bordering=remove_bordering, min_size=min_size, max_size=max_size)
-        out[i] = labeled
+        out[i] = (labeled > 0).astype(int) * img  # Restore original labels
 
     for j, img in enumerate(out):
         for i in np.unique(img)[1:]:
@@ -96,7 +99,11 @@ def data_to_cells(input_data, initial_crop=5, final_crop=7, rotate='binary', rem
     cell_list = []
     i_fill = int(np.ceil(np.log10(len(input_data))))
     for i, data in enumerate(input_data):
-        binary = data.binary_img
+        if len(np.unique(data.binary_img)) > 2:  # Image is already labeled
+            binary = data.binary_img
+        else:
+            binary, n = mh.labeled.label(data.binary_img)
+
         if binary.mean() == 0.:
             vprint('Image {} {}: No cells'.format(binary.name, i))
             continue
