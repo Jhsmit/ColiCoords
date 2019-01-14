@@ -32,15 +32,19 @@ class SynthCell(Cell):
         r = radius
         xm = (xl + xr) / 2
         y_mid = a1*xm + a2*xm**2
-        a0 = 4*radius - y_mid
+        a0 = 4*radius - y_mid + pad_width
 
         y_max = a0 + a1 * xr + a2 * xr ** 2
         shape = tuple(np.ceil([y_max + 10 + r, xr + 2 * r + 10]).astype(int))
         coords = Coordinates(None, a0=a0, a1=a1, a2=a2, xl=xl, xr=xr, r=r, shape=shape, initialize=False)
         binary = coords.rc < r
+
         min1, max1, min2, max2 = mh.bbox(binary)
         min1p, max1p, min2p, max2p = min1 - pad_width, max1 + pad_width, min2 - pad_width, max2 + pad_width
-        res = binary[min1p:max1p, 0:max2p]
+        full = np.zeros((np.max([max1p, binary.shape[0]]), np.max([max2p, binary.shape[1]])))
+        full[0:binary.shape[0], 0:binary.shape[1]] = binary
+
+        res = full[min1p:max1p, 0:max2p]
 
         data = Data()
         data.add_data(res.astype(int), 'binary')
@@ -265,8 +269,8 @@ class SynthCellList(CellList):
         Array like of curvatures of cells.
     """
 
-    def __init__(self, lengths, radii, curvatures):
-        cell_list = [SynthCell(l, r, c, name='Cell_' + str(i).zfill(int(np.ceil(np.log10(len(radii)))))) for i, (l, r, c) in enumerate(zip(lengths, radii, curvatures))]
+    def __init__(self, lengths, radii, curvatures, pad_width=5):
+        cell_list = [SynthCell(l, r, c, pad_width=pad_width, name='Cell_' + str(i).zfill(int(np.ceil(np.log10(len(radii)))))) for i, (l, r, c) in enumerate(zip(lengths, radii, curvatures))]
         super(SynthCellList, self).__init__(cell_list)
 
     def copy(self):
