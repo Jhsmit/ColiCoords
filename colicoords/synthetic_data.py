@@ -230,7 +230,7 @@ class SynthCell(Cell):
 
         img = np.zeros_like(x_coords)
         intensities = storm_table['intensity']
-        sigma = sigma*np.ones_like(x_coords) if not sigma_std else np.random.normal(sigma, sigma_std, size=len(x_coords))
+        sigma = sigma*np.ones_like(x) if not sigma_std else np.random.normal(sigma, sigma_std, size=len(x))
         for _sigma, _int, _x, _y in zip(sigma, intensities, x, y):
             img += _int * np.exp(-(((_x - x_coords) / _sigma) ** 2 + ((_y - y_coords) / _sigma) ** 2) / 2)
 
