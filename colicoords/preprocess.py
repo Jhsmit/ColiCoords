@@ -43,7 +43,7 @@ def filter_binaries(bin_arr, remove_bordering=True, min_size=None, max_size=None
         for i in np.unique(img)[1:]:
             selected_binary = (img == i).astype('int')
             min1, max1, min2, max2 = mh.bbox(selected_binary)
-            selection = img[min1:max1, min2:max2]
+            selection = selected_binary[min1:max1, min2:max2]
             major, minor = mh.features.ellipse_axes(selection)
 
             if max_minor and minor > max_minor:
