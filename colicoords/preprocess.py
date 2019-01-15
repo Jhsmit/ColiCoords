@@ -5,7 +5,8 @@ import warnings
 from colicoords.cell import Cell, CellList
 
 
-def filter_binaries(bin_arr, remove_bordering=True, min_size=None, max_size=None, max_minor=None, max_major=None):
+def filter_binaries(bin_arr, remove_bordering=True, min_size=None, max_size=None, min_minor=None, max_minor=None,
+                    min_major=None, max_major=None):
     """
     Filters and labels a stack of binary images.
 
@@ -19,8 +20,12 @@ def filter_binaries(bin_arr, remove_bordering=True, min_size=None, max_size=None
         Minimum size of binary regions. ``None`` to ignore.
     max_size : :obj:`int`
         Maximum size of binary regions. ``None`` to ignore.
+    min_minor : :obj:`int`
+        Minimum length of the semiminor ellipse axes of the binary region. ``None`` to ignore.
     max_minor : :obj:`int`
         Maximum length of the semiminor ellipse axes of the binary region. ``None`` to ignore.
+    min_major : :obj:`int`
+        Minimum length of the simimajor ellipse axes of the binary region. ``None`` to ignore.
     max_major : :obj:`int`
         Maximum length of the simimajor ellipse axes of the binary region. ``None`` to ignore.
 
@@ -37,7 +42,7 @@ def filter_binaries(bin_arr, remove_bordering=True, min_size=None, max_size=None
         else:
             labeled, n = mh.labeled.label(img)
         labeled, n = mh.labeled.filter_labeled(labeled, remove_bordering=remove_bordering, min_size=min_size, max_size=max_size)
-        out[i] = (labeled > 0).astype(int) * img  # Restore original labels
+        out[i] = (labeled > 0).astype(int) * labeled  # Restore labels
 
     for j, img in enumerate(out):
         for i in np.unique(img)[1:]:
@@ -46,7 +51,11 @@ def filter_binaries(bin_arr, remove_bordering=True, min_size=None, max_size=None
             selection = selected_binary[min1:max1, min2:max2]
             major, minor = mh.features.ellipse_axes(selection)
 
+            if min_minor and minor < min_minor:
+                img[img == i] = 0
             if max_minor and minor > max_minor:
+                img[img == i] = 0
+            if min_major and major < min_major:
                 img[img == i] = 0
             if max_major and major > max_major:
                 img[img == i] = 0
