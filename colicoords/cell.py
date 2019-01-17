@@ -6,6 +6,7 @@ import mahotas as mh
 import numpy as np
 import operator
 from functools import partial
+from contextlib import closing
 from scipy.integrate import quad
 from scipy.optimize import brentq
 import multiprocess as mp
@@ -1247,11 +1248,10 @@ class CellList(object):
         """
 
         kwargs = {'data_name': data_name, 'cell_function': cell_function, 'minimizer': minimizer, **kwargs}
-        pool = mp.Pool(processes=processes)
-
         f = partial(optimize_worker, **kwargs)
 
-        res = list(tqdm(pool.imap(f, self), total=len(self)))
+        with closing(mp.Pool(processes=processes)) as pool:
+            res = list(tqdm(pool.imap(f, self), total=len(self)))
 
         for r, cell in zip(res, self):
             cell.coords.sub_par(r.params)
@@ -1276,7 +1276,7 @@ class CellList(object):
 
         return res
 
-    def execute_mp(self, worker, processes=None, **kwargs):
+    def execute_mp(self, worker, processes=None):
         """
         Apply worker function `worker` to all cell objects and returns the results.
 
@@ -1294,8 +1294,8 @@ class CellList(object):
             List of results returned from ``worker``.
         """
 
-        pool = mp.Pool(processes, **kwargs)
-        res = list(tqdm(pool.imap(worker, self), total=len(self)))
+        with closing(mp.Pool(processes=processes)) as pool:
+            res = list(tqdm(pool.imap(worker, self), total=len(self)))
 
         return res
 
