@@ -244,6 +244,9 @@ class DefaultImgSequence(AugmentedImgSequence):
     batch_size : :obj:`int`
         Number of images per batch to feed to the neural network during training.
     """
+
+    #TODO check input shape
+    #TODO verify val_split for n=10 images and split 1/8 (result 2, 9)
     def __init__(self, x_arr, y_arr, standardization=None, augmentation=None, shuffle=True, batch_size=8):
         standardization = ['hampel'] if standardization is None else standardization
         augmentation = ['flip_horizontal', 'flip_vertical', 'transpose'] if augmentation is None else augmentation
@@ -325,6 +328,7 @@ def norm_stack(img_stack):
 
 
 def resize_stack(img_stack, factor, img_type=None):
+    #TODO in the case of binary check for labelled binary!!1111oneone
     """
     Resize a stack of images by a constant factor
 
