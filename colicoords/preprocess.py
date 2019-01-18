@@ -108,11 +108,7 @@ def data_to_cells(input_data, initial_crop=5, final_crop=7, rotate='binary', rem
     cell_list = []
     i_fill = int(np.ceil(np.log10(len(input_data))))
     for i, data in enumerate(input_data):
-        if len(np.unique(data.binary_img)) > 2:  # Image is already labeled
-            binary = data.binary_img
-        else:
-            binary, n = mh.labeled.label(data.binary_img)
-
+        binary = data.binary_img
         if binary.mean() == 0.:
             vprint('Image {} {}: No cells'.format(binary.name, i))
             continue
