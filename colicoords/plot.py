@@ -820,10 +820,14 @@ class CellPlot(object):
         x_len = calc_lc(self.cell_obj.coords.xl, xc.flatten(), self.cell_obj.coords.coeff)
 
         if norm_x:
-            x_len /= self.cell_obj.length
+            x_len /= self.cell_obj.coords.r
+            xunits = 'norm'
+        else:
+            x_len *= (cfg.IMG_PIXELSIZE / 1000)
+            xunits = '$\mu m$'
 
         ax = plt.gca() if ax is None else ax
-        ax.set_xlabel('Distance (norm)')
+        ax.set_xlabel('Distance ({})'.format(xunits))
         ax.set_ylabel('Number of localizations')
         ax.set_title('Longitudinal Distribution')
 
@@ -860,6 +864,7 @@ class CellPlot(object):
 
         assert self.cell_obj.data.data_dict[data_name].dclass == 'storm'
 
+        #todo why is this an empty list and thenone element is appended??
         r_coords = []
         storm_table = self.cell_obj.data.data_dict[data_name]
 
@@ -868,16 +873,20 @@ class CellPlot(object):
         r = self.cell_obj.coords.calc_rc(xp, yp)
         if norm_x:
             r /= self.cell_obj.coords.r
+            xunits = 'norm'
+        else:
+            r *= (cfg.IMG_PIXELSIZE / 1000)
+            xunits = '$\mu m$'
 
         r_coords.append(r)
 
         ax = plt.gca() if ax is None else ax
-        ax.set_xlabel('Distance (norm)')
+        ax.set_xlabel('Distance ({})'.format(xunits))
         ax.set_ylabel('Number of localizations')
         ax.set_title('Radial Distribution')
         bins = kwargs.pop('bins', 'fd')
         h = ax.hist(r, bins=bins, **kwargs)
-        ax.set_xlim(0, None)
+        ax.set_xlim(left=0)
 
         return h
 
