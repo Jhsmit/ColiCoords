@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 from colicoords.cell import CellList, calc_lc
-from colicoords.plot import cmap_default
+from colicoords.plot import cmap_default, render_storm
 from colicoords.support import pad_cell
 from colicoords.config import cfg
 from ipywidgets import widgets
@@ -754,11 +754,6 @@ class IterCellPlot(object):
 
         extent = kwargs.pop('extent', [0, xmax, ymax, 0])
         interpolation = kwargs.pop('interpolation', 'nearest')
-        try:
-            intensities = storm_table['intensity'] if storm_weight else np.ones_like(x)
-        except ValueError:
-            print("Warning: The field 'intensity' was not found, all weights are set to one")
-            intensities = np.ones_like(x)
 
         ax = plt.gca() if ax is None else ax
         if method == 'plot':
@@ -786,15 +781,6 @@ class IterCellPlot(object):
             artist = ax.iter_imshow(img, interpolation=interpolation, cmap=cmap, extent=extent, **kwargs)
 
         elif method == 'gauss':
-            if type(sigma) == str:
-                sigma = storm_table[sigma]
-            elif isinstance(sigma, np.ndarray):
-                assert sigma.shape == x.shape
-            elif np.isscalar(sigma):
-                sigma = sigma*np.ones_like(x)
-            else:
-                raise ValueError('Invalid sigma')
-
             step = 1 / upscale
             xi = np.arange(step / 2, xmax, step)
             yi = np.arange(step / 2, ymax, step)
@@ -808,12 +794,32 @@ class IterCellPlot(object):
             colors_stack = np.empty((len(self.cell_list), *x_coords.shape, 4))
             for i, cell in enumerate(self.cell_list):
                 storm_table = cell.data.data_dict[data_name]
+
+                if type(sigma) == str:
+                    sigma_local = storm_table[sigma]
+                elif isinstance(sigma, np.ndarray):
+                    assert sigma.shape == x.shape
+                    sigma_local = sigma
+                elif np.isscalar(sigma):
+                    sigma_local = sigma * np.ones_like(x)
+                else:
+                    raise ValueError('Invalid sigma')
+
                 x, y = storm_table['x'], storm_table['y']
 
+                try:
+                    intensities = storm_table['intensity'] if storm_weight else np.ones_like(x)
+                except ValueError:
+                    intensities = np.ones_like(x)
+
                 # Make empty image and iteratively add gaussians for each localization
-                img = np.zeros_like(x_coords)
-                for _sigma, _int, _x, _y in zip(sigma, intensities, x, y):
-                        img += _int * np.exp(-(((_x - x_coords) / _sigma) ** 2 + ((_y - y_coords) / _sigma) ** 2) / 2)
+                #img = np.zeros_like(x_coords)
+
+                img = render_storm(x_coords, y_coords, sigma_local, intensities, x, y)
+
+                # @jit(nopython=True)
+                # for _sigma, _int, _x, _y in zip(sigma_local, intensities, x, y):
+                #         img += _int * np.exp(-(((_x - x_coords) / _sigma) ** 2 + ((_y - y_coords) / _sigma) ** 2) / 2)
 
                 img_norm = img / img.max()
                 alphas = np.ones(img.shape)

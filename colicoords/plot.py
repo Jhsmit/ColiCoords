@@ -5,7 +5,6 @@ import numpy as np
 from colicoords.config import cfg
 from colicoords.cell import calc_lc, CellList
 import seaborn as sns
-from scipy import stats
 from tqdm.auto import tqdm
 
 sns.set_style('white')
@@ -521,6 +520,7 @@ class CellPlot(object):
             #            np.ma.masked_where(img_norm < alpha_cutoff, img)
 
             alphas = np.ones(img.shape)
+            #todo sigmoidal alpha?
             if alpha_cutoff:
                 alphas[img_norm < alpha_cutoff] = img_norm[img_norm < alpha_cutoff] / alpha_cutoff
 
@@ -708,18 +708,19 @@ class CellPlot(object):
 
             x_coords = np.repeat(xi, len(yi)).reshape(len(xi), len(yi)).T
             y_coords = np.repeat(yi, len(xi)).reshape(len(yi), len(xi))
-            img = np.zeros_like(x_coords)
+            #img = np.zeros_like(x_coords)
 
-            pbar = tqdm if len(sigma) > 1500 else lambda i, total=None: i
-            for _sigma, _int, _x, _y in pbar(zip(sigma, intensities, x, y), total=len(sigma)):
-                img += _int * np.exp(-(((_x - x_coords) / _sigma) ** 2 + ((_y - y_coords) / _sigma) ** 2) / 2)
+            #pbar = tqdm if len(sigma) > 1500 else lambda i, total=None: i
+
+            img = render_storm(x_coords, y_coords, sigma, intensities, x, y)
+
+            # for _sigma, _int, _x, _y in pbar(zip(sigma, intensities, x, y), total=len(sigma)):
+            #     img += _int * np.exp(-(((_x - x_coords) / _sigma) ** 2 + ((_y - y_coords) / _sigma) ** 2) / 2)
 
             return img
 
         else:
             raise ValueError('Invalid plotting method')
-
-        return artist
 
     def plot_kymograph(self, ax=None, mode='r', data_name='', time_factor=1, time_unit='frames', dist_kwargs=None,
                        norm_y=True, aspect=1, **kwargs):
@@ -1608,3 +1609,10 @@ def kymograph(x, arr, ax=None, time_factor=1, time_unit='frames', norm_y=True, a
     ax.set_ylabel('Time ({})'.format(time_unit))
 
     return image
+
+
+def render_storm(x_coords, y_coords, sigma_local, intensities, x, y):
+    img = np.zeros_like(x_coords)
+    for _sigma, _int, _x, _y in zip(sigma_local, intensities, x, y):
+        img += _int * np.exp(-(((_x - x_coords) / _sigma) ** 2 + ((_y - y_coords) / _sigma) ** 2) / 2)
+    return img
