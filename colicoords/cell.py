@@ -91,22 +91,7 @@ class Cell(object):
     @property
     def circumference(self):
         """:obj:`float`: Circumference of the cell in pixels."""
-
-        # http://tutorial.math.lamar.edu/Classes/CalcII/ParaArcLength.aspx
-        def integrant_top(t, a1, a2, r):
-            return np.sqrt(1 + (a1 + 2 * a2 * t) ** 2 + ((4 * a2 ** 2 * r ** 2) / (1 + (a1 + 2 * a2 * t) ** 2) ** 2) + (
-                        (4 * a2 * r) / np.sqrt(1 + (a1 + 2 * a2 * t))))
-
-        def integrant_bot(t, a1, a2, r):
-            return np.sqrt(1 + (a1 + 2 * a2 * t) ** 2 + ((4 * a2 ** 2 * r ** 2) / (1 + (a1 + 2 * a2 * t) ** 2) ** 2) - (
-                        (4 * a2 * r) / np.sqrt(1 + (a1 + 2 * a2 * t))))
-
-        top, terr = quad(integrant_top, self.coords.xl, self.coords.xr,
-                         args=(self.coords.a1, self.coords.a2, self.coords.r))
-        bot, berr = quad(integrant_bot, self.coords.xl, self.coords.xr,
-                         args=(self.coords.a1, self.coords.a2, self.coords.r))
-
-        return top + bot + 2 * np.pi * self.coords.r
+        return self.coords._top + self.coords._bot + 2 * np.pi * self.coords.r
 
     @property
     def area(self):
@@ -813,6 +798,7 @@ class Coordinates(object):
         phi : :obj:`float` or :class:`~numpy.ndarray`
             Angle phi for (xp, yp).
         """
+
         idx_left, idx_right, xc = self.get_idx_xc(xp, yp)
         xc[idx_left] = self.xl
         xc[idx_right] = self.xr
@@ -830,6 +816,108 @@ class Coordinates(object):
         phi[idx_left] = thetha[idx_left]
 
         return phi * (180 / np.pi)
+
+    #TODO tests
+    @allow_scalars
+    def calc_perimeter(self, xp, yp):
+        """
+        Calculates how far along the perimeter of the cell the points (xp, yp) lay.
+
+        The perimeter of the cell is the current outline as described by the current coordinate system. The zero-point
+        is the top-left point where the top membrane section starts (lc=0, phi=0) and increases along the perimeter
+        clockwise.
+
+        Parameters
+        ----------
+        xp : :obj:`float` or :class:`~numpy.ndarray`
+            Input scalar or vector/matrix x-coordinate. Must be the same shape as yp.
+        yp : :obj:`float` or :class:`~numpy.ndarray`
+            Input scalar or vector/matrix x-coordinate. Must be the same shape as xp.
+
+        Returns
+        -------
+        per : :obj:`float` or :class:`~numpy.ndarray`
+            Length along the cell perimeter.
+        """
+
+        output = np.zeros_like(xp)
+        lc = self.calc_lc(xp, yp)
+        phi = self.calc_phi(xp, yp)
+        sc = np.pi*self.r  # Semicircle perimeter length
+
+        # Top membrane section
+        b = phi == 0
+        output[b] = (lc[b] / self.length) * self._top
+
+        # Right pole
+        b = lc == self.length
+        output[b] = self._top + phi[b]*(np.pi/180)*self.r
+
+        # Bottom, reverse direction
+        b = phi == 180
+        output[b] = self._top + sc + (1 - lc[b] / self.length) + self._bot
+
+        # Left pole
+        b = lc == 0
+        output[b] = self._top + sc + self._bot + (180-phi[b])*(np.pi/180)*self.r
+
+        return output
+
+    #TODO tests
+    @allow_scalars
+    def rev_calc_perimeter(self, par_values):
+        """
+        For a given distance along the perimeter calculate the `xp`, `yp` cartesian coordinates.
+
+            Parameters
+        ----------
+        par_values : :obj:`float` or :class:`~numpy.ndarray`
+             Input parameter values. Must be between 0 and `:attr:~colicoords.Cell.circumference`
+
+        Returns
+        -------
+        xp : :obj:`float` or :class:`~numpy.ndarray`
+            Cartesian x-coordinate corresponding to `lc`, `rc`, `phi`
+        yp : :obj:`float` or :class:`~numpy.ndarray`
+            Cartesian y-coordinate corresponding to `lc`, `rc`, `phi`
+
+        """
+
+        sc = np.pi*self.r
+
+        if np.min(par_values) < 0:
+            raise ValueError("Minimum value of `par_values` must be larger than 0")
+        if np.max(par_values) > self._top + self._bot + 2*sc:
+            raise ValueError("Maximum value of `par_values` must be smaller than the cell's circumference")
+
+        lc = np.zeros_like(par_values)
+        phi = np.zeros_like(par_values)
+
+        # Left pole
+        b = par_values > self._top + sc + self._bot
+        l = par_values[b] - (self._top + sc + self._bot)
+        lc[b] = 0.
+        phi[b] = 180 - (180/l) / sc
+
+        # Bottom
+        b = (par_values <= self._top + sc + self._bot) * (par_values > self._top + sc)
+        l = par_values[b] - (self._top + sc)
+        lc[b] = (self._bot - l) / self._bot
+        phi[b] = (180*l)/sc
+
+        # Right pole
+        b = (par_values <= self._top + sc) * (par_values > self._top)
+        l = par_values[b] - self._top
+        lc[b] = 1.
+        phi[b] = (180/l)/sc
+
+        # Top
+        b = par_values <= self._top
+        lc[b] = par_values[b] / self._top
+        phi[b] = 0.
+
+        return self.rev_transform(lc, self.r, phi)
+
 
     def get_idx_xc(self, xp, yp):
         """
@@ -1064,6 +1152,32 @@ class Coordinates(object):
         )
 
         return l
+
+    @property
+    def _top(self):
+        """:obj:`float`: Length of the cell's top membrane segment."""
+
+        # http://tutorial.math.lamar.edu/Classes/CalcII/ParaArcLength.aspx
+        def integrant_top(t, a1, a2, r):
+            return np.sqrt(1 + (a1 + 2 * a2 * t) ** 2 + ((4 * a2 ** 2 * r ** 2) / (1 + (a1 + 2 * a2 * t) ** 2) ** 2) + (
+                        (4 * a2 * r) / np.sqrt(1 + (a1 + 2 * a2 * t))))
+
+        top, terr = quad(integrant_top, self.coords.xl, self.coords.xr,
+                         args=(self.coords.a1, self.coords.a2, self.coords.r))
+        return top
+
+    @property
+    def _bot(self):
+        """:obj:`float`: Length of the cell's bottom membrane segment."""
+
+        # http://tutorial.math.lamar.edu/Classes/CalcII/ParaArcLength.aspx\
+        def integrant_bot(t, a1, a2, r):
+            return np.sqrt(1 + (a1 + 2 * a2 * t) ** 2 + ((4 * a2 ** 2 * r ** 2) / (1 + (a1 + 2 * a2 * t) ** 2) ** 2) - (
+                        (4 * a2 * r) / np.sqrt(1 + (a1 + 2 * a2 * t))))
+
+        bot, berr = quad(integrant_bot, self.coords.xl, self.coords.xr,
+                         args=(self.coords.a1, self.coords.a2, self.coords.r))
+        return bot
 
     def p(self, x_arr):
         """
