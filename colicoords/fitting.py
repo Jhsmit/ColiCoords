@@ -240,9 +240,11 @@ class CellFit(object):
         self.minimizer = minimizer
         self.kwargs = kwargs
 
-        dclass = self.data_elem.dclass
-        func_klass = self.defaults[dclass] if not cell_function else cell_function
+        #todo
+        self.dclass = self.data_elem.dclass  #the self.data_elem value changes when sefl.cell_fuction is defined!
 
+        func_klass = self.defaults[self.dclass] if not cell_function else cell_function
+        #todo check custom function
         if issubclass(func_klass, CellMinimizeFunctionBase):
             self.cell_function = func_klass(self.cell_obj, data_name)
         elif callable(func_klass):
@@ -251,6 +253,15 @@ class CellFit(object):
             raise TypeError("Invalid type for cell_function keyword argument.")
 
         self.model = NumericalCellModel(cell_obj, self.cell_function)
+
+        if self.dclass == 'storm':
+            data_elem = self.cell_obj.data.data_dict[self.data_name]
+            r_mean = self.cell_obj.coords.calc_rc(data_elem['x'], data_elem['y']).mean()
+            idx = [p.name for p in self.model.params].index('r')
+            self.model.params[idx].value = r_mean
+            self.model.params[idx].min = 0.8*r_mean
+            self.model.params[idx].max = 1.2*r_mean
+
         self.fit = Fit(self.model, self.data_elem, minimizer=minimizer, **kwargs)
 
     def renew_fit(self):
