@@ -91,6 +91,19 @@ def running_mean(x_in, y_in, x_out, sigma=0.5):
     return y_out
 
 
+def running_sum(x_in, y_in, x_out, sigma=0.5):
+    """Calculates sum by sliding a gaussian kernel over `x_in`, `y_in` at points in `x_out`"""
+
+    # Gaussian kernel
+    x_in_mesh, x_out_mesh = np.meshgrid(x_in, x_out)
+    gauss_kernel = np.exp(-np.square(x_in_mesh - x_out_mesh) / (2 * sigma**2))
+
+    # Perform running average as a linear operation
+    y_out = gauss_kernel @ y_in
+
+    return y_out
+
+
 def gauss_2d(x, y, x_mu, y_mu, sigma):
     """"2D gaussian function"""
     return np.exp( - (( (x - x_mu)**2 / (2*sigma**2) ) + ( (y - y_mu)**2 / (2*sigma**2) )) )
