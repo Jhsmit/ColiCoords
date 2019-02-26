@@ -918,7 +918,6 @@ class Coordinates(object):
 
         return self.rev_transform(lc, self.r, phi)
 
-
     def get_idx_xc(self, xp, yp):
         """
         Finds the indices of the arrays xp an yp where they either belong to the left or right polar regions,
@@ -1162,8 +1161,8 @@ class Coordinates(object):
             return np.sqrt(1 + (a1 + 2 * a2 * t) ** 2 + ((4 * a2 ** 2 * r ** 2) / (1 + (a1 + 2 * a2 * t) ** 2) ** 2) + (
                         (4 * a2 * r) / np.sqrt(1 + (a1 + 2 * a2 * t))))
 
-        top, terr = quad(integrant_top, self.coords.xl, self.coords.xr,
-                         args=(self.coords.a1, self.coords.a2, self.coords.r))
+        top, terr = quad(integrant_top, self.xl, self.xr,
+                         args=(self.a1, self.a2, self.r))
         return top
 
     @property
@@ -1175,8 +1174,8 @@ class Coordinates(object):
             return np.sqrt(1 + (a1 + 2 * a2 * t) ** 2 + ((4 * a2 ** 2 * r ** 2) / (1 + (a1 + 2 * a2 * t) ** 2) ** 2) - (
                         (4 * a2 * r) / np.sqrt(1 + (a1 + 2 * a2 * t))))
 
-        bot, berr = quad(integrant_bot, self.coords.xl, self.coords.xr,
-                         args=(self.coords.a1, self.coords.a2, self.coords.r))
+        bot, berr = quad(integrant_bot, self.xl, self.xr,
+                         args=(self.a1, self.a2, self.r))
         return bot
 
     def p(self, x_arr):
