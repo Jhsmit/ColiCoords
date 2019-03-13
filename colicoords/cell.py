@@ -500,7 +500,7 @@ class Cell(object):
 
         Returns
         -------
-        value : :obj:`float`:
+        value : :obj:`float`
             Mean fluorescence pixel value.
         """
 
@@ -543,7 +543,7 @@ class Cell(object):
 
         Returns
         -------
-        cell : :class:`~colicoords.cell.Cell`:
+        cell : :class:`~colicoords.cell.Cell`
             Copied cell object.
 
         """
@@ -1282,7 +1282,7 @@ def optimize_worker(cell, **kwargs):
 
     Returns
     -------
-    result : :class:`~symit.core.fit import FitResults
+    result : :class:`~symit.core.fit.FitResults`
     """
     res = cell.optimize(**kwargs)
     return res
@@ -1615,7 +1615,7 @@ class CellList(object):
 
         Returns
         -------
-        cell_list : :class:`CellList`:
+        cell_list : :class:`CellList`
             Copied `CellList` object
         """
         return CellList([cell.copy() for cell in self])

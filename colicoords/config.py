@@ -34,7 +34,7 @@ class DefaultConfig(object):
     ALHPA_DIST_STOP = 180.
     ALPHA_DIST_STEP = 1.
 
-    DEBUG = False # If True, numpy division warnings will be printed.
+    DEBUG = False  # If True, numpy division warnings will be printed.
 
     #Other
     @classproperty
@@ -43,7 +43,7 @@ class DefaultConfig(object):
 
 
 config_sections = {
-    'General': ['IMG_PIXELSIZE', 'PAD_WIDTH', 'CELL_FRACTION'],
+    'General': ['IMG_PIXELSIZE'],
     'Optimization': ['ENDCAP_RANGE'],
     'Plotting': ['R_DIST_STOP', 'R_DIST_STEP', 'R_DIST_SIGMA', 'R_DIST_NORM_STOP', 'R_DIST_NORM_STEP',
                  'R_DIST_NORM_SIGMA', 'L_DIST_NBINS', 'L_DIST_SIGMA', 'ALHPA_DIST_STOP', 'ALPHA_DIST_STEP'],

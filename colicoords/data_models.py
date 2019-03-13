@@ -295,7 +295,19 @@ class Data(object):
         self.data_dict.update(self.storm_dict)
 
     def prune(self, data_name):
-        #todo test and docstring
+        """
+        Removes localizations from the STORM-dataset with name `data_name` which lie outside of the associated image.
+
+        Parameters
+        ----------
+        data_name : :obj:`str`
+            Name of the data element to prune.
+
+        Returns
+        -------
+        None
+
+        """
         storm = self.data_dict.pop(data_name)
         self.storm_dict.pop(data_name)
         assert isinstance(storm, STORMTable)
