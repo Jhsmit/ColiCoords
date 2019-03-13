@@ -855,7 +855,7 @@ class Coordinates(object):
 
         # Bottom, reverse direction
         b = phi == 180
-        output[b] = self._top + sc + (1 - lc[b] / self.length) + self._bot
+        output[b] = self._top + sc + (1 - lc[b] / self.length) * self._bot
 
         # Left pole
         b = lc == 0
