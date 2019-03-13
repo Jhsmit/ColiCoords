@@ -3,6 +3,7 @@ import numpy as np
 from numpy.lib.polynomial import RankWarning
 import warnings
 from colicoords.cell import Cell, CellList
+from colicoords.support import multi_dilate
 
 
 def filter_binaries(bin_arr, remove_bordering=True, min_size=None, max_size=None, min_minor=None, max_minor=None,
@@ -61,6 +62,40 @@ def filter_binaries(bin_arr, remove_bordering=True, min_size=None, max_size=None
                 img[img == i] = 0
 
     return out
+
+
+def filter_binaries_beamprofile(bin_arr, beamprofile, cutoff=0.75, dilate=0):
+    """
+    Filters and labels a stack of binary (labelled) images based a supplied beamprofile. If the binary objects are
+    located in an area of the ``beamprofile``
+
+    Parameters
+    ----------
+    bin_arr
+    beamprofile
+    cutoff
+    dilate
+
+    Returns
+    -------
+
+    """
+    bp_bool = beamprofile < cutoff * beamprofile.max()
+    out_binary = np.empty_like(bin_arr, dtype=int)
+    total_cells = 0
+    removed_cells = 0
+
+    for i, img in enumerate(bin_arr):
+        labeled, n = mh.labeled.label(img)
+        total_cells += n
+        for l in np.unique(labeled)[1:]:
+            selected_binary = multi_dilate(labeled == l, dilate)
+            if np.any(np.logical_and(selected_binary, bp_bool)):  # Cell lies outside of
+                labeled[labeled == l] = 0
+                removed_cells += 1
+            out_binary[i] = labeled
+    print('Removed {} cells out of a total of {} cells.'.format(removed_cells, total_cells))
+    return out_binary
 
 
 #todo check input binary labeled or not
