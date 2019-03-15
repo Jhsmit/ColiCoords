@@ -118,6 +118,7 @@ class IterRedrawAxes(Axes):
             assert length == fig.length
 
 
+#TODO thread/process?? per axes for updating the figure?
 class IterUpdateAxes(Axes):
     name = 'iter_update'
     # update_register = []
@@ -130,7 +131,6 @@ class IterUpdateAxes(Axes):
 
     def iter_plot(self, *args, **kwargs):
         # todo allow single x for multiple y's
-
         self._set_length(len(args[0]))
         args_grps = []
         while args:
@@ -235,14 +235,9 @@ class IterUpdateAxes(Axes):
             assert length == fig.length
 
 
-    #
-    # def get_extent(self):
-
-
 class IterFigure(Figure):
     length = None
-
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, slider=True, **kwargs):
         super(IterFigure, self).__init__(*args, **kwargs)
         self.idx = 0
 
@@ -262,14 +257,29 @@ class IterFigure(Figure):
         self._btn_random.on_click(self.on_random)
 
         self.btn_hbox = widgets.HBox()
-        self.btn_hbox.children = [self._btn_first, self._btn_prev, self._int_box, self._btn_next, self._btn_last, self._btn_random]
+        self.btn_hbox.children = [self._btn_first, self._btn_prev, self._int_box,
+                                  self._btn_next, self._btn_last, self._btn_random]
+
+        if slider:
+            self._slider = widgets.IntSlider(value=0, min=0, max=1, layout=dict(width='99%'), readout=False)
+            widgets.jslink((self._int_box, 'value'), (self._slider, 'value'))
+
+            self.vbox = widgets.VBox()
+            self.vbox.children = [self.btn_hbox, self._slider]
+            self.box = self.vbox
+        else:
+            self.box = self.btn_hbox
 
     def display(self):
-        display(self.btn_hbox)
+        display(self.box)
 
     def set_length(self, length):
         self.length = length
         self._int_box.max = length - 1
+        try:
+            self._slider.max = length - 1
+        except AttributeError:
+            pass
 
     def handle_int_box(self, change):
         self.idx = change.new
