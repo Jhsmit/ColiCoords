@@ -31,8 +31,8 @@ class DefaultConfig(object):
     L_DIST_NBINS = 100
     L_DIST_SIGMA = 0.5
 
-    PHI_DIST_STEP = 1.
-    PHI_DIST_SIGMA = 0.5
+    PHI_DIST_STEP = 0.5
+    PHI_DIST_SIGMA = 5
 
     DEBUG = False  # If True, numpy division warnings will be printed.
 
@@ -46,7 +46,7 @@ config_sections = {
     'General': ['IMG_PIXELSIZE'],
     'Optimization': ['ENDCAP_RANGE'],
     'Plotting': ['R_DIST_STOP', 'R_DIST_STEP', 'R_DIST_SIGMA', 'R_DIST_NORM_STOP', 'R_DIST_NORM_STEP',
-                 'R_DIST_NORM_SIGMA', 'L_DIST_NBINS', 'L_DIST_SIGMA', 'ALHPA_DIST_STOP', 'ALPHA_DIST_STEP'],
+                 'R_DIST_NORM_SIGMA', 'L_DIST_NBINS', 'L_DIST_SIGMA', 'PHI_DIST_STEP', 'PHI_DIST_SIGMA'],
     'Other': ['CACHE_DIR', 'DEBUG']
 }
 

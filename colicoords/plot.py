@@ -400,6 +400,7 @@ class CellPlot(object):
         line, = ax.plot(x, y, **kwargs)
         ax.set_xlabel('Distance ({})'.format(xunits))
 
+        #?????
         if data_elem.dclass == 'storm':
             if storm_weight:
                 ylabel = 'Total STORM intensity (photons)'
@@ -415,6 +416,49 @@ class CellPlot(object):
             ax.set_ylim(0, ymax)
 
         return line
+
+    def plot_phi_dist(self, ax=None, data_name='', r_max=None, r_min=0, storm_weight=False, method='gauss',
+                      dist_kwargs=None, **kwargs):
+
+        step = kwargs.pop('step', cfg.PHI_DIST_STEP)
+        sigma = kwargs.pop('sigma', cfg.PHI_DIST_SIGMA)
+        dist_kwargs = {} if dist_kwargs is None else dist_kwargs
+
+        if not data_name:
+            try:
+                data_elem = list(self.cell_obj.data.flu_dict.values())[0]  # yuck
+            except IndexError:
+                try:
+                    data_elem = list(self.cell_obj.data.storm_dict.values())[0]
+                except IndexError:
+                    raise IndexError('No valid data element found')
+        else:
+            data_elem = self.cell_obj.data.data_dict[data_name]
+
+        #todo dist_wkargs should lways be empty
+        x_vals, phi_l, phi_r = self.cell_obj.phi_dist(step, data_name=data_name, r_max=r_max, r_min=r_min,
+                                                      storm_weight=storm_weight, sigma=sigma, method=method, **dist_kwargs)
+
+        ax = plt.gca() if ax is None else ax
+
+        #?????
+        print(data_elem.dclass)
+        if data_elem.dclass == 'storm':
+            if storm_weight:
+                ylabel = 'Total STORM intensity (photons)'
+            else:
+                ylabel = 'Number of localizations'
+        else:
+            ylabel = 'Intensity (a.u.)'
+
+        ax.set_xlabel('Distance ({})'.format('degrees'))
+        ax.set_ylabel(ylabel)
+
+        l = kwargs.pop('label', None)
+        line_l = ax.plot(x_vals, phi_l, label='Left pole')
+        line_r = ax.plot(x_vals, phi_r, label='Right pole')
+
+        return line_l, line_r
 
     def plot_storm(self, ax=None, data_name='', method='plot', upscale=5, alpha_cutoff=None, storm_weight=True, sigma=0.25, **kwargs):
         #todo make functions with table and shape and other kwargs?
@@ -1302,6 +1346,47 @@ class CellListPlot(object):
             ax.set_ylim(0, ymax)
 
         return line
+
+    def plot_phi_dist(self, ax=None, data_name='', r_max=None, r_min=0, storm_weight=False, method='gauss',
+                      dist_kwargs=None, **kwargs):
+        step = kwargs.pop('step', cfg.PHI_DIST_STEP)
+        sigma = kwargs.pop('sigma', cfg.PHI_DIST_SIGMA)
+        dist_kwargs = {} if dist_kwargs is None else dist_kwargs
+
+        x_vals, phi_l, phi_r = self.cell_list.phi_dist(step, data_name=data_name, r_max=r_max, r_min=r_min,
+                                                      storm_weight=storm_weight, sigma=sigma, method=method, **dist_kwargs)
+
+        if not data_name:
+            try:
+                data_elem = list(self.cell_list[0].data.flu_dict.values())[0]  # yuck
+            except IndexError:
+                try:
+                    data_elem = list(self.cell_list[0].data.storm_dict.values())[0]
+                except IndexError:
+                    raise IndexError('No valid data element found')
+        else:
+            data_elem = self.cell_list[0].data.data_dict[data_name]
+
+        ax = plt.gca() if ax is None else ax
+
+        #?????
+        if data_elem.dclass == 'storm':
+            if storm_weight:
+                ylabel = 'Total STORM intensity (photons)'
+            else:
+                ylabel = 'Number of localizations'
+        else:
+            ylabel = 'Intensity (a.u.)'
+
+        ax.set_xlabel('Distance ({})'.format('degrees'))
+        ax.set_ylabel(ylabel)
+
+        l = kwargs.pop('label', None)
+        line_l = ax.plot(x_vals, np.nanmean(phi_l, axis=0), label='Left pole')
+        line_r = ax.plot(x_vals, np.nanmean(phi_r, axis=0), label='Right pole')
+
+        return line_l, line_r
+
 
     def plot_l_class(self, data_name='', ax=None, yerr='std', **kwargs):
         """

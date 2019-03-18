@@ -108,8 +108,78 @@ class Cell(object):
         """:obj:`float`: Volume of the cell in cubic pixels."""
         return np.pi * self.coords.r ** 2 * self.length + (4 / 3) * np.pi * self.coords.r ** 3
 
-    def a_dist(self):
-        raise NotImplementedError()
+    def phi_dist(self, step, data_name='', storm_weight=False, method='gauss', sigma=3, r_max=None, r_min=0):
+        r_max = r_max if r_max else self.coords.r
+        stop = 180
+
+        if not data_name:
+            try:
+                data_elem = list(self.data.flu_dict.values())[0]  # yuck
+            except IndexError:
+                try:
+                    data_elem = list(self.data.storm_dict.values())[0]
+                except IndexError:
+                    raise IndexError('No valid data element found')
+        else:
+            try:
+                data_elem = self.data.data_dict[data_name]
+            except KeyError:
+                raise ValueError('Chosen data not found')
+
+        if method == 'gauss' and data_elem.dclass == 'storm':
+            print("Warning: method 'gauss' is not a storm-compatible method, method was set to 'box'")
+            method = 'box'
+
+        bins = np.arange(0, stop + step, step)
+
+        if method == 'gauss':
+            bin_func = running_mean
+            bin_kwargs = {'sigma': sigma}
+            xvals = bins
+        elif method == 'box':
+            bin_func = box_mean
+            bin_kwargs = {'storm_weight': storm_weight}
+            bins = np.arange(0, stop + step, step)
+            xvals = bins + 0.5 * step  # xval is the middle of the bin
+        else:
+            raise ValueError('Invalid method')
+
+        if data_elem.ndim == 1:
+            assert data_elem.dclass == 'storm'
+            x = data_elem['x']
+            y = data_elem['y']
+            phi = self.coords.calc_phi(x, y)
+            lc = self.coords.calc_lc(x, y)
+            rc = self.coords.calc_rc(x, y)
+            y_weight = data_elem['intensity'] if storm_weight else None
+
+        elif data_elem.ndim == 2 or data_elem.ndim == 3:
+            phi = self.coords.phi
+            lc = self.coords.lc
+            rc = self.coords.rc
+            y_weight = data_elem
+
+        else:
+            raise ValueError("Invalid data dimensions")
+
+        b_max = rc < r_max
+        b_min = rc > r_min
+        b1 = (lc == 0) * b_max * b_min
+        b2 = (lc == self.length) * b_max * b_min
+
+        if data_elem.ndim <= 2:
+            y_wt = y_weight[b1].flatten() if y_weight is not None else None
+            yvals_l = bin_func(phi[b1].flatten(), y_wt, bins, **bin_kwargs)
+        else:
+            yvals_l = np.vstack([bin_func(phi[b1].flatten(), d[b1].flatten(), bins) for d in data_elem])
+
+        if data_elem.ndim <= 2:
+            y_wt = y_weight[b2].flatten() if y_weight is not None else None
+            yvals_r = bin_func(phi[b2].flatten(), y_wt, bins, **bin_kwargs)
+        else:
+            yvals_r = np.vstack([bin_func(phi[b2].flatten(), d[b2].flatten(), bins, **bin_kwargs) for d in data_elem])
+
+        return xvals, yvals_l, yvals_r
 
     def l_dist(self, nbins, start=None, stop=None, data_name='', norm_x=False, l_mean=None, r_max=None, storm_weight=False,
                method='gauss', sigma=0.5):
@@ -367,6 +437,7 @@ class Cell(object):
         else:
             raise ValueError("Invalid data dimensions")
 
+        #TODO limit by lc
         if limit_l:
             if limit_l == 'full':
                 b = (xc > self.coords.xl) * (xc < self.coords.xr).astype(bool)
@@ -1526,6 +1597,19 @@ class CellList(object):
 
         return x_arr, y_arr
 
+    def phi_dist(self, step, data_name='', storm_weight=False, method='gauss', sigma=5, r_max=None, r_min=0):
+        stop = 180
+        numpoints = len(np.arange(0, stop + step, step))
+        out_l = np.zeros((len(self), numpoints))
+        out_r = np.zeros((len(self), numpoints))
+        for i, c in enumerate(self):
+            xvals, yvals_l, yvals_r = c.phi_dist(step, data_name=data_name, storm_weight=storm_weight, sigma=sigma,
+                                                 method=method, r_max=r_max, r_min=r_min)
+            out_l[i] = yvals_l
+            out_r[i] = yvals_r
+
+        return xvals, out_l, out_r
+
     def l_classify(self, data_name=''):
         """
         Classifies foci in STORM-type data by they x-position along the long axis.
@@ -1547,9 +1631,6 @@ class CellList(object):
         """
 
         return np.array([c.l_classify(data_name=data_name) for c in self])
-
-    def a_dist(self):
-        raise NotImplementedError()
 
     def get_intensity(self, mask='binary', data_name='', func=np.mean):
         """
