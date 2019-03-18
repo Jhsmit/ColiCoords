@@ -31,8 +31,8 @@ class DefaultConfig(object):
     L_DIST_NBINS = 100
     L_DIST_SIGMA = 0.5
 
-    ALHPA_DIST_STOP = 180.
-    ALPHA_DIST_STEP = 1.
+    PHI_DIST_STEP = 1.
+    PHI_DIST_SIGMA = 0.5
 
     DEBUG = False  # If True, numpy division warnings will be printed.
 
@@ -106,13 +106,18 @@ def create_config(path=None):
     config = configparser.ConfigParser()
     config.optionxform = str
     for k, v in config_sections.items():
+        print(k)
         config[k] = {vi: getattr(DefaultConfig, vi) for vi in v}
 
     with open(os.path.join(path, 'config.ini'), 'w') as configfile:
         config.write(configfile)
 
+    if not os.path.isdir(config['Other']['CACHE_DIR']):
+        os.mkdir(config['Other']['CACHE_DIR'])
+
 
 load_config()
+
 
 try:
     if not cfg.DEBUG:
