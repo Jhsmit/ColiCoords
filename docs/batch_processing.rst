@@ -42,8 +42,9 @@ A :class:`~colicoords.data_models.Data` object can be prepares as follows:
 
 The :class:`~colicoords.data_models.Data` class supports iteration and Numpy-like indexing. This indexing capability is 
 used by the helper function :func:`~colicoords.preprocessing.data_to_cells` to cut individual cells out of the data 
-across all data channels. Every cell is then oriented horizonally based on the image moments in the binary image (as default). 
-A :class:`~colicoords.cell.Cell` object is initialized together with its own coordinate sytem and place in an instance of
+across all data channels. Every cell is then oriented horizontally based on the image moments in the binary image (as default).
+A name attribute is assigned based on the image the cell originates from and the label in the binary image, ie
+A :class:`~colicoords.cell.Cell` object is initialized together with its own coordinate system and placed in an instance of
 :class:`~colicoords.cell.CellList`. This object is a container for :class:`~colicoords.cell.Cell` objects and supports 
 Numpy-like indexing and allows for batch operations to be done on all cells in the container.
 

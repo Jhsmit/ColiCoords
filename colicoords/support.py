@@ -35,6 +35,29 @@ class ArrayFitResults(FitResults):
         return res
 
 
+def label_stack(img_stack):
+    """
+    Labels a stack of binary images.
+
+    Parameters
+    ----------
+    img_stack : :class:`~numpy.ndarray`
+        Input stack of binary images.
+
+    Returns
+    -------
+    out : :class:`~numpy.ndarray`
+        Output stack of labelled binary images.
+
+    """
+    out = np.empty_like(img_stack)
+    for i, img in enumerate(img_stack):
+        l, n = mh.label(img)
+        out[i] = l
+
+    return out
+
+
 def allow_scalars(f):
     """
     Wraps a function so it accepts scalars instead of only numpy arrays.
