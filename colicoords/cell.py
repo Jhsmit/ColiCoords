@@ -108,7 +108,39 @@ class Cell(object):
         """:obj:`float`: Volume of the cell in cubic pixels."""
         return np.pi * self.coords.r ** 2 * self.length + (4 / 3) * np.pi * self.coords.r ** 3
 
-    def phi_dist(self, step, data_name='', storm_weight=False, method='gauss', sigma=3, r_max=None, r_min=0):
+    def phi_dist(self, step, data_name='',  r_max=None, r_min=0, storm_weight=False, method='gauss', sigma=5):
+        """
+        Calculates the angular distribution of signal for a given data element.
+
+        Parameters
+        ----------
+        step : :obj:`float`
+            Step size between datapoints.
+        data_name : :obj:`str`
+            Name of the data element to use.
+        r_max : :obj:`float`, optional
+            Datapoints within r_max from the cell midline will be included. If `None` the value from the cell's
+            coordinate system will be used.
+        r_min : :obj:`float`, optional
+            Datapoints outside of r_min from the cell midline will be included.
+        storm_weight : :obj:`bool`
+            If `True` the datapoints of the specified STORM-type data will be weighted by their intensity.
+        method : :obj:`str`
+            Method of averaging datapoints to calculate the final distribution curve.
+        sigma : :obj:`float`
+            Applies only when `method` is set to 'gauss'. `sigma` gives the width of the gaussian used for convoluting
+            datapoints.
+
+        Returns
+        -------
+        xvals : :class:`~numpy.ndarray`
+            Array of distances along the cell midline, values are the middle of the bins/kernel.
+        yvals_l : :class:`~numpy.ndarray`
+            Array of bin heights for the left pole.
+        yvals_r : :class:`~numpy.ndarray`
+            Array of bin heights for the right pole.
+        """
+
         r_max = r_max if r_max else self.coords.r
         stop = 180
 
@@ -1598,6 +1630,37 @@ class CellList(object):
         return x_arr, y_arr
 
     def phi_dist(self, step, data_name='', storm_weight=False, method='gauss', sigma=5, r_max=None, r_min=0):
+        """
+        Calculates the angular distribution of signal for a given data element for all cells.
+
+        Parameters
+        ----------
+        step : :obj:`float`
+            Step size between datapoints.
+        data_name : :obj:`str`
+            Name of the data element to use.
+        r_max : :obj:`float`, optional
+            Datapoints within r_max from the cell midline will be included. If `None` the value from the cell's
+            coordinate system will be used.
+        r_min : :obj:`float`, optional
+            Datapoints outside of r_min from the cell midline will be included.
+        storm_weight : :obj:`bool`
+            If `True` the datapoints of the specified STORM-type data will be weighted by their intensity.
+        method : :obj:`str`
+            Method of averaging datapoints to calculate the final distribution curve.
+        sigma : :obj:`float`
+            Applies only when `method` is set to 'gauss'. `sigma` gives the width of the gaussian used for convoluting
+            datapoints.
+
+        Returns
+        -------
+        xvals : :class:`~numpy.ndarray`
+            Array of distances along the cell midline, values are the middle of the bins/kernel.
+        yvals_l : :class:`~numpy.ndarray`
+            Array of bin heights for the left pole.
+        yvals_r : :class:`~numpy.ndarray`
+            Array of bin heights for the right pole.
+        """
         stop = 180
         numpoints = len(np.arange(0, stop + step, step))
         out_l = np.zeros((len(self), numpoints))
