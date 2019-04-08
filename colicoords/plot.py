@@ -419,7 +419,32 @@ class CellPlot(object):
 
     def plot_phi_dist(self, ax=None, data_name='', r_max=None, r_min=0, storm_weight=False, method='gauss',
                       dist_kwargs=None, **kwargs):
+        """
+        Plots the angular distribution of a given data element.
 
+        Parameters
+        ----------
+        ax : :class:`matplotlib.axes.Axes`, optional
+            Matplotlib axes to use for plotting.
+        data_name : :obj:`str`
+            Name of the data element to use.
+        r_max: : :obj:`float`
+            Datapoints within r_max from the cell midline are included. If *None* the value from the cell's coordinate
+            system will be used.
+        r_min: : :obj:`float`
+            Datapoints outside of r_min from the cell midline are included.
+        storm_weight : :obj:`bool`
+            If `True` the datapoints of the specified STORM-type data will be weighted by their intensity.
+        method : :obj:`str`:
+            Method of averaging datapoints to calculate the final distribution curve.
+        dist_kwargs : :obj:`dict`
+            Additional kwargs to be passed to :meth:`~colicoords.cell.Cell.phi_dist`
+
+        Returns
+        -------
+        lines : :obj:`tuple`
+            Tuple with Matplotlib line artist objects.
+        """
         step = kwargs.pop('step', cfg.PHI_DIST_STEP)
         sigma = kwargs.pop('sigma', cfg.PHI_DIST_SIGMA)
         dist_kwargs = {} if dist_kwargs is None else dist_kwargs
@@ -1265,7 +1290,7 @@ class CellListPlot(object):
         """
         Plots the longitudinal distribution of a given data element.
 
-        The data is normalized along the long axis to allow the combining of multiple cells with different lenghts.
+        The data is normalized along the long axis to allow the combining of multiple cells with different lengths.
 
         Parameters
         ----------
@@ -1347,8 +1372,37 @@ class CellListPlot(object):
 
         return line
 
-    def plot_phi_dist(self, ax=None, data_name='', r_max=None, r_min=0, storm_weight=False, method='gauss',
+    def plot_phi_dist(self, ax=None, data_name='', r_max=None, r_min=0, storm_weight=False, band_func=np.std, method='gauss',
                       dist_kwargs=None, **kwargs):
+        """
+        Plots the angular distribution of a given data element for all cells.
+
+        Parameters
+        ----------
+        ax : :class:`matplotlib.axes.Axes`, optional
+            Matplotlib axes to use for plotting.
+        data_name : :obj:`str`
+            Name of the data element to use.
+        r_max: : :obj:`float`
+            Datapoints within r_max from the cell midline are included. If *None* the value from the cell's coordinate
+            system will be used.
+        r_min: : :obj:`float`
+            Datapoints outside of r_min from the cell midline are included.
+        storm_weight : :obj:`bool`
+            If `True` the datapoints of the specified STORM-type data will be weighted by their intensity.
+        band_func : :obj:`callable`
+            Callable to determine the fill area around the graph. Default is standard deviation.
+        method : :obj:`str`:
+            Method of averaging datapoints to calculate the final distribution curve.
+        dist_kwargs : :obj:`dict`
+            Additional kwargs to be passed to :meth:`~colicoords.cell.Cell.phi_dist`
+
+        Returns
+        -------
+        lines : :obj:`tuple`
+            Tuple with Matplotlib line artist objects.
+        """
+
         step = kwargs.pop('step', cfg.PHI_DIST_STEP)
         sigma = kwargs.pop('sigma', cfg.PHI_DIST_SIGMA)
         dist_kwargs = {} if dist_kwargs is None else dist_kwargs
@@ -1382,8 +1436,18 @@ class CellListPlot(object):
         ax.set_ylabel(ylabel)
 
         l = kwargs.pop('label', None)
-        line_l = ax.plot(x_vals, np.nanmean(phi_l, axis=0), label='Left pole')
-        line_r = ax.plot(x_vals, np.nanmean(phi_r, axis=0), label='Right pole')
+
+        mean = np.nanmean(phi_l, axis=0)
+        line_l = ax.plot(x_vals, mean, label='Left pole')
+        if band_func:
+            width = band_func(phi_l, axis=0)
+            ax.fill_between(x_vals, mean + width, mean - width, alpha=0.25)
+
+        mean = np.nanmean(phi_r, axis=0)
+        line_r = ax.plot(x_vals, mean, label='Right pole')
+        if band_func:
+            width = band_func(phi_r, axis=0)
+            ax.fill_between(x_vals, mean + width, mean - width, alpha=0.25)
 
         return line_l, line_r
 
