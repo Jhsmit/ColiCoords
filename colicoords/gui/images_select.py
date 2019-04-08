@@ -14,6 +14,8 @@ from colicoords.plot import CellPlot
 
 DCLASS_ORDER = {'binary': 0, 'brightfield': 1, 'fluorescence': 2, 'STORM': 3}
 
+from pyqtgraph import ImageItem
+
 
 class CellMplCanvas(FigureCanvas):
     def __init__(self, cell_list, parent=None, width=5, height=4):
@@ -116,12 +118,13 @@ class PaintOptionsWindow(QMainWindow):
 class OverlayImageWindow(QMainWindow):  #todo mixin with ImageWindow
     alpha = 0.5
     keypress = QtCore.pyqtSignal(QtGui.QKeyEvent)
+    olay_updated = QtCore.pyqtSignal(np.ndarray)
 
-    def __init__(self, img_arr, binary_arr, parent=None, title='ImageWindow'):
+    def __init__(self, img_arr, binary_array, parent=None, title='ImageWindow'):
         super(OverlayImageWindow, self).__init__(parent)
         self.setWindowTitle(title)
         self.img_arr = img_arr
-        self.binary_arr = binary_arr
+        self.binary_array = binary_array
 
         win = pg.GraphicsLayoutWidget()
         self.vb = pg.ViewBox(enableMouse=False, enableMenu=False)
@@ -133,15 +136,16 @@ class OverlayImageWindow(QMainWindow):  #todo mixin with ImageWindow
         cm = pg.ColorMap(pos, color)
         lut = cm.getLookupTable(0., 1.)
 
-        self.overlay_item = pg.ImageItem(binary_arr[0])
+        self.olay_updated.connect(self.update_overlay)
+
+        self.overlay_item = pg.ImageItem(binary_array[0])
         self.overlay_item.setLookupTable(lut)
         self.vb.addItem(self.img_item)
         self.vb.addItem(self.overlay_item)
         self.vb.setAspectLocked()
         win.addItem(self.vb)
-        #
+
         self.circle = QGraphicsEllipseItem(30., 30., 0., 0.)
-        #self.circle.setBrush(QtGui.QBrush(QtCore.Qt.yellow))
         self.vb.addItem(self.circle)
 
         hist = pg.HistogramLUTItem()
@@ -151,6 +155,10 @@ class OverlayImageWindow(QMainWindow):  #todo mixin with ImageWindow
         win.setStyleSheet("background-color:black;")
         self.setCentralWidget(win)
 
+    @QtCore.pyqtSlot(np.ndarray)
+    def update_overlay(self, arr):
+        self.overlay_item.setImage(arr)
+
     def make_lut(self):
         pos = np.array([0., 1.])
         color = np.array([[0., 0., 0., 0.], [1., 0., 0., self.alpha]])
@@ -159,40 +167,12 @@ class OverlayImageWindow(QMainWindow):  #todo mixin with ImageWindow
 
         return lut
 
-        #self.img_item.scene().sigMouseMoved.connect(self.mouseMoved)
-        #
-        #self.img_item.sigMouseDrag.connect(self.mouseDrag)
-        #proxy = pg.SignalProxy(vb.scene().sigMouseMoved, rateLimit=60, slot=self.mouseMoved)
-
-    # def mouseDrag(self, ev):
-    #     if ev.isStart():
-    #         pos = ev.buttonDownPos()
-    #         print(pos)
-    #         row, col = int(pos.y()), int(pos.x())
-    #
-    #         self.binary_arr[0][row, col] = 1
-    #
-    #     im = self.binary_to_rgb(self.binary_arr[0])
-    #     self.overlay_item.setImage(im)
-    #
-    #     ev.accept()
-
     def keyPressEvent(self, event):
         self.keypress.emit(event)
 
-    # def mouseMoved(self, evt):
-    #
-    #     # print(evt)
-    #     #
-    #     # print(self.img_item.mapFromScene(evt))
-    #     scenePos = self.img_item.mapFromScene(evt)
-    #     self.circle.setRect(scenePos.x() - 30/2, scenePos.y() - 30/2, 30, 30)
-    #     # row, col = int(scenePos.y()), int(scenePos.x())
-    #     # print(row, col)
-
     def set_frame(self, i):
         self.img_item.setImage(self.img_arr[i])
-        self.overlay_item.setImage(self.binary_arr[i])
+        self.overlay_item.setImage(self.binary_array[i])
 
 
 class ImageWindow(QMainWindow):

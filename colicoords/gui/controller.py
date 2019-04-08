@@ -8,6 +8,7 @@ import time
 import tifffile
 import os
 
+
 class NavigationMixin(object):
     index = 0
     length = 0
@@ -109,10 +110,12 @@ class DrawThread(QtCore.QThread):
             self.zero[int(y), int(x)] = False
             dmap = mh.distance(self.zero)
             bools = dmap < self.brush_size_sq
-            self.binary_array[idx][bools] = value
+            #self.binary_array[idx][bools] = value
+            np.putmask(self.binary_array[idx], bools, value)
             self.edited[idx] = True
 
-            self.iw.overlay_item.setImage(self.binary_array[idx])
+            #self.iw.overlay_item.setImage(self.binary_array[idx])
+            self.iw.olay_updated.emit(self.binary_array[idx])
             self.zero[int(y), int(x)] = True
 
             self.queue.task_done()
@@ -132,8 +135,6 @@ class PropagateThread(QtCore.QThread):
     def run(self):
         #todo trigger with next?
         while not self.terminate:
-            print('running')
-
             binary = self.parent.binary_array[self.parent.index]
             idx = np.where(self.parent.draw_thread.edited)[0]
             try:
@@ -151,6 +152,8 @@ class GenerateBinaryController(NavigationMixin):
         assert grey_array.shape == binary_array.shape
         self.grey_array = grey_array[:, ::-1, :]
         self.binary_array = binary_array[:, ::-1, :].astype(int)
+
+#        self.binary_array = list([arr.copy() for arr in bin_mirror])
         super(GenerateBinaryController, self).__init__(len(grey_array))
 
         self.shape = self.grey_array[0].shape
@@ -166,9 +169,6 @@ class GenerateBinaryController(NavigationMixin):
             self.prop = PropagateThread(self)
             self.prop.start()
 
-        #self.autosave = AutoSaveThread(self.binary_array, self.draw_thread)
-        #self.autosave.start()
-
         self.iw.img_item.scene().sigMouseMoved.connect(self.mouse_moved)
 
         #Paint options window
@@ -181,6 +181,10 @@ class GenerateBinaryController(NavigationMixin):
         self.pw.keypress.connect(self.on_key_press)
 
         self.nw.done_button.clicked.connect(self.on_done_button)
+
+    @property
+    def output_binary(self):
+        return self.binary_array[:, ::-1, :]
 
     def on_done_button(self):
         self.iw.update()
