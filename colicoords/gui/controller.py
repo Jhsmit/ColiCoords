@@ -153,7 +153,6 @@ class GenerateBinaryController(NavigationMixin):
         self.grey_array = grey_array[:, ::-1, :]
         self.binary_array = binary_array[:, ::-1, :].astype(int)
 
-#        self.binary_array = list([arr.copy() for arr in bin_mirror])
         super(GenerateBinaryController, self).__init__(len(grey_array))
 
         self.shape = self.grey_array[0].shape
@@ -162,6 +161,7 @@ class GenerateBinaryController(NavigationMixin):
         self.iw = OverlayImageWindow(self.grey_array, self.binary_array)
         self.iw.img_item.sigMouseDrag.connect(self.on_mouse_drag)
         self.iw.keypress.connect(self.on_key_press)
+
         self.draw_thread = DrawThread(self.binary_array, self.iw)
         self.draw_thread.start()
 
@@ -187,11 +187,9 @@ class GenerateBinaryController(NavigationMixin):
         return self.binary_array[:, ::-1, :]
 
     def on_done_button(self):
-        self.iw.update()
-        self.iw.overlay_item.update()
-        self.pw.update()
-        self.set_frame(self.index)
-        self._paint_mode_rb()
+        self.iw.close()
+        self.pw.close()
+        self.nw.close()
 
     def alpha_slider(self):
         self.iw.alpha = self.pw.alpha_slider.value() / 100
