@@ -475,7 +475,7 @@ class Cell(object):
             elif limit_l == 'poles':
                 b = ((xc <= self.coords.xl) * (xc >= self.coords.xr)).astype(bool)
             else:
-                assert 0 < limit_l < 1
+                assert 0 < limit_l < 1, 'The value of limit_l should be between 0 and 1.'
                 mid_l = self.length / 2
                 lc = self.coords.calc_lc(x, y)
                 limit = limit_l * self.length
