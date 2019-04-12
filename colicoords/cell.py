@@ -469,7 +469,6 @@ class Cell(object):
         else:
             raise ValueError("Invalid data dimensions")
 
-        #TODO limit by lc
         if limit_l:
             if limit_l == 'full':
                 b = (xc > self.coords.xl) * (xc < self.coords.xr).astype(bool)
