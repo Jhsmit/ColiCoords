@@ -30,9 +30,9 @@ A :class:`~colicoords.data_models.Data` object can be prepares as follows:
     import tifffile
     from colicoords import Data, data_to_cells
 
-    binary_stack = tifffile.imread('data/02_binary_stack.tif')
-    flu_stack = tifffile.imread('data/02_brightfield_stack.tif')
-    brightfield_stack = tifffile.imread('data/02_fluorescence_stack.tif')
+    binary_stack = tifffile.imread('data/02/binary_stack.tif')
+    flu_stack = tifffile.imread('data/02/brightfield_stack.tif')
+    brightfield_stack = tifffile.imread('data/02/fluorescence_stack.tif')
 
     data = Data()
     data.add_data(binary_stack, 'binary')
