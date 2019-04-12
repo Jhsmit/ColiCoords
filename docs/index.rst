@@ -10,8 +10,8 @@ Welcome to ColiCoords' documentation!
     :maxdepth: 2
     :caption: Contents:
 
-    introduction
     installation
+    introduction
     batch_processing
     optimization
     storm_data

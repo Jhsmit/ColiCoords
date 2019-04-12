@@ -22,8 +22,7 @@
    :target: https://zenodo.org/badge/latestdoi/92830488
 
 
-
-Preliminary docs: https://colicoords.readthedocs.io/
+Documentation: https://colicoords.readthedocs.io/
 
 Project Goals
 =============
