@@ -51,7 +51,7 @@ class TestCellList(ArrayTestCase):
         self.assertTrue(cell in self.cell_list)
 
     def test_geometry(self):
-        props = ['radius', 'length', 'area', 'surface', 'volume']
+        props = ['radius', 'length', 'circumference', 'area', 'surface', 'volume']
         cell_list_copy = self.cell_list.copy()
         for prop in props:
             m1 = getattr(self.cell_list, prop)
@@ -67,7 +67,7 @@ class TestCellList(ArrayTestCase):
 
             self.assertAlmostEqual(m1, m2, 6)  # On Linux (Travis) the result is exactly equal
 
-
+# TODO 3D array fluorescence testing
 class TestCellListSTORM(ArrayTestCase):
     def setUp(self):
         f_path = os.path.dirname(os.path.realpath(__file__))
@@ -86,6 +86,31 @@ class TestCellListSTORM(ArrayTestCase):
             x, y = self.cell.l_dist(nbins, data_name='notexisting')
         with self.assertRaises(ValueError):
             x, y = self.cell.l_dist(nbins, method='notexisting')
+
+        storm_int_sum = np.sum(self.cell.data.data_dict['storm']['intensity'])
+
+        x, y = self.cell.l_dist(nbins, data_name='storm', r_max=20)
+        self.assertEqual(np.sum(y), storm_int_sum)
+
+        x, y = self.cell.l_dist(nbins, data_name='storm', method='box', r_max=20)
+        self.assertEqual(np.sum(y), storm_int_sum)
+
+        x, y = self.cell.l_dist(nbins, data_name='storm', method='box', storm_weight=True, r_max=20)
+        self.assertEqual(np.sum(y), storm_int_sum)
+
+        x, y = self.cell.l_dist(nbins, data_name='fluorescence')
+
+        x, y = self.cell.l_dist(nbins, data_name='fluorescence', method='box')
+
+        x, y = self.cell.l_dist(nbins, method='box',)
+        x, y = self.cell.l_dist(nbins, method='box', l_mean=0.75*self.cell.length, norm_x=True)
+        x, y = self.cell.l_dist(nbins, method='box', norm_x=True)
+        x, y = self.cell.l_dist(nbins, method='box', r_max=np.inf)
+        x, y = self.cell.l_dist(nbins, method='box', r_max=1)
+        x, y = self.cell.l_dist(nbins, method='box', r_max=0)
+
+    def test_l_classify(self):
+        pass
 
     def test_r_dist(self):
             stop = 15
