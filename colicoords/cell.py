@@ -317,8 +317,8 @@ class Cell(object):
             bin_kwargs = {'sigma': sigma}
             xvals = bins
         elif method == 'box':
-            bools = (x_len > bins.min()) * (x_len < bins.max())  # Remove values outside of bins range
-            x_len = x_len[bools]
+            bools_box = (x_len > bins.min()) * (x_len < bins.max())  # Remove values outside of bins range
+            x_len = x_len[bools_box]
 
             bin_func = box_mean
             bin_kwargs = {'storm_weight': storm_weight}
