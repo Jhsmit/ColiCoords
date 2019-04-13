@@ -228,8 +228,6 @@ class Cell(object):
         stop : :obj:`float`
             Distance from `xr` as end point for the distribution, units are are either pixels or normalized units
             if `norm_x=True`.
-        bins : :class:`~numpy.ndarray`
-            Array of bin edges to use. Overrrides `nbin`, `start` and `stop`.
         data_name : :obj:`str`
             Name of the data element to use.
         norm_x : :obj:`bool`
