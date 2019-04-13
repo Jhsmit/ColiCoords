@@ -65,7 +65,7 @@ class TestCellList(ArrayTestCase):
             m1 = getattr(self.cell_obj, prop)
             m2 = getattr(cell_pad, prop)
 
-            self.assertEqual(m1, m2)
+            self.assertAlmostEqual(m1, m2, 6)  # On Linux (Travis) the result is exactly equal
 
 
 class TestCellListSTORM(ArrayTestCase):
