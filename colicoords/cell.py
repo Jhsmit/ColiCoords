@@ -329,7 +329,7 @@ class Cell(object):
             yvals = bin_func(x_len, y_weight, bins, **bin_kwargs)
 
         elif data_elem.ndim == 2:
-            y_weight = np.clip(data_elem[bools].flatten(), 0, None)  # Negative values are set to zero
+            y_weight = np.clip(data_elem[bools].flatten(), 0, None)  # Negative values are set to zero (why?)
             yvals = bin_func(x_len, y_weight, bins, **bin_kwargs)
 
         elif data_elem.ndim == 3:
@@ -529,13 +529,9 @@ class Cell(object):
             x_select = x[imin:imax] if imax > imin else x[imax:imin][::-1]
 
             try:
-                assert np.all(np.diff(y_select) > 0)
-            except AssertionError:
-                print('Radial distribution not monotonically increasing')
-            try:
                 r = np.interp(mid_val, y_select, x_select)
             except ValueError:
-                print("r value not found")
+                print("Cell {}: No r value was found".format(self.name))
                 return
         elif mode == 'max':
             imax = np.argmax(y)
@@ -1742,6 +1738,9 @@ class CellList(object):
         radius : :class:`np.ndarray`
             The measured radius `r` values if `in_place` is `False`, otherwise `None`.
         """
+
+        if mode not in ['min', 'max', 'mid']:
+            raise ValueError('Invalid value for mode')
 
         r = [c.measure_r(data_name=data_name, mode=mode, in_place=in_place, **kwargs) for c in self]
         if not in_place:
