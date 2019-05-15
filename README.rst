@@ -24,6 +24,8 @@
 
 Documentation: https://colicoords.readthedocs.io/
 
+BioRxiv Paper: https://www.biorxiv.org/content/10.1101/608109v1
+
 Project Goals
 =============
 
