@@ -1,4 +1,8 @@
-If you use the `cnn` module for scientific publication please cite the U-net paper: https://arxiv.org/abs/1505.04597
+If you use the `cnn` module for scientific publication please cite the U-net papers: 
+
+https://arxiv.org/abs/1505.04597
+
+https://www.nature.com/articles/s41592-018-0261-2
 
 Installation
 ------------
