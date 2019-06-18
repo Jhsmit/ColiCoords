@@ -1435,7 +1435,7 @@ class CellList(object):
     def optimize_mp(self, data_name='binary', cell_function=None, minimizer=Powell, processes=None, **kwargs):
         """ Optimize all cell's coordinate systems using `optimize` through parallel computing.
 
-        A call to this method must be  protected by if __name__ == '__main__' if its not executed in jupyter notebooks.
+        A call to this method must be protected by if __name__ == '__main__' if its not executed in jupyter notebooks.
 
         Parameters
         ----------
