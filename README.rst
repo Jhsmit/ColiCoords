@@ -2,7 +2,7 @@
 
 |test|
 
-.. |test| image:: images/ColiCoords_Final_Logo.svg
+.. |test| image:: images/logo_with_cell_1280x640.png
     :width: 50%
 
 .. |travis| image:: https://travis-ci.org/Jhsmit/ColiCoords.svg?branch=master
