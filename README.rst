@@ -21,10 +21,11 @@
 .. |doi| image:: https://zenodo.org/badge/92830488.svg
    :target: https://zenodo.org/badge/latestdoi/92830488
 
+`Documentation <https://colicoords.readthedocs.io/>`_
 
-Documentation: https://colicoords.readthedocs.io/
+`PLOS One Paper <https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0217524>`_ 
 
-BioRxiv Paper: https://www.biorxiv.org/content/10.1101/608109v1
+`BioRxiv Paper <https://www.biorxiv.org/content/10.1101/608109v1>`_
 
 Project Goals
 =============
