@@ -471,7 +471,7 @@ class Cell(object):
             if limit_l == 'full':
                 b = (xc > self.coords.xl) * (xc < self.coords.xr).astype(bool)
             elif limit_l == 'poles':
-                b = ((xc <= self.coords.xl) * (xc >= self.coords.xr)).astype(bool)
+                b = np.logical_or(xc <= self.coords.xl, xc >= self.coords.xr)
             else:
                 assert 0 < limit_l < 1#, 'The value of limit_l should be between 0 and 1.'
                 mid_l = self.length / 2
@@ -480,7 +480,7 @@ class Cell(object):
 
                 b = ((lc > mid_l - limit / 2) * (lc < mid_l + limit / 2)).astype(bool)
         else:
-            b = True
+            b = np.ones_like(r, dtype=bool)
 
         if data_elem.ndim <= 2:
             y_wt = y_weight[b].flatten() if y_weight is not None else None

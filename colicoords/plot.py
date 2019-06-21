@@ -904,7 +904,7 @@ class CellPlot(object):
         bins = kwargs.pop('bins', 'fd')
         return ax.hist(x_len, bins=bins, **kwargs)
 
-    def hist_r_storm(self, data_name='', ax=None, norm_x=True, **kwargs):
+    def hist_r_storm(self, data_name='', ax=None, norm_x=True, limit_l=None, **kwargs):
         """
         Makes a histogram of the radial distribution of localizations.
 
@@ -916,6 +916,11 @@ class CellPlot(object):
             Matplotlib axes to use for plotting.
         norm_x : :obj:`bool`
             If `True` all radial distances are normalized by dividing by the radius of the individual cells.
+        limit_l : :obj:`str`
+            If `None`, all datapoints are taking into account. This can be limited by providing the value `full`
+            (omit poles only), 'poles' (include only poles), or a float value which will limit the data points with
+            around the midline where xmid - xlim < x < xmid + xlim.method : :obj:`str`, either 'gauss' or 'box'
+
         **kwargs
             Additional kwargs passed to `ax.hist()`
 
@@ -948,7 +953,25 @@ class CellPlot(object):
             r *= (cfg.IMG_PIXELSIZE / 1000)
             xunits = '$\mu m$'
 
-        r_coords.append(r)
+        if limit_l is not None:
+            #todo this code appears also in cell.r_dist()
+            if limit_l is 'full':
+                xc = self.cell_obj.coords.calc_xc(xp, yp)
+                b = (xc > self.cell_obj.coords.xl) * (xc < self.cell_obj.coords.xr).astype(bool)
+            elif limit_l == 'poles':
+                xc = self.cell_obj.coords.calc_xc(xp, yp)
+                b = np.logical_or(xc <= self.cell_obj.coords.xl, xc >= self.cell_obj.coords.xr)
+            else:
+                assert 0 < limit_l < 1  # 'The value of limit_l should be between 0 and 1'
+                mid_l = self.cell_obj.length / 2
+                lc = self.cell_obj.coords.calc_lc(xp, yp)
+                limit = limit_l * self.cell_obj.length
+
+                b = ((lc > mid_l - limit / 2) * (lc < mid_l + limit / 2)).astype(bool)
+        else:
+            b = np.ones_like(r, dtype=bool)
+
+        r_coords.append(r[b])
 
         ax = plt.gca() if ax is None else ax
         ax.set_xlabel('Distance ({})'.format(xunits))
@@ -1451,7 +1474,6 @@ class CellListPlot(object):
 
         return line_l, line_r
 
-
     def plot_l_class(self, data_name='', ax=None, yerr='std', **kwargs):
         """
         Plots a bar chart of how many foci are in a given STORM data set in classes depending on x-position.
@@ -1600,7 +1622,7 @@ class CellListPlot(object):
         bins = kwargs.pop('bins', 'fd')
         return ax.hist(full_l, bins=bins, **kwargs)
 
-    def hist_r_storm(self, data_name='', ax=None, norm_x=True, **kwargs):
+    def hist_r_storm(self, data_name='', ax=None, norm_x=True, limit_l=None, **kwargs):
         """
         Makes a histogram of the radial distribution of localizations.
 
@@ -1612,6 +1634,10 @@ class CellListPlot(object):
             Matplotlib axes to use for plotting.
         norm_x : :obj:`bool`
             If `True` all radial distances are normalized by dividing by the radius of the individual cells.
+        limit_l : :obj:`str`
+            If `None`, all datapoints are used. This can be limited by providing the value `full` (omit poles only),
+            'poles' (include only poles), or a float value between 0 and 1 which will limit the data points by
+            longitudinal coordinate around the midpoint of the cell.
         **kwargs
             Additional kwargs passed to ``ax.hist()``
 
@@ -1639,7 +1665,25 @@ class CellListPlot(object):
             if norm_x:
                 r /= cell_obj.coords.r
 
-            r_coords.append(r)
+            if limit_l is not None:
+                #todo this code appears also in cell.r_dist()
+                if limit_l is 'full':
+                    xc = cell_obj.coords.calc_xc(xp, yp)
+                    b = (xc > cell_obj.coords.xl) * (xc < cell_obj.coords.xr).astype(bool)
+                elif limit_l == 'poles':
+                    xc = cell_obj.coords.calc_xc(xp, yp)
+                    b = np.logical_or(xc <= cell_obj.coords.xl, xc >= cell_obj.coords.xr)
+                else:
+                    assert 0 < limit_l < 1  # 'The value of limit_l should be between 0 and 1'
+                    mid_l = cell_obj.length / 2
+                    lc = cell_obj.coords.calc_lc(xp, yp)
+                    limit = limit_l * cell_obj.length
+
+                    b = ((lc > mid_l - limit / 2) * (lc < mid_l + limit / 2)).astype(bool)
+            else:
+                b = np.ones_like(r, dtype=bool)
+
+            r_coords.append(r[b])
 
         full_r = np.concatenate(r_coords)
 
