@@ -111,6 +111,8 @@ def align_storm(model_cell, data_cells, data_name, r_norm=True):
     for cell in tqdm(data_cells, desc='Align STORM'):
         data_elem = cell.data.data_dict[data_name]
         curr_dpts = len(data_elem)
+        if curr_dpts == 0:
+            continue
 
         x, y = data_elem['x'], data_elem['y']
         lc, rc, phi = cell.coords.transform(x, y)
