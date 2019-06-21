@@ -1687,9 +1687,15 @@ class CellListPlot(object):
 
         full_r = np.concatenate(r_coords)
 
+        if norm_x:
+            xunits = 'norm'
+        else:
+            full_r *= (cfg.IMG_PIXELSIZE / 1000)
+            xunits = '$\mu m$'
+
         ax = plt.gca() if ax is None else ax
 
-        ax.set_xlabel('Distance (norm)')
+        ax.set_xlabel('Distance ({})'.format(xunits))
         ax.set_ylabel('Number of localizations')
         ax.set_title('Radial Distribution')
         bins = kwargs.pop('bins', 'fd')
