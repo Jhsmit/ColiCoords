@@ -485,7 +485,7 @@ class CellPlot(object):
 
         return line_l, line_r
 
-    def plot_storm(self, ax=None, data_name='', method='plot', upscale=5, alpha_cutoff=None, storm_weight=True, sigma=0.25, **kwargs):
+    def plot_storm(self, ax=None, data_name='', method='plot', upscale=5, alpha_cutoff=None, storm_weight=False, sigma=0.25, **kwargs):
         #todo make functions with table and shape and other kwargs?
         """
         Graphically represent STORM data.
@@ -636,10 +636,10 @@ class CellPlot(object):
 
             s = np.sum(res, axis=1)
             img = s.reshape(xcoords.shape)
+
+
+
             img_norm = img / img.max()
-
-#            np.ma.masked_where(img_norm < alpha_cutoff, img)
-
             alphas = np.ones(img.shape)
             if alpha_cutoff:
                 alphas[img_norm < alpha_cutoff] = img_norm[img_norm < alpha_cutoff] / alpha_cutoff
@@ -686,7 +686,7 @@ class CellPlot(object):
 
         return container
 
-    def _plot_storm(self, ax=None, data_name='', method='plot', upscale=5, storm_weight=True,
+    def _plot_storm(self, ax=None, data_name='', method='plot', upscale=5, storm_weight=False,
                    sigma=0.25, **kwargs):
         # temporary function
         """
