@@ -4,9 +4,8 @@ from matplotlib.ticker import MaxNLocator
 import numpy as np
 # import cupy as gp
 from colicoords.config import cfg
-from colicoords.cell import calc_lc, CellList
+from colicoords.cell import calc_lc, CellList, Cell
 import seaborn as sns
-from scipy import stats
 from tqdm.auto import tqdm
 from numba import jit
 
@@ -30,6 +29,8 @@ class CellPlot(object):
         Single-cell object to plot.
     """
     def __init__(self, cell_obj):
+        if not isinstance(cell_obj, Cell):
+            raise ValueError("'cell_obj' must be an instance of colicoords.cell.Cell")
         self.cell_obj = cell_obj
 
     def plot_midline(self, ax=None, **kwargs):
@@ -404,6 +405,7 @@ class CellPlot(object):
         line, = ax.plot(x, y, **kwargs)
         ax.set_xlabel('Distance ({})'.format(xunits))
 
+        #?????
         if data_elem.dclass == 'storm':
             if storm_weight:
                 ylabel = 'Total STORM intensity (photons)'
@@ -420,7 +422,75 @@ class CellPlot(object):
 
         return line
 
-    def plot_storm(self, ax=None, data_name='', method='plot', upscale=5, alpha_cutoff=None, storm_weight=True, sigma=0.25, **kwargs):
+    def plot_phi_dist(self, ax=None, data_name='', r_max=None, r_min=0, storm_weight=False, method='gauss',
+                      dist_kwargs=None, **kwargs):
+        """
+        Plots the angular distribution of a given data element.
+
+        Parameters
+        ----------
+        ax : :class:`matplotlib.axes.Axes`, optional
+            Matplotlib axes to use for plotting.
+        data_name : :obj:`str`
+            Name of the data element to use.
+        r_max: : :obj:`float`
+            Datapoints within r_max from the cell midline are included. If *None* the value from the cell's coordinate
+            system will be used.
+        r_min: : :obj:`float`
+            Datapoints outside of r_min from the cell midline are included.
+        storm_weight : :obj:`bool`
+            If `True` the datapoints of the specified STORM-type data will be weighted by their intensity.
+        method : :obj:`str`:
+            Method of averaging datapoints to calculate the final distribution curve.
+        dist_kwargs : :obj:`dict`
+            Additional kwargs to be passed to :meth:`~colicoords.cell.Cell.phi_dist`
+
+        Returns
+        -------
+        lines : :obj:`tuple`
+            Tuple with Matplotlib line artist objects.
+        """
+        step = kwargs.pop('step', cfg.PHI_DIST_STEP)
+        sigma = kwargs.pop('sigma', cfg.PHI_DIST_SIGMA)
+        dist_kwargs = {} if dist_kwargs is None else dist_kwargs
+
+        if not data_name:
+            try:
+                data_elem = list(self.cell_obj.data.flu_dict.values())[0]  # yuck
+            except IndexError:
+                try:
+                    data_elem = list(self.cell_obj.data.storm_dict.values())[0]
+                except IndexError:
+                    raise IndexError('No valid data element found')
+        else:
+            data_elem = self.cell_obj.data.data_dict[data_name]
+
+        #todo dist_wkargs should lways be empty
+        x_vals, phi_l, phi_r = self.cell_obj.phi_dist(step, data_name=data_name, r_max=r_max, r_min=r_min,
+                                                      storm_weight=storm_weight, sigma=sigma, method=method, **dist_kwargs)
+
+        ax = plt.gca() if ax is None else ax
+
+        #?????
+        print(data_elem.dclass)
+        if data_elem.dclass == 'storm':
+            if storm_weight:
+                ylabel = 'Total STORM intensity (photons)'
+            else:
+                ylabel = 'Number of localizations'
+        else:
+            ylabel = 'Intensity (a.u.)'
+
+        ax.set_xlabel('Distance ({})'.format('degrees'))
+        ax.set_ylabel(ylabel)
+
+        l = kwargs.pop('label', None)
+        line_l = ax.plot(x_vals, phi_l, label='Left pole')
+        line_r = ax.plot(x_vals, phi_r, label='Right pole')
+
+        return line_l, line_r
+
+    def plot_storm(self, ax=None, data_name='', method='plot', upscale=5, alpha_cutoff=None, storm_weight=False, sigma=0.25, **kwargs):
         #todo make functions with table and shape and other kwargs?
         """
         Graphically represent STORM data.
@@ -526,6 +596,7 @@ class CellPlot(object):
             #            np.ma.masked_where(img_norm < alpha_cutoff, img)
 
             alphas = np.ones(img.shape)
+            #todo sigmoidal alpha?
             if alpha_cutoff:
                 alphas[img_norm < alpha_cutoff] = img_norm[img_norm < alpha_cutoff] / alpha_cutoff
 
@@ -537,57 +608,7 @@ class CellPlot(object):
             colors[..., -1] = alphas
             artist = ax.imshow(colors, cmap=cmap, extent=extent, interpolation=interpolation, **kwargs)
 
-        elif method == 'gauss_old':
-            xmax = self.cell_obj.data.shape[1]
-            ymax = self.cell_obj.data.shape[0]
 
-            step = 1 / upscale
-            xi = np.arange(step / 2, xmax, step)
-            yi = np.arange(step / 2, ymax, step)
-
-            xcoords = np.repeat(xi, len(yi)).reshape(len(xi), len(yi)).T
-            ycoords = np.repeat(yi, len(xi)).reshape(len(yi), len(xi))
-
-            mx_i, mx_o = np.meshgrid(x, xcoords.flatten())
-            my_i, my_o = np.meshgrid(y, ycoords.flatten())
-
-            if type(sigma) == str:
-                sigma_arr = storm_table(sigma)
-                sigma = sigma_arr[np.newaxis, :]
-            elif isinstance(sigma, np.ndarray):
-                assert sigma.shape == x.shape
-                sigma = sigma[np.newaxis, :]
-            elif np.isscalar(sigma):
-                pass
-            else:
-                raise ValueError('Invalid sigma')
-
-            #todo normalization like this or not? (doesnt really matter in the end)
-            # res = 1 / (np.sqrt((2 * np.pi)) * sigma ** 2) * np.exp(
-            #     - (((mx_i - mx_o) ** 2 / (2 * sigma ** 2)) + ((my_i - my_o) ** 2 / (2 * sigma ** 2)))
-            res = np.exp(-(((mx_i - mx_o) ** 2 / (2 * sigma ** 2)) + ((my_i - my_o) ** 2 / (2 * sigma ** 2))))
-
-            if storm_weight:
-                res = res*storm_table['intensity'][np.newaxis, :]
-
-            s = np.sum(res, axis=1)
-            img = s.reshape(xcoords.shape)
-            img_norm = img / img.max()
-
-#            np.ma.masked_where(img_norm < alpha_cutoff, img)
-
-            alphas = np.ones(img.shape)
-            if alpha_cutoff:
-                alphas[img_norm < alpha_cutoff] = img_norm[img_norm < alpha_cutoff] / alpha_cutoff
-
-            cmap = kwargs.pop('cmap', 'viridis')
-            cmap = plt.cm.get_cmap(cmap) if type(cmap) == str else cmap
-
-            normed = Normalize()(img)
-            colors = cmap(normed)
-            colors[..., -1] = alphas
-
-            artist = ax.imshow(colors, cmap=cmap, extent=extent, interpolation=interpolation, **kwargs)
 
         else:
             raise ValueError('Invalid plotting method')
@@ -622,7 +643,7 @@ class CellPlot(object):
 
         return container
 
-    def _plot_storm(self, ax=None, data_name='', method='plot', upscale=5, storm_weight=True,
+    def _plot_storm(self, ax=None, data_name='', method='plot', upscale=5, storm_weight=False,
                    sigma=0.25, **kwargs):
         # temporary function
         """
@@ -713,26 +734,12 @@ class CellPlot(object):
 
             x_coords = np.repeat(xi, len(yi)).reshape(len(xi), len(yi)).T
             y_coords = np.repeat(yi, len(xi)).reshape(len(yi), len(xi))
-            
-
-            # threadsperblock = 32
-            # blockspergrid = (x_coords.size + (threadsperblock - 1)) // threadsperblock
-
-            # img = np.zeros_like(x_coords, dtype=np.float32)
-            # g_img = cuda.to_device(img.astype(np.float32))
-            # g_x_coords = cuda.to_device(x_coords.astype(np.float32))
-            # g_y_coords = cuda.to_device(y_coords.astype(np.float32))
-            # g_sigma = cuda.to_device(sigma.astype(np.float32))
-            # g_intensities = cuda.to_device(intensities.astype(np.float32))
-            # g_x = cuda.to_device(x.astype(np.float32))
-            # g_y = cuda.to_device(y.astype(np.float32))
-            # render_storm[blockspergrid, threadsperblock](g_img, g_x_coords, g_y_coords, g_sigma, g_intensities, g_x, g_y)
-            # img = g_img.copy_to_host()
-
-            render_storm(x_coords, y_coords, sigma, intensities, x, y)
 
 
-            # pbar = tqdm if len(sigma) > 1500 else lambda i, total=None: i
+            #pbar = tqdm if len(sigma) > 1500 else lambda i, total=None: i
+
+            img = render_storm(x_coords, y_coords, sigma, intensities, x, y)
+
             # for _sigma, _int, _x, _y in pbar(zip(sigma, intensities, x, y), total=len(sigma)):
             #     img += _int * np.exp(-(((_x - x_coords) / _sigma) ** 2 + ((_y - y_coords) / _sigma) ** 2) / 2)
 
@@ -740,8 +747,6 @@ class CellPlot(object):
 
         else:
             raise ValueError('Invalid plotting method')
-
-        return artist
 
     def plot_kymograph(self, ax=None, mode='r', data_name='', time_factor=1, time_unit='frames', dist_kwargs=None,
                        norm_y=True, aspect=1, **kwargs):
@@ -842,17 +847,21 @@ class CellPlot(object):
         x_len = calc_lc(self.cell_obj.coords.xl, xc.flatten(), self.cell_obj.coords.coeff)
 
         if norm_x:
-            x_len /= self.cell_obj.length
+            x_len /= self.cell_obj.coords.r
+            xunits = 'norm'
+        else:
+            x_len *= (cfg.IMG_PIXELSIZE / 1000)
+            xunits = '$\mu m$'
 
         ax = plt.gca() if ax is None else ax
-        ax.set_xlabel('Distance (norm)')
+        ax.set_xlabel('Distance ({})'.format(xunits))
         ax.set_ylabel('Number of localizations')
         ax.set_title('Longitudinal Distribution')
 
         bins = kwargs.pop('bins', 'fd')
         return ax.hist(x_len, bins=bins, **kwargs)
 
-    def hist_r_storm(self, data_name='', ax=None, norm_x=True, **kwargs):
+    def hist_r_storm(self, data_name='', ax=None, norm_x=True, limit_l=None, **kwargs):
         """
         Makes a histogram of the radial distribution of localizations.
 
@@ -864,6 +873,11 @@ class CellPlot(object):
             Matplotlib axes to use for plotting.
         norm_x : :obj:`bool`
             If `True` all radial distances are normalized by dividing by the radius of the individual cells.
+        limit_l : :obj:`str`
+            If `None`, all datapoints are taking into account. This can be limited by providing the value `full`
+            (omit poles only), 'poles' (include only poles), or a float value which will limit the data points with
+            around the midline where xmid - xlim < x < xmid + xlim.method : :obj:`str`, either 'gauss' or 'box'
+
         **kwargs
             Additional kwargs passed to `ax.hist()`
 
@@ -882,6 +896,7 @@ class CellPlot(object):
 
         assert self.cell_obj.data.data_dict[data_name].dclass == 'storm'
 
+        #todo why is this an empty list and thenone element is appended??
         r_coords = []
         storm_table = self.cell_obj.data.data_dict[data_name]
 
@@ -890,16 +905,38 @@ class CellPlot(object):
         r = self.cell_obj.coords.calc_rc(xp, yp)
         if norm_x:
             r /= self.cell_obj.coords.r
+            xunits = 'norm'
+        else:
+            r *= (cfg.IMG_PIXELSIZE / 1000)
+            xunits = '$\mu m$'
 
-        r_coords.append(r)
+        if limit_l is not None:
+            #todo this code appears also in cell.r_dist()
+            if limit_l is 'full':
+                xc = self.cell_obj.coords.calc_xc(xp, yp)
+                b = (xc > self.cell_obj.coords.xl) * (xc < self.cell_obj.coords.xr).astype(bool)
+            elif limit_l == 'poles':
+                xc = self.cell_obj.coords.calc_xc(xp, yp)
+                b = np.logical_or(xc <= self.cell_obj.coords.xl, xc >= self.cell_obj.coords.xr)
+            else:
+                assert 0 < limit_l < 1  # 'The value of limit_l should be between 0 and 1'
+                mid_l = self.cell_obj.length / 2
+                lc = self.cell_obj.coords.calc_lc(xp, yp)
+                limit = limit_l * self.cell_obj.length
+
+                b = ((lc > mid_l - limit / 2) * (lc < mid_l + limit / 2)).astype(bool)
+        else:
+            b = np.ones_like(r, dtype=bool)
+
+        r_coords.append(r[b])
 
         ax = plt.gca() if ax is None else ax
-        ax.set_xlabel('Distance (norm)')
+        ax.set_xlabel('Distance ({})'.format(xunits))
         ax.set_ylabel('Number of localizations')
         ax.set_title('Radial Distribution')
         bins = kwargs.pop('bins', 'fd')
         h = ax.hist(r, bins=bins, **kwargs)
-        ax.set_xlim(0, None)
+        ax.set_xlim(left=0)
 
         return h
 
@@ -1020,7 +1057,9 @@ class CellListPlot(object):
         ``CellList`` object with ``Cell`` objects to plot.
     """
     def __init__(self, cell_list):
-        assert isinstance(cell_list, CellList)
+        if not isinstance(cell_list, CellList):
+            raise ValueError("'cell_list' must be an instance of colicoords.cell.CellList")
+
         self.cell_list = cell_list
 
     def hist_property(self, prop='length', ax=None, **kwargs):
@@ -1233,7 +1272,7 @@ class CellListPlot(object):
         """
         Plots the longitudinal distribution of a given data element.
 
-        The data is normalized along the long axis to allow the combining of multiple cells with different lenghts.
+        The data is normalized along the long axis to allow the combining of multiple cells with different lengths.
 
         Parameters
         ----------
@@ -1314,6 +1353,85 @@ class CellListPlot(object):
             ax.set_ylim(0, ymax)
 
         return line
+
+    def plot_phi_dist(self, ax=None, data_name='', r_max=None, r_min=0, storm_weight=False, band_func=np.std, method='gauss',
+                      dist_kwargs=None, **kwargs):
+        """
+        Plots the angular distribution of a given data element for all cells.
+
+        Parameters
+        ----------
+        ax : :class:`matplotlib.axes.Axes`, optional
+            Matplotlib axes to use for plotting.
+        data_name : :obj:`str`
+            Name of the data element to use.
+        r_max: : :obj:`float`
+            Datapoints within r_max from the cell midline are included. If *None* the value from the cell's coordinate
+            system will be used.
+        r_min: : :obj:`float`
+            Datapoints outside of r_min from the cell midline are included.
+        storm_weight : :obj:`bool`
+            If `True` the datapoints of the specified STORM-type data will be weighted by their intensity.
+        band_func : :obj:`callable`
+            Callable to determine the fill area around the graph. Default is standard deviation.
+        method : :obj:`str`:
+            Method of averaging datapoints to calculate the final distribution curve.
+        dist_kwargs : :obj:`dict`
+            Additional kwargs to be passed to :meth:`~colicoords.cell.Cell.phi_dist`
+
+        Returns
+        -------
+        lines : :obj:`tuple`
+            Tuple with Matplotlib line artist objects.
+        """
+
+        step = kwargs.pop('step', cfg.PHI_DIST_STEP)
+        sigma = kwargs.pop('sigma', cfg.PHI_DIST_SIGMA)
+        dist_kwargs = {} if dist_kwargs is None else dist_kwargs
+
+        x_vals, phi_l, phi_r = self.cell_list.phi_dist(step, data_name=data_name, r_max=r_max, r_min=r_min,
+                                                      storm_weight=storm_weight, sigma=sigma, method=method, **dist_kwargs)
+
+        if not data_name:
+            try:
+                data_elem = list(self.cell_list[0].data.flu_dict.values())[0]  # yuck
+            except IndexError:
+                try:
+                    data_elem = list(self.cell_list[0].data.storm_dict.values())[0]
+                except IndexError:
+                    raise IndexError('No valid data element found')
+        else:
+            data_elem = self.cell_list[0].data.data_dict[data_name]
+
+        ax = plt.gca() if ax is None else ax
+
+        #?????
+        if data_elem.dclass == 'storm':
+            if storm_weight:
+                ylabel = 'Total STORM intensity (photons)'
+            else:
+                ylabel = 'Number of localizations'
+        else:
+            ylabel = 'Intensity (a.u.)'
+
+        ax.set_xlabel('Distance ({})'.format('degrees'))
+        ax.set_ylabel(ylabel)
+
+        l = kwargs.pop('label', None)
+
+        mean = np.nanmean(phi_l, axis=0)
+        line_l = ax.plot(x_vals, mean, label='Left pole')
+        if band_func:
+            width = band_func(phi_l, axis=0)
+            ax.fill_between(x_vals, mean + width, mean - width, alpha=0.25)
+
+        mean = np.nanmean(phi_r, axis=0)
+        line_r = ax.plot(x_vals, mean, label='Right pole')
+        if band_func:
+            width = band_func(phi_r, axis=0)
+            ax.fill_between(x_vals, mean + width, mean - width, alpha=0.25)
+
+        return line_l, line_r
 
     def plot_l_class(self, data_name='', ax=None, yerr='std', **kwargs):
         """
@@ -1463,7 +1581,7 @@ class CellListPlot(object):
         bins = kwargs.pop('bins', 'fd')
         return ax.hist(full_l, bins=bins, **kwargs)
 
-    def hist_r_storm(self, data_name='', ax=None, norm_x=True, **kwargs):
+    def hist_r_storm(self, data_name='', ax=None, norm_x=True, limit_l=None, **kwargs):
         """
         Makes a histogram of the radial distribution of localizations.
 
@@ -1475,6 +1593,10 @@ class CellListPlot(object):
             Matplotlib axes to use for plotting.
         norm_x : :obj:`bool`
             If `True` all radial distances are normalized by dividing by the radius of the individual cells.
+        limit_l : :obj:`str`
+            If `None`, all datapoints are used. This can be limited by providing the value `full` (omit poles only),
+            'poles' (include only poles), or a float value between 0 and 1 which will limit the data points by
+            longitudinal coordinate around the midpoint of the cell.
         **kwargs
             Additional kwargs passed to ``ax.hist()``
 
@@ -1502,13 +1624,37 @@ class CellListPlot(object):
             if norm_x:
                 r /= cell_obj.coords.r
 
-            r_coords.append(r)
+            if limit_l is not None:
+                #todo this code appears also in cell.r_dist()
+                if limit_l is 'full':
+                    xc = cell_obj.coords.calc_xc(xp, yp)
+                    b = (xc > cell_obj.coords.xl) * (xc < cell_obj.coords.xr).astype(bool)
+                elif limit_l == 'poles':
+                    xc = cell_obj.coords.calc_xc(xp, yp)
+                    b = np.logical_or(xc <= cell_obj.coords.xl, xc >= cell_obj.coords.xr)
+                else:
+                    assert 0 < limit_l < 1  # 'The value of limit_l should be between 0 and 1'
+                    mid_l = cell_obj.length / 2
+                    lc = cell_obj.coords.calc_lc(xp, yp)
+                    limit = limit_l * cell_obj.length
+
+                    b = ((lc > mid_l - limit / 2) * (lc < mid_l + limit / 2)).astype(bool)
+            else:
+                b = np.ones_like(r, dtype=bool)
+
+            r_coords.append(r[b])
 
         full_r = np.concatenate(r_coords)
 
+        if norm_x:
+            xunits = 'norm'
+        else:
+            full_r *= (cfg.IMG_PIXELSIZE / 1000)
+            xunits = '$\mu m$'
+
         ax = plt.gca() if ax is None else ax
 
-        ax.set_xlabel('Distance (norm)')
+        ax.set_xlabel('Distance ({})'.format(xunits))
         ax.set_ylabel('Number of localizations')
         ax.set_title('Radial Distribution')
         bins = kwargs.pop('bins', 'fd')

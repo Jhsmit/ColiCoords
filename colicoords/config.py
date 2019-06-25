@@ -31,10 +31,10 @@ class DefaultConfig(object):
     L_DIST_NBINS = 100
     L_DIST_SIGMA = 0.5
 
-    ALHPA_DIST_STOP = 180.
-    ALPHA_DIST_STEP = 1.
+    PHI_DIST_STEP = 0.5
+    PHI_DIST_SIGMA = 5
 
-    DEBUG = False # If True, numpy division warnings will be printed.
+    DEBUG = False  # If True, numpy division warnings will be printed.
 
     #Other
     @classproperty
@@ -43,10 +43,10 @@ class DefaultConfig(object):
 
 
 config_sections = {
-    'General': ['IMG_PIXELSIZE', 'PAD_WIDTH', 'CELL_FRACTION'],
+    'General': ['IMG_PIXELSIZE'],
     'Optimization': ['ENDCAP_RANGE'],
     'Plotting': ['R_DIST_STOP', 'R_DIST_STEP', 'R_DIST_SIGMA', 'R_DIST_NORM_STOP', 'R_DIST_NORM_STEP',
-                 'R_DIST_NORM_SIGMA', 'L_DIST_NBINS', 'L_DIST_SIGMA', 'ALHPA_DIST_STOP', 'ALPHA_DIST_STEP'],
+                 'R_DIST_NORM_SIGMA', 'L_DIST_NBINS', 'L_DIST_SIGMA', 'PHI_DIST_STEP', 'PHI_DIST_SIGMA'],
     'Other': ['CACHE_DIR', 'DEBUG']
 }
 
@@ -106,13 +106,18 @@ def create_config(path=None):
     config = configparser.ConfigParser()
     config.optionxform = str
     for k, v in config_sections.items():
+        print(k)
         config[k] = {vi: getattr(DefaultConfig, vi) for vi in v}
 
     with open(os.path.join(path, 'config.ini'), 'w') as configfile:
         config.write(configfile)
 
+    if not os.path.isdir(config['Other']['CACHE_DIR']):
+        os.mkdir(config['Other']['CACHE_DIR'])
+
 
 load_config()
+
 
 try:
     if not cfg.DEBUG:

@@ -107,19 +107,13 @@ To plot the radial distribution of the ``flu_514`` fluorescence channel:
     plt.tight_layout()
 
 .. figure:: figures/introduction_flu_rdist.png
-    :scale: 75 %
+    :scale: 60 %
 
     Radial distribution curve of fluorescence as measured (left) and normalized (right).
 
-The displayed curve is constructed by calcuating the radials distance for every the (x, y) coordinates pair for each pixels.
-The final curve is calculated from all datapoints by smoothing with a gaussian kernel. 
+The displayed curve is constructed by calcuating the radial distance for every the (x, y) coordinates pair for each pixels.
+The final curve is calculated from all datapoints by convolution with a gaussian kernel. 
 
-basically a histogram of mean intensity of all fluorescence pixels binned by their distance from
-the cell midline. When using the :meth:`~colicoords.plot.CellPlot.plot_r_dist` method on :class:`~colicoords.plot.CellPlot` the bin size is chosen 
-automatically as defined in the config. The x-axis (distance) is converted from pixels (which is used internally) to 
-physical distance by the converstion factor as defined in the config (default is 80 nm).
-
-
-It is also possible to directly access the data from the :class:`~colicoords.cell.Cell` object by calling :class:`~colicoords.cell.Cell.r_dist`. The radial distribution curves can be normalized in both ``x`` and ``y`` directions. 
+The data can be accessed directly from the :class:`~colicoords.cell.Cell` object by calling :class:`~colicoords.cell.Cell.r_dist`. The radial distribution curves can be normalized in both ``x`` and ``y`` directions. 
 When normalized in the ``x`` direction the radius obtained from the brightfield image is set to one, thereby eliminating 
 cell-to-cell variations in width.

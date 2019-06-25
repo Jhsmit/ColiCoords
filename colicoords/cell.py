@@ -1,11 +1,13 @@
 from colicoords.fitting import CellFit
 from colicoords.support import allow_scalars, box_mean, running_mean
 from colicoords.minimizers import Powell
+from colicoords.data_models import CellListData
 import numbers
 import mahotas as mh
 import numpy as np
 import operator
 from functools import partial
+from contextlib import closing
 from scipy.integrate import quad
 from scipy.optimize import brentq
 import multiprocess as mp
@@ -90,22 +92,7 @@ class Cell(object):
     @property
     def circumference(self):
         """:obj:`float`: Circumference of the cell in pixels."""
-
-        # http://tutorial.math.lamar.edu/Classes/CalcII/ParaArcLength.aspx
-        def integrant_top(t, a1, a2, r):
-            return np.sqrt(1 + (a1 + 2 * a2 * t) ** 2 + ((4 * a2 ** 2 * r ** 2) / (1 + (a1 + 2 * a2 * t) ** 2) ** 2) + (
-                        (4 * a2 * r) / np.sqrt(1 + (a1 + 2 * a2 * t))))
-
-        def integrant_bot(t, a1, a2, r):
-            return np.sqrt(1 + (a1 + 2 * a2 * t) ** 2 + ((4 * a2 ** 2 * r ** 2) / (1 + (a1 + 2 * a2 * t) ** 2) ** 2) - (
-                        (4 * a2 * r) / np.sqrt(1 + (a1 + 2 * a2 * t))))
-
-        top, terr = quad(integrant_top, self.coords.xl, self.coords.xr,
-                         args=(self.coords.a1, self.coords.a2, self.coords.r))
-        bot, berr = quad(integrant_bot, self.coords.xl, self.coords.xr,
-                         args=(self.coords.a1, self.coords.a2, self.coords.r))
-
-        return top + bot + 2 * np.pi * self.coords.r
+        return self.coords._top + self.coords._bot + 2 * np.pi * self.coords.r
 
     @property
     def area(self):
@@ -122,8 +109,110 @@ class Cell(object):
         """:obj:`float`: Volume of the cell in cubic pixels."""
         return np.pi * self.coords.r ** 2 * self.length + (4 / 3) * np.pi * self.coords.r ** 3
 
-    def a_dist(self):
-        raise NotImplementedError()
+    def phi_dist(self, step, data_name='',  r_max=None, r_min=0, storm_weight=False, method='gauss', sigma=5):
+        """
+        Calculates the angular distribution of signal for a given data element.
+
+        Parameters
+        ----------
+        step : :obj:`float`
+            Step size between datapoints.
+        data_name : :obj:`str`
+            Name of the data element to use.
+        r_max : :obj:`float`, optional
+            Datapoints within r_max from the cell midline will be included. If `None` the value from the cell's
+            coordinate system will be used.
+        r_min : :obj:`float`, optional
+            Datapoints outside of r_min from the cell midline will be included.
+        storm_weight : :obj:`bool`
+            If `True` the datapoints of the specified STORM-type data will be weighted by their intensity.
+        method : :obj:`str`
+            Method of averaging datapoints to calculate the final distribution curve.
+        sigma : :obj:`float`
+            Applies only when `method` is set to 'gauss'. `sigma` gives the width of the gaussian used for convoluting
+            datapoints.
+
+        Returns
+        -------
+        xvals : :class:`~numpy.ndarray`
+            Array of distances along the cell midline, values are the middle of the bins/kernel.
+        yvals_l : :class:`~numpy.ndarray`
+            Array of bin heights for the left pole.
+        yvals_r : :class:`~numpy.ndarray`
+            Array of bin heights for the right pole.
+        """
+
+        r_max = r_max if r_max else self.coords.r
+        stop = 180
+
+        if not data_name:
+            try:
+                data_elem = list(self.data.flu_dict.values())[0]  # yuck
+            except IndexError:
+                try:
+                    data_elem = list(self.data.storm_dict.values())[0]
+                except IndexError:
+                    raise IndexError('No valid data element found')
+        else:
+            try:
+                data_elem = self.data.data_dict[data_name]
+            except KeyError:
+                raise ValueError('Chosen data not found')
+
+        if method == 'gauss' and data_elem.dclass == 'storm':
+            print("Warning: method 'gauss' is not a storm-compatible method, method was set to 'box'")
+            method = 'box'
+
+        bins = np.arange(0, stop + step, step)
+
+        if method == 'gauss':
+            bin_func = running_mean
+            bin_kwargs = {'sigma': sigma}
+            xvals = bins
+        elif method == 'box':
+            bin_func = box_mean
+            bin_kwargs = {'storm_weight': storm_weight}
+            bins = np.arange(0, stop + step, step)
+            xvals = bins + 0.5 * step  # xval is the middle of the bin
+        else:
+            raise ValueError('Invalid method')
+
+        if data_elem.ndim == 1:
+            assert data_elem.dclass == 'storm'
+            x = data_elem['x']
+            y = data_elem['y']
+            phi = self.coords.calc_phi(x, y)
+            lc = self.coords.calc_lc(x, y)
+            rc = self.coords.calc_rc(x, y)
+            y_weight = data_elem['intensity'] if storm_weight else None
+
+        elif data_elem.ndim == 2 or data_elem.ndim == 3:
+            phi = self.coords.phi
+            lc = self.coords.lc
+            rc = self.coords.rc
+            y_weight = data_elem
+
+        else:
+            raise ValueError("Invalid data dimensions")
+
+        b_max = rc < r_max
+        b_min = rc > r_min
+        b1 = (lc == 0) * b_max * b_min
+        b2 = (lc == self.length) * b_max * b_min
+
+        if data_elem.ndim <= 2:
+            y_wt = y_weight[b1].flatten() if y_weight is not None else None
+            yvals_l = bin_func(phi[b1].flatten(), y_wt, bins, **bin_kwargs)
+        else:
+            yvals_l = np.vstack([bin_func(phi[b1].flatten(), d[b1].flatten(), bins) for d in data_elem])
+
+        if data_elem.ndim <= 2:
+            y_wt = y_weight[b2].flatten() if y_weight is not None else None
+            yvals_r = bin_func(phi[b2].flatten(), y_wt, bins, **bin_kwargs)
+        else:
+            yvals_r = np.vstack([bin_func(phi[b2].flatten(), d[b2].flatten(), bins, **bin_kwargs) for d in data_elem])
+
+        return xvals, yvals_l, yvals_r
 
     def l_dist(self, nbins, start=None, stop=None, data_name='', norm_x=False, l_mean=None, r_max=None, storm_weight=False,
                method='gauss', sigma=0.5):
@@ -140,8 +229,6 @@ class Cell(object):
         stop : :obj:`float`
             Distance from `xr` as end point for the distribution, units are are either pixels or normalized units
             if `norm_x=True`.
-        bins : :class:`~numpy.ndarray`
-            Array of bin edges to use. Overrrides `nbin`, `start` and `stop`.
         data_name : :obj:`str`
             Name of the data element to use.
         norm_x : :obj:`bool`
@@ -229,8 +316,8 @@ class Cell(object):
             bin_kwargs = {'sigma': sigma}
             xvals = bins
         elif method == 'box':
-            bools = (x_len > bins.min()) * (x_len < bins.max())  # Remove values outside of bins range
-            x_len = x_len[bools]
+            bools_box = (x_len > bins.min()) * (x_len < bins.max())  # Remove values outside of bins range
+            x_len = x_len[bools_box]
 
             bin_func = box_mean
             bin_kwargs = {'storm_weight': storm_weight}
@@ -243,7 +330,7 @@ class Cell(object):
             yvals = bin_func(x_len, y_weight, bins, **bin_kwargs)
 
         elif data_elem.ndim == 2:
-            y_weight = np.clip(data_elem[bools].flatten(), 0, None)  # Negative values are set to zero
+            y_weight = np.clip(data_elem[bools].flatten(), 0, None)  # Negative values are set to zero (why?)
             yvals = bin_func(x_len, y_weight, bins, **bin_kwargs)
 
         elif data_elem.ndim == 3:
@@ -381,20 +468,20 @@ class Cell(object):
         else:
             raise ValueError("Invalid data dimensions")
 
-        if limit_l:
+        if limit_l is not None:
             if limit_l == 'full':
                 b = (xc > self.coords.xl) * (xc < self.coords.xr).astype(bool)
             elif limit_l == 'poles':
-                b = ((xc <= self.coords.xl) * (xc >= self.coords.xr)).astype(bool)
+                b = np.logical_or(xc <= self.coords.xl, xc >= self.coords.xr)
             else:
-                assert 0 < limit_l < 1
+                assert 0 < limit_l < 1#, 'The value of limit_l should be between 0 and 1.'
                 mid_l = self.length / 2
                 lc = self.coords.calc_lc(x, y)
                 limit = limit_l * self.length
 
                 b = ((lc > mid_l - limit / 2) * (lc < mid_l + limit / 2)).astype(bool)
         else:
-            b = True
+            b = np.ones_like(r, dtype=bool)
 
         if data_elem.ndim <= 2:
             y_wt = y_weight[b].flatten() if y_weight is not None else None
@@ -443,13 +530,9 @@ class Cell(object):
             x_select = x[imin:imax] if imax > imin else x[imax:imin][::-1]
 
             try:
-                assert np.all(np.diff(y_select) > 0)
-            except AssertionError:
-                print('Radial distribution not monotonically increasing')
-            try:
                 r = np.interp(mid_val, y_select, x_select)
             except ValueError:
-                print("r value not found")
+                print("Cell {}: No r value was found".format(self.name))
                 return
         elif mode == 'max':
             imax = np.argmax(y)
@@ -514,7 +597,7 @@ class Cell(object):
 
         Returns
         -------
-        value : :obj:`float`:
+        value : :obj:`float`
             Mean fluorescence pixel value.
         """
 
@@ -557,7 +640,7 @@ class Cell(object):
 
         Returns
         -------
-        cell : :class:`~colicoords.cell.Cell`:
+        cell : :class:`~colicoords.cell.Cell`
             Copied cell object.
 
         """
@@ -817,6 +900,7 @@ class Coordinates(object):
         phi : :obj:`float` or :class:`~numpy.ndarray`
             Angle phi for (xp, yp).
         """
+
         idx_left, idx_right, xc = self.get_idx_xc(xp, yp)
         xc[idx_left] = self.xl
         xc[idx_right] = self.xr
@@ -834,6 +918,107 @@ class Coordinates(object):
         phi[idx_left] = thetha[idx_left]
 
         return phi * (180 / np.pi)
+
+    #TODO tests
+    @allow_scalars
+    def calc_perimeter(self, xp, yp):
+        """
+        Calculates how far along the perimeter of the cell the points (xp, yp) lay.
+
+        The perimeter of the cell is the current outline as described by the current coordinate system. The zero-point
+        is the top-left point where the top membrane section starts (lc=0, phi=0) and increases along the perimeter
+        clockwise.
+
+        Parameters
+        ----------
+        xp : :obj:`float` or :class:`~numpy.ndarray`
+            Input scalar or vector/matrix x-coordinate. Must be the same shape as yp.
+        yp : :obj:`float` or :class:`~numpy.ndarray`
+            Input scalar or vector/matrix x-coordinate. Must be the same shape as xp.
+
+        Returns
+        -------
+        per : :obj:`float` or :class:`~numpy.ndarray`
+            Length along the cell perimeter.
+        """
+
+        output = np.zeros_like(xp)
+        lc = self.calc_lc(xp, yp)
+        phi = self.calc_phi(xp, yp)
+        sc = np.pi*self.r  # Semicircle perimeter length
+
+        # Top membrane section
+        b = phi == 0
+        output[b] = (lc[b] / self.length) * self._top
+
+        # Right pole
+        b = lc == self.length
+        output[b] = self._top + phi[b]*(np.pi/180)*self.r
+
+        # Bottom, reverse direction
+        b = phi == 180
+        output[b] = self._top + sc + (1 - lc[b] / self.length) * self._bot
+
+        # Left pole
+        b = lc == 0
+        output[b] = self._top + sc + self._bot + (180-phi[b])*(np.pi/180)*self.r
+
+        return output
+
+    #TODO tests
+    @allow_scalars
+    def rev_calc_perimeter(self, par_values):
+        """
+        For a given distance along the perimeter calculate the `xp`, `yp` cartesian coordinates.
+
+            Parameters
+        ----------
+        par_values : :obj:`float` or :class:`~numpy.ndarray`
+             Input parameter values. Must be between 0 and `:attr:~colicoords.Cell.circumference`
+
+        Returns
+        -------
+        xp : :obj:`float` or :class:`~numpy.ndarray`
+            Cartesian x-coordinate corresponding to `lc`, `rc`, `phi`
+        yp : :obj:`float` or :class:`~numpy.ndarray`
+            Cartesian y-coordinate corresponding to `lc`, `rc`, `phi`
+
+        """
+
+        sc = np.pi*self.r
+
+        if np.min(par_values) < 0:
+            raise ValueError("Minimum value of `par_values` must be larger than 0")
+        if np.max(par_values) > self._top + self._bot + 2*sc:
+            raise ValueError("Maximum value of `par_values` must be smaller than the cell's circumference")
+
+        lc = np.zeros_like(par_values)
+        phi = np.zeros_like(par_values)
+
+        # Left pole
+        b = par_values > self._top + sc + self._bot
+        l = par_values[b] - (self._top + sc + self._bot)
+        lc[b] = 0.
+        phi[b] = 180 - (180/l) / sc
+
+        # Bottom
+        b = (par_values <= self._top + sc + self._bot) * (par_values > self._top + sc)
+        l = par_values[b] - (self._top + sc)
+        lc[b] = (self._bot - l) / self._bot
+        phi[b] = (180*l)/sc
+
+        # Right pole
+        b = (par_values <= self._top + sc) * (par_values > self._top)
+        l = par_values[b] - self._top
+        lc[b] = 1.
+        phi[b] = (180/l)/sc
+
+        # Top
+        b = par_values <= self._top
+        lc[b] = par_values[b] / self._top
+        phi[b] = 0.
+
+        return self.rev_transform(lc, self.r, phi)
 
     def get_idx_xc(self, xp, yp):
         """
@@ -1069,6 +1254,32 @@ class Coordinates(object):
 
         return l
 
+    @property
+    def _top(self):
+        """:obj:`float`: Length of the cell's top membrane segment."""
+
+        # http://tutorial.math.lamar.edu/Classes/CalcII/ParaArcLength.aspx
+        def integrant_top(t, a1, a2, r):
+            return np.sqrt(1 + (a1 + 2 * a2 * t) ** 2 + ((4 * a2 ** 2 * r ** 2) / (1 + (a1 + 2 * a2 * t) ** 2) ** 2) + (
+                        (4 * a2 * r) / np.sqrt(1 + (a1 + 2 * a2 * t))))
+
+        top, terr = quad(integrant_top, self.xl, self.xr,
+                         args=(self.a1, self.a2, self.r))
+        return top
+
+    @property
+    def _bot(self):
+        """:obj:`float`: Length of the cell's bottom membrane segment."""
+
+        # http://tutorial.math.lamar.edu/Classes/CalcII/ParaArcLength.aspx\
+        def integrant_bot(t, a1, a2, r):
+            return np.sqrt(1 + (a1 + 2 * a2 * t) ** 2 + ((4 * a2 ** 2 * r ** 2) / (1 + (a1 + 2 * a2 * t) ** 2) ** 2) - (
+                        (4 * a2 * r) / np.sqrt(1 + (a1 + 2 * a2 * t))))
+
+        bot, berr = quad(integrant_bot, self.xl, self.xr,
+                         args=(self.a1, self.a2, self.r))
+        return bot
+
     def p(self, x_arr):
         """
         Calculate p(x).
@@ -1173,7 +1384,7 @@ def optimize_worker(cell, **kwargs):
 
     Returns
     -------
-    result : :class:`~symit.core.fit import FitResults
+    result : :class:`~symit.core.fit.FitResults`
     """
     res = cell.optimize(**kwargs)
     return res
@@ -1195,11 +1406,14 @@ class CellList(object):
     ----------
     cell_list : :class:`~numpy.ndarray`
         Numpy array of `Cell` objects
+    data : :class:`~colicoords.data_models.CellListData`
+        Object with common attributes for all cells
 
     """
 
     def __init__(self, cell_list):
         self.cell_list = np.array(cell_list)
+        self.data = CellListData(cell_list)
 
     def optimize(self, data_name='binary', cell_function=None, minimizer=Powell, **kwargs):
         """
@@ -1230,7 +1444,7 @@ class CellList(object):
     def optimize_mp(self, data_name='binary', cell_function=None, minimizer=Powell, processes=None, **kwargs):
         """ Optimize all cell's coordinate systems using `optimize` through parallel computing.
 
-        A call to this method must be  protected by if __name__ == '__main__' if its not executed in jupyter notebooks.
+        A call to this method must be protected by if __name__ == '__main__' if its not executed in jupyter notebooks.
 
         Parameters
         ----------
@@ -1252,11 +1466,10 @@ class CellList(object):
         """
 
         kwargs = {'data_name': data_name, 'cell_function': cell_function, 'minimizer': minimizer, **kwargs}
-        pool = mp.Pool(processes=processes)
-
         f = partial(optimize_worker, **kwargs)
 
-        res = list(tqdm(pool.imap(f, self), total=len(self)))
+        with closing(mp.Pool(processes=processes)) as pool:
+            res = list(tqdm(pool.imap(f, self), total=len(self)))
 
         for r, cell in zip(res, self):
             cell.coords.sub_par(r.params)
@@ -1281,7 +1494,7 @@ class CellList(object):
 
         return res
 
-    def execute_mp(self, worker, processes=None, **kwargs):
+    def execute_mp(self, worker, processes=None):
         """
         Apply worker function `worker` to all cell objects and returns the results.
 
@@ -1299,8 +1512,8 @@ class CellList(object):
             List of results returned from ``worker``.
         """
 
-        pool = mp.Pool(processes, **kwargs)
-        res = list(tqdm(pool.imap(worker, self), total=len(self)))
+        with closing(mp.Pool(processes=processes)) as pool:
+            res = list(tqdm(pool.imap(worker, self), total=len(self)))
 
         return res
 
@@ -1354,6 +1567,25 @@ class CellList(object):
         """
 
         # todo might be a good idea to warm the user when attempting this on a  list of 3D data
+
+        if not data_name:
+            try:
+                data_elem = list(self.cell_list[0].data.flu_dict.values())[0]  # yuck
+            except IndexError:
+                try:
+                    data_elem = list(self.cell_list[0].data.storm_dict.values())[0]
+                except IndexError:
+                    raise IndexError('No valid data element found')
+        else:
+            try:
+                data_elem = self.cell_list[0].data.data_dict[data_name]
+            except KeyError:
+                raise ValueError('Chosen data not found')
+
+        if method == 'gauss' and data_elem.dclass == 'storm':
+            print("Warning: method 'gauss' is not a storm-compatible method, method was set to 'box'")
+            method = 'box'
+
         numpoints = len(np.arange(0, stop + step, step))
         out_arr = np.zeros((len(self), numpoints))
         for i, c in enumerate(self):
@@ -1418,6 +1650,50 @@ class CellList(object):
 
         return x_arr, y_arr
 
+    def phi_dist(self, step, data_name='', storm_weight=False, method='gauss', sigma=5, r_max=None, r_min=0):
+        """
+        Calculates the angular distribution of signal for a given data element for all cells.
+
+        Parameters
+        ----------
+        step : :obj:`float`
+            Step size between datapoints.
+        data_name : :obj:`str`
+            Name of the data element to use.
+        r_max : :obj:`float`, optional
+            Datapoints within r_max from the cell midline will be included. If `None` the value from the cell's
+            coordinate system will be used.
+        r_min : :obj:`float`, optional
+            Datapoints outside of r_min from the cell midline will be included.
+        storm_weight : :obj:`bool`
+            If `True` the datapoints of the specified STORM-type data will be weighted by their intensity.
+        method : :obj:`str`
+            Method of averaging datapoints to calculate the final distribution curve.
+        sigma : :obj:`float`
+            Applies only when `method` is set to 'gauss'. `sigma` gives the width of the gaussian used for convoluting
+            datapoints.
+
+        Returns
+        -------
+        xvals : :class:`~numpy.ndarray`
+            Array of distances along the cell midline, values are the middle of the bins/kernel.
+        yvals_l : :class:`~numpy.ndarray`
+            Array of bin heights for the left pole.
+        yvals_r : :class:`~numpy.ndarray`
+            Array of bin heights for the right pole.
+        """
+        stop = 180
+        numpoints = len(np.arange(0, stop + step, step))
+        out_l = np.zeros((len(self), numpoints))
+        out_r = np.zeros((len(self), numpoints))
+        for i, c in enumerate(self):
+            xvals, yvals_l, yvals_r = c.phi_dist(step, data_name=data_name, storm_weight=storm_weight, sigma=sigma,
+                                                 method=method, r_max=r_max, r_min=r_min)
+            out_l[i] = yvals_l
+            out_r[i] = yvals_r
+
+        return xvals, out_l, out_r
+
     def l_classify(self, data_name=''):
         """
         Classifies foci in STORM-type data by they x-position along the long axis.
@@ -1439,9 +1715,6 @@ class CellList(object):
         """
 
         return np.array([c.l_classify(data_name=data_name) for c in self])
-
-    def a_dist(self):
-        raise NotImplementedError()
 
     def get_intensity(self, mask='binary', data_name='', func=np.mean):
         """
@@ -1494,6 +1767,9 @@ class CellList(object):
             The measured radius `r` values if `in_place` is `False`, otherwise `None`.
         """
 
+        if mode not in ['min', 'max', 'mid']:
+            raise ValueError('Invalid value for mode')
+
         r = [c.measure_r(data_name=data_name, mode=mode, in_place=in_place, **kwargs) for c in self]
         if not in_place:
             return np.array(r)
@@ -1507,7 +1783,7 @@ class CellList(object):
 
         Returns
         -------
-        cell_list : :class:`CellList`:
+        cell_list : :class:`CellList`
             Copied `CellList` object
         """
         return CellList([cell.copy() for cell in self])

@@ -3,9 +3,11 @@ import numpy as np
 from numpy.lib.polynomial import RankWarning
 import warnings
 from colicoords.cell import Cell, CellList
+from colicoords.support import multi_dilate
 
 
-def filter_binaries(bin_arr, remove_bordering=True, min_size=None, max_size=None, max_minor=None, max_major=None):
+def filter_binaries(bin_arr, remove_bordering=True, min_size=None, max_size=None, min_minor=None, max_minor=None,
+                    min_major=None, max_major=None):
     """
     Filters and labels a stack of binary images.
 
@@ -19,8 +21,12 @@ def filter_binaries(bin_arr, remove_bordering=True, min_size=None, max_size=None
         Minimum size of binary regions. ``None`` to ignore.
     max_size : :obj:`int`
         Maximum size of binary regions. ``None`` to ignore.
+    min_minor : :obj:`int`
+        Minimum length of the semiminor ellipse axes of the binary region. ``None`` to ignore.
     max_minor : :obj:`int`
         Maximum length of the semiminor ellipse axes of the binary region. ``None`` to ignore.
+    min_major : :obj:`int`
+        Minimum length of the simimajor ellipse axes of the binary region. ``None`` to ignore.
     max_major : :obj:`int`
         Maximum length of the simimajor ellipse axes of the binary region. ``None`` to ignore.
 
@@ -32,23 +38,64 @@ def filter_binaries(bin_arr, remove_bordering=True, min_size=None, max_size=None
 
     out = np.empty_like(bin_arr)
     for i, img in enumerate(bin_arr):
-        labeled, n = mh.labeled.label(img)
+        if len(np.unique(img)) > 2:  # Image is already labeled
+            labeled = img
+        else:
+            labeled, n = mh.labeled.label(img)
         labeled, n = mh.labeled.filter_labeled(labeled, remove_bordering=remove_bordering, min_size=min_size, max_size=max_size)
-        out[i] = labeled
+        out[i] = (labeled > 0).astype(int) * labeled  # Restore labels
 
     for j, img in enumerate(out):
         for i in np.unique(img)[1:]:
             selected_binary = (img == i).astype('int')
             min1, max1, min2, max2 = mh.bbox(selected_binary)
-            selection = img[min1:max1, min2:max2]
+            selection = selected_binary[min1:max1, min2:max2]
             major, minor = mh.features.ellipse_axes(selection)
 
+            if min_minor and minor < min_minor:
+                img[img == i] = 0
             if max_minor and minor > max_minor:
+                img[img == i] = 0
+            if min_major and major < min_major:
                 img[img == i] = 0
             if max_major and major > max_major:
                 img[img == i] = 0
 
     return out
+
+
+def filter_binaries_beamprofile(bin_arr, beamprofile, cutoff=0.75, dilate=0):
+    """
+    Filters and labels a stack of binary (labelled) images based a supplied beamprofile. If the binary objects are
+    located in an area of the ``beamprofile``
+
+    Parameters
+    ----------
+    bin_arr
+    beamprofile
+    cutoff
+    dilate
+
+    Returns
+    -------
+
+    """
+    bp_bool = beamprofile < cutoff * beamprofile.max()
+    out_binary = np.empty_like(bin_arr, dtype=int)
+    total_cells = 0
+    removed_cells = 0
+
+    for i, img in enumerate(bin_arr):
+        labeled, n = mh.labeled.label(img)
+        total_cells += n
+        for l in np.unique(labeled)[1:]:
+            selected_binary = multi_dilate(labeled == l, dilate)
+            if np.any(np.logical_and(selected_binary, bp_bool)):  # Cell lies outside of
+                labeled[labeled == l] = 0
+                removed_cells += 1
+            out_binary[i] = labeled
+    print('Removed {} cells out of a total of {} cells.'.format(removed_cells, total_cells))
+    return out_binary
 
 
 #todo check input binary labeled or not

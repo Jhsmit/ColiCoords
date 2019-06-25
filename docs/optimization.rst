@@ -105,6 +105,6 @@ target data element. These attributes are then accessible in the custom ``__call
 
 The ``__call__`` function must take the coordinate parameters with their values as keyword arguments and should return
 the calculated data which is compared to the target data element to calculate the chi-squared. Alternatively, the `target_data`
-property can be used, as is done for :class:`~colicorods.fitting.CellSTORMMembraneFunction` to specify a different target.
+property can be used, as is done for :class:`~colicoords.fitting.CellSTORMMembraneFunction` to specify a different target.
 
 Alternatively, any custom callable can be given as `cell_function`, as long as it complies with the above requirements.

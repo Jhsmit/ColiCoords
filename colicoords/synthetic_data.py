@@ -32,15 +32,19 @@ class SynthCell(Cell):
         r = radius
         xm = (xl + xr) / 2
         y_mid = a1*xm + a2*xm**2
-        a0 = 4*radius - y_mid
+        a0 = 4*radius - y_mid + pad_width
 
         y_max = a0 + a1 * xr + a2 * xr ** 2
         shape = tuple(np.ceil([y_max + 10 + r, xr + 2 * r + 10]).astype(int))
         coords = Coordinates(None, a0=a0, a1=a1, a2=a2, xl=xl, xr=xr, r=r, shape=shape, initialize=False)
         binary = coords.rc < r
+
         min1, max1, min2, max2 = mh.bbox(binary)
         min1p, max1p, min2p, max2p = min1 - pad_width, max1 + pad_width, min2 - pad_width, max2 + pad_width
-        res = binary[min1p:max1p, 0:max2p]
+        full = np.zeros((np.max([max1p, binary.shape[0]]), np.max([max2p, binary.shape[1]])))
+        full[0:binary.shape[0], 0:binary.shape[1]] = binary
+
+        res = full[min1p:max1p, 0:max2p]
 
         data = Data()
         data.add_data(res.astype(int), 'binary')
@@ -75,7 +79,7 @@ class SynthCell(Cell):
         flu = np.interp(self.coords.rc, x, y)
         return flu
 
-    def gen_storm_membrane(self, num, r_mean, r_std=None, intensity_mean=1., intensity_std=None):
+    def gen_storm_membrane(self, num, r_mean, r_std=None, intensities=None):
         """
         Returns a STORM data element to the ``Cell`` object with localizations randomly spaced on the membrane.
 
@@ -87,11 +91,8 @@ class SynthCell(Cell):
             Mean radial distance of localizations.
         r_std : :obj:`std`
             Standard deviation of radial distance of localizations.
-        intensity_mean : :obj:`float`
-            Intensity value of the localizations
-        intensity_std : :obj:`float`
-            If `intensity_std` is given, the intensity values are drawn from a normal distribution with centre
-            `intensity_mean` and standard deviation `intensity_std`.
+        intensities : array_like
+            Intensity values of the localizations. If `None` all values are 1.
         name : :obj:`str`, optional
             Name of the data element. Default is 'storm'
 
@@ -155,12 +156,16 @@ class SynthCell(Cell):
             x_res[i == 3] = t + - new_r[i == 3] * ((self.coords.a1 + 2 * self.coords.a2 * t) / np.sqrt(1 + (self.coords.a1 + 2 * self.coords.a2 * t) ** 2))
             y_res[i == 3] = self.coords.a0 + self.coords.a1 * t + self.coords.a2 * (t ** 2) + new_r[i == 3] * (1 / np.sqrt(1 + (self.coords.a1 + 2 * self.coords.a2 * t) ** 2))
 
+        #TODO change intensity type to float and testing
         storm = np.recarray((len(x_res, )), dtype=[('x', float), ('y', float), ('frame', int), ('intensity', int)])
         storm['x'] = x_res
         storm['y'] = y_res
         storm['frame'] = np.zeros_like(x_res)
-        storm['intensity'] = intensity_mean*np.ones_like(x_res) if not intensity_std else \
-            np.random.normal(intensity_mean, intensity_std, len(x_res))
+
+        intensity = intensities if intensities is not None else np.ones_like(x_res)
+        if len(intensity) != len(x_res):
+            raise ValueError('Invalid shape of `intensities`')
+        storm['intensity'] = intensity
 
         return storm
 
@@ -226,7 +231,7 @@ class SynthCell(Cell):
 
         img = np.zeros_like(x_coords)
         intensities = storm_table['intensity']
-        sigma = sigma*np.ones_like(x_coords) if not sigma_std else np.random.normal(sigma, sigma_std, size=len(x_coords))
+        sigma = sigma*np.ones_like(x) if not sigma_std else np.random.normal(sigma, sigma_std, size=len(x))
         for _sigma, _int, _x, _y in zip(sigma, intensities, x, y):
             img += _int * np.exp(-(((_x - x_coords) / _sigma) ** 2 + ((_y - y_coords) / _sigma) ** 2) / 2)
 
@@ -265,8 +270,8 @@ class SynthCellList(CellList):
         Array like of curvatures of cells.
     """
 
-    def __init__(self, lengths, radii, curvatures):
-        cell_list = [SynthCell(l, r, c, name='Cell_' + str(i).zfill(int(np.ceil(np.log10(len(radii)))))) for i, (l, r, c) in enumerate(zip(lengths, radii, curvatures))]
+    def __init__(self, lengths, radii, curvatures, pad_width=5):
+        cell_list = [SynthCell(l, r, c, pad_width=pad_width, name='Cell_' + str(i).zfill(int(np.ceil(np.log10(len(radii)))))) for i, (l, r, c) in enumerate(zip(lengths, radii, curvatures))]
         super(SynthCellList, self).__init__(cell_list)
 
     def copy(self):

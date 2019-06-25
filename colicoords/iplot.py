@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 from colicoords.cell import CellList, calc_lc
-from colicoords.plot import cmap_default
+from colicoords.plot import cmap_default, render_storm
 from colicoords.support import pad_cell
 from colicoords.config import cfg
 from ipywidgets import widgets
@@ -118,6 +118,7 @@ class IterRedrawAxes(Axes):
             assert length == fig.length
 
 
+#TODO thread/process?? per axes for updating the figure?
 class IterUpdateAxes(Axes):
     name = 'iter_update'
     # update_register = []
@@ -130,7 +131,6 @@ class IterUpdateAxes(Axes):
 
     def iter_plot(self, *args, **kwargs):
         # todo allow single x for multiple y's
-
         self._set_length(len(args[0]))
         args_grps = []
         while args:
@@ -235,14 +235,9 @@ class IterUpdateAxes(Axes):
             assert length == fig.length
 
 
-    #
-    # def get_extent(self):
-
-
 class IterFigure(Figure):
     length = None
-
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, slider=True, **kwargs):
         super(IterFigure, self).__init__(*args, **kwargs)
         self.idx = 0
 
@@ -262,14 +257,29 @@ class IterFigure(Figure):
         self._btn_random.on_click(self.on_random)
 
         self.btn_hbox = widgets.HBox()
-        self.btn_hbox.children = [self._btn_first, self._btn_prev, self._int_box, self._btn_next, self._btn_last, self._btn_random]
+        self.btn_hbox.children = [self._btn_first, self._btn_prev, self._int_box,
+                                  self._btn_next, self._btn_last, self._btn_random]
+
+        if slider:
+            self._slider = widgets.IntSlider(value=0, min=0, max=1, layout=dict(width='99%'), readout=False)
+            widgets.jslink((self._int_box, 'value'), (self._slider, 'value'))
+
+            self.vbox = widgets.VBox()
+            self.vbox.children = [self.btn_hbox, self._slider]
+            self.box = self.vbox
+        else:
+            self.box = self.btn_hbox
 
     def display(self):
-        display(self.btn_hbox)
+        display(self.box)
 
     def set_length(self, length):
         self.length = length
         self._int_box.max = length - 1
+        try:
+            self._slider.max = length - 1
+        except AttributeError:
+            pass
 
     def handle_int_box(self, change):
         self.idx = change.new
@@ -701,7 +711,7 @@ class IterCellPlot(object):
 
         return line
 
-    def plot_storm(self, ax=None, data_name='', method='plot', upscale=5, alpha_cutoff=None, storm_weight=True, sigma=0.25, **kwargs):
+    def plot_storm(self, ax=None, data_name='', method='plot', upscale=5, alpha_cutoff=None, storm_weight=False, sigma=0.25, **kwargs):
         #todo make functions with table and shape and other kwargs?
         """
         Graphically represent STORM data.
@@ -738,6 +748,7 @@ class IterCellPlot(object):
         #todo alpha cutoff docstirng and adjustment / testing
 
         if not data_name:
+            #todo update via CellListData
             data_name = list(self.cell_list[0].data.storm_dict.keys())[0]
 
         storm_table = self.cell_list[0].data.data_dict[data_name]
@@ -745,20 +756,16 @@ class IterCellPlot(object):
 
         x, y = storm_table['x'], storm_table['y']
 
-        if self.cell_list[0].data.shape:
-            xmax = self.cell_list[0].data.shape[1]
-            ymax = self.cell_list[0].data.shape[0]
+        if self.cell_list.data.shape is not None:
+            xmax = self.cell_list.data.shape[1]
+            ymax = self.cell_list.data.shape[0]
         else:
+            #todo change to global x, y max and not local
             xmax = int(storm_table['x'].max())
             ymax = int(storm_table['y'].max())
 
         extent = kwargs.pop('extent', [0, xmax, ymax, 0])
         interpolation = kwargs.pop('interpolation', 'nearest')
-        try:
-            intensities = storm_table['intensity'] if storm_weight else np.ones_like(x)
-        except ValueError:
-            print("Warning: The field 'intensity' was not found, all weights are set to one")
-            intensities = np.ones_like(x)
 
         ax = plt.gca() if ax is None else ax
         if method == 'plot':
@@ -786,15 +793,6 @@ class IterCellPlot(object):
             artist = ax.iter_imshow(img, interpolation=interpolation, cmap=cmap, extent=extent, **kwargs)
 
         elif method == 'gauss':
-            if type(sigma) == str:
-                sigma = storm_table[sigma]
-            elif isinstance(sigma, np.ndarray):
-                assert sigma.shape == x.shape
-            elif np.isscalar(sigma):
-                sigma = sigma*np.ones_like(x)
-            else:
-                raise ValueError('Invalid sigma')
-
             step = 1 / upscale
             xi = np.arange(step / 2, xmax, step)
             yi = np.arange(step / 2, ymax, step)
@@ -810,10 +808,30 @@ class IterCellPlot(object):
                 storm_table = cell.data.data_dict[data_name]
                 x, y = storm_table['x'], storm_table['y']
 
+                if type(sigma) == str:
+                    sigma_local = storm_table[sigma]
+                elif isinstance(sigma, np.ndarray):
+                    assert sigma.shape == x.shape
+                    sigma_local = sigma
+                elif np.isscalar(sigma):
+                    sigma_local = sigma * np.ones_like(x)
+                else:
+                    raise ValueError('Invalid sigma')
+
+
+                try:
+                    intensities = storm_table['intensity'] if storm_weight else np.ones_like(x)
+                except ValueError:
+                    intensities = np.ones_like(x)
+
                 # Make empty image and iteratively add gaussians for each localization
-                img = np.zeros_like(x_coords)
-                for _sigma, _int, _x, _y in zip(sigma, intensities, x, y):
-                        img += _int * np.exp(-(((_x - x_coords) / _sigma) ** 2 + ((_y - y_coords) / _sigma) ** 2) / 2)
+                #img = np.zeros_like(x_coords)
+
+                img = render_storm(x_coords, y_coords, sigma_local, intensities, x, y)
+
+                # @jit(nopython=True)
+                # for _sigma, _int, _x, _y in zip(sigma_local, intensities, x, y):
+                #         img += _int * np.exp(-(((_x - x_coords) / _sigma) ** 2 + ((_y - y_coords) / _sigma) ** 2) / 2)
 
                 img_norm = img / img.max()
                 alphas = np.ones(img.shape)
@@ -827,58 +845,6 @@ class IterCellPlot(object):
                 colors_stack[i] = colors
 
             artist = ax.iter_imshow(colors_stack, cmap=cmap, extent=extent, interpolation=interpolation, **kwargs)
-
-        elif method == 'gauss_old':
-            xmax = self.cell_obj.data.shape[1]
-            ymax = self.cell_obj.data.shape[0]
-
-            step = 1 / upscale
-            xi = np.arange(step / 2, xmax, step)
-            yi = np.arange(step / 2, ymax, step)
-
-            xcoords = np.repeat(xi, len(yi)).reshape(len(xi), len(yi)).T
-            ycoords = np.repeat(yi, len(xi)).reshape(len(yi), len(xi))
-
-            mx_i, mx_o = np.meshgrid(x, xcoords.flatten())
-            my_i, my_o = np.meshgrid(y, ycoords.flatten())
-
-            if type(sigma) == str:
-                sigma_arr = storm_table(sigma)
-                sigma = sigma_arr[np.newaxis, :]
-            elif isinstance(sigma, np.ndarray):
-                assert sigma.shape == x.shape
-                sigma = sigma[np.newaxis, :]
-            elif np.isscalar(sigma):
-                pass
-            else:
-                raise ValueError('Invalid sigma')
-
-            #todo normalization like this or not? (doesnt really matter in the end)
-            # res = 1 / (np.sqrt((2 * np.pi)) * sigma ** 2) * np.exp(
-            #     - (((mx_i - mx_o) ** 2 / (2 * sigma ** 2)) + ((my_i - my_o) ** 2 / (2 * sigma ** 2)))
-            res = np.exp(-(((mx_i - mx_o) ** 2 / (2 * sigma ** 2)) + ((my_i - my_o) ** 2 / (2 * sigma ** 2))))
-
-            if storm_weight:
-                res = res*storm_table['intensity'][np.newaxis, :]
-
-            s = np.sum(res, axis=1)
-            img = s.reshape(xcoords.shape)
-            img_norm = img / img.max()
-
-#            np.ma.masked_where(img_norm < alpha_cutoff, img)
-
-            alphas = np.ones(img.shape)
-            if alpha_cutoff:
-                alphas[img_norm < alpha_cutoff] = img_norm[img_norm < alpha_cutoff] / alpha_cutoff
-
-            cmap = kwargs.pop('cmap', 'viridis')
-            cmap = plt.cm.get_cmap(cmap) if type(cmap) == str else cmap
-
-            normed = Normalize()(img)
-            colors = cmap(normed)
-            colors[..., -1] = alphas
-
-            artist = ax.imshow(colors, cmap=cmap, extent=extent, interpolation=interpolation, **kwargs)
 
         else:
             raise ValueError('Invalid plotting method')

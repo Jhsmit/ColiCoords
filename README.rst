@@ -2,12 +2,12 @@
 
 |test|
 
-.. |test| image:: images/ColiCoords_Final_Logo.svg
+.. |test| image:: images/logo_with_cell_1280x640.png
     :width: 50%
 
 .. |travis| image:: https://travis-ci.org/Jhsmit/ColiCoords.svg?branch=master
     :target: https://travis-ci.org/Jhsmit/ColiCoords 
-.. |appveyor| image:: https://ci.appveyor.com/api/projects/status/801teey9fnm8kuc9?svg=true
+.. |appveyor| image:: https://ci.appveyor.com/api/projects/status/801teey9fnm8kuc9/branch/master?svg=true
     :target: https://ci.appveyor.com/project/Jhsmit/colicoords
 .. |docs| image:: https://readthedocs.org/projects/colicoords/badge/?version=latest
     :target: https://colicoords.readthedocs.io/en/latest/?badge=latest
@@ -21,9 +21,11 @@
 .. |doi| image:: https://zenodo.org/badge/92830488.svg
    :target: https://zenodo.org/badge/latestdoi/92830488
 
+`Documentation <https://colicoords.readthedocs.io/>`_
 
+`PLOS One Paper <https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0217524>`_ 
 
-Preliminary docs: https://colicoords.readthedocs.io/
+`BioRxiv Paper <https://www.biorxiv.org/content/10.1101/608109v1>`_
 
 Project Goals
 =============
