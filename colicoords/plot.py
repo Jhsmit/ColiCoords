@@ -601,57 +601,7 @@ class CellPlot(object):
             colors[..., -1] = alphas
             artist = ax.imshow(colors, cmap=cmap, extent=extent, interpolation=interpolation, **kwargs)
 
-        elif method == 'gauss_old':
-            xmax = self.cell_obj.data.shape[1]
-            ymax = self.cell_obj.data.shape[0]
 
-            step = 1 / upscale
-            xi = np.arange(step / 2, xmax, step)
-            yi = np.arange(step / 2, ymax, step)
-
-            xcoords = np.repeat(xi, len(yi)).reshape(len(xi), len(yi)).T
-            ycoords = np.repeat(yi, len(xi)).reshape(len(yi), len(xi))
-
-            mx_i, mx_o = np.meshgrid(x, xcoords.flatten())
-            my_i, my_o = np.meshgrid(y, ycoords.flatten())
-
-            if type(sigma) == str:
-                sigma_arr = storm_table(sigma)
-                sigma = sigma_arr[np.newaxis, :]
-            elif isinstance(sigma, np.ndarray):
-                assert sigma.shape == x.shape
-                sigma = sigma[np.newaxis, :]
-            elif np.isscalar(sigma):
-                pass
-            else:
-                raise ValueError('Invalid sigma')
-
-            #todo normalization like this or not? (doesnt really matter in the end)
-            # res = 1 / (np.sqrt((2 * np.pi)) * sigma ** 2) * np.exp(
-            #     - (((mx_i - mx_o) ** 2 / (2 * sigma ** 2)) + ((my_i - my_o) ** 2 / (2 * sigma ** 2)))
-            res = np.exp(-(((mx_i - mx_o) ** 2 / (2 * sigma ** 2)) + ((my_i - my_o) ** 2 / (2 * sigma ** 2))))
-
-            if storm_weight:
-                res = res*storm_table['intensity'][np.newaxis, :]
-
-            s = np.sum(res, axis=1)
-            img = s.reshape(xcoords.shape)
-
-
-
-            img_norm = img / img.max()
-            alphas = np.ones(img.shape)
-            if alpha_cutoff:
-                alphas[img_norm < alpha_cutoff] = img_norm[img_norm < alpha_cutoff] / alpha_cutoff
-
-            cmap = kwargs.pop('cmap', 'viridis')
-            cmap = plt.cm.get_cmap(cmap) if type(cmap) == str else cmap
-
-            normed = Normalize()(img)
-            colors = cmap(normed)
-            colors[..., -1] = alphas
-
-            artist = ax.imshow(colors, cmap=cmap, extent=extent, interpolation=interpolation, **kwargs)
 
         else:
             raise ValueError('Invalid plotting method')
