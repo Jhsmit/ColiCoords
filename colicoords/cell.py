@@ -1845,7 +1845,7 @@ class CellList(object):
         return self.cell_list.__contains__(item)
 
 
-@jit('float32[:](float64, float64, float32[:], float32[:])', nopython=True, cache=True)
+#@jit('float32[:](float64, float64, float32[:], float32[:])', nopython=True, cache=True)
 def solve_general(a, b, c, d):
     """
     Solve cubic polynomial in the form a*x^3 + b*x^2 + c*x + d.
@@ -1889,7 +1889,7 @@ def solve_general(a, b, c, d):
     return -(1. / (3. * a)) * (b + dc + (d0 / dc))
     # todo hit a runtimewaring divide by zero on line above once
 
-@jit('float32[:](float64, float64, float32[:], float32[:])', nopython=True, cache=True)
+#@jit('float32[:](float64, float64, float32[:], float32[:])', nopython=True, cache=True)
 def solve_trig(a, b, c, d):
     """
     Solve cubic polynomial in the form a*x^3 + b*x^2 + c*x + d
@@ -1929,6 +1929,7 @@ def solve_trig(a, b, c, d):
         # todo find out if this is bad or not
         # raise ValueError
     return x_r
+
 
 def calc_lc(xl, xr, coeff):
     """

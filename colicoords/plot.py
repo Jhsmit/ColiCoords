@@ -7,7 +7,7 @@ from colicoords.config import cfg
 from colicoords.cell import calc_lc, CellList, Cell
 import seaborn as sns
 from tqdm.auto import tqdm
-from numba import jit
+from numba import jit, float32
 
 
 sns.set_style('white')
@@ -1769,17 +1769,17 @@ def kymograph(x, arr, ax=None, time_factor=1, time_unit='frames', norm_y=True, a
     return image
 
 
-
+#
 # @cuda.jit('void(float32[:,:], float32[:], float32[:], float32[:], float32[:], float32[:], float32[:])')
 # def render_storm(img, x_coords, y_coords, sigma, intensities, x, y):
-#     #img = np.zeros_lik(x_coords)          
+#     #img = np.zeros_lik(x_coords)
 #     for _sigma, _int, _x, _y in zip(sigma, intensities, x, y):
 #         img += _int * 2.72**(-(((_x - x_coords) / _sigma) ** 2 ))#+ ((_y - y_coords) / _sigma) ** 2) / 2)
 
-
-@jit(nopython=True, parallel=True, cache=True)
+#float32[:, :](float32[:], float32[:], float32[:], float32[:], float32[:], float32[:])
+@jit(nopython=True, parallel=True)
 def render_storm(x_coords, y_coords, sigma, intensities, x, y):
-    img = np.zeros_like(x_coords)          
+    img = np.zeros_like(x_coords, dtype=np.float32)
     for _sigma, _int, _x, _y in zip(sigma, intensities, x, y):
         img += _int * np.exp(-(((_x - x_coords) / _sigma) ** 2 + ((_y - y_coords) / _sigma) ** 2) / 2)
 
