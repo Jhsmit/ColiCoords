@@ -181,7 +181,6 @@ class AugmentedImgSequence(BaseSequence):
         super(AugmentedImgSequence, self).__init__(x_arr, y_arr, index_list, shuffle=shuffle, batch_size=batch_size)
 
     #todo smart training
-    #todo check rounding 20181107 example
     #https://stackoverflow.com/questions/25889637/how-to-use-k-fold-cross-validation-in-a-neural-network#25897087
     def val_split(self, frac, random=True, offset=0):
         """
@@ -190,7 +189,7 @@ class AugmentedImgSequence(BaseSequence):
         frac : :obj:`float`
             Fraction of the data to use for validation.
         random : :obj:`bool`
-            If `True` the returned validation data is randomy but equidistantly selected.
+            If `True` the returned validation data is randomly but on average equidistantly selected.
         offset : :obj:`int`
             Index of where to start selecting validation data.
 
