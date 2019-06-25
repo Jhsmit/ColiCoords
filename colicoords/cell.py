@@ -1562,6 +1562,26 @@ class CellList(object):
         """
 
         # todo might be a good idea to warm the user when attempting this on a  list of 3D data
+
+        if not data_name:
+            try:
+                data_elem = list(self.cell_list[0].data.flu_dict.values())[0]  # yuck
+            except IndexError:
+                try:
+                    data_elem = list(self.cell_list[0].data.storm_dict.values())[0]
+                except IndexError:
+                    raise IndexError('No valid data element found')
+        else:
+            try:
+                data_elem = self.cell_list[0].data.data_dict[data_name]
+            except KeyError:
+                raise ValueError('Chosen data not found')
+
+        if method == 'gauss' and data_elem.dclass == 'storm':
+            print("Warning: method 'gauss' is not a storm-compatible method, method was set to 'box'")
+            method = 'box'
+
+
         numpoints = len(np.arange(0, stop + step, step))
         out_arr = np.zeros((len(self), numpoints))
         for i, c in enumerate(self):
