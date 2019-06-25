@@ -79,7 +79,7 @@ class SynthCell(Cell):
         flu = np.interp(self.coords.rc, x, y)
         return flu
 
-    def gen_storm_membrane(self, num, r_mean, r_std=None, intensity_mean=1., intensity_std=None):
+    def gen_storm_membrane(self, num, r_mean, r_std=None, intensities=None):
         """
         Returns a STORM data element to the ``Cell`` object with localizations randomly spaced on the membrane.
 
@@ -91,11 +91,8 @@ class SynthCell(Cell):
             Mean radial distance of localizations.
         r_std : :obj:`std`
             Standard deviation of radial distance of localizations.
-        intensity_mean : :obj:`float`
-            Intensity value of the localizations
-        intensity_std : :obj:`float`
-            If `intensity_std` is given, the intensity values are drawn from a normal distribution with centre
-            `intensity_mean` and standard deviation `intensity_std`.
+        intensities : array_like
+            Intensity values of the localizations. If `None` all values are 1.
         name : :obj:`str`, optional
             Name of the data element. Default is 'storm'
 
@@ -164,8 +161,11 @@ class SynthCell(Cell):
         storm['x'] = x_res
         storm['y'] = y_res
         storm['frame'] = np.zeros_like(x_res)
-        storm['intensity'] = intensity_mean*np.ones_like(x_res) if not intensity_std else \
-            np.random.normal(intensity_mean, intensity_std, len(x_res))
+
+        intensity = intensities if intensities is not None else np.ones_like(x_res)
+        if len(intensity) != len(x_res):
+            raise ValueError('Invalid shape of `intensities`')
+        storm['intensity'] = intensity
 
         return storm
 
