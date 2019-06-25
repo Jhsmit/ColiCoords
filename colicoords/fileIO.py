@@ -156,6 +156,8 @@ def load_thunderstorm(file_path, pixelsize=None):
     storm_table['x'] /= pixelsize
     storm_table['y'] /= pixelsize
     storm_table['uncertainty_xy'] /= pixelsize
+    storm_table['sigma'] /= pixelsize
+
 
     return storm_table
 
