@@ -759,6 +759,7 @@ class IterCellPlot(object):
             xmax = self.cell_list[0].data.shape[1]
             ymax = self.cell_list[0].data.shape[0]
         else:
+            #todo change to global x, y max and not local
             xmax = int(storm_table['x'].max())
             ymax = int(storm_table['y'].max())
 

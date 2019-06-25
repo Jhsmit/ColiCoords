@@ -308,6 +308,8 @@ class Data(object):
         None
 
         """
+
+        #todo np.clip?
         storm = self.data_dict.pop(data_name)
         self.storm_dict.pop(data_name)
         assert isinstance(storm, STORMTable)
@@ -480,6 +482,31 @@ class Data(object):
         return data
 
     next = __next__
+
+
+class CellListData(object):
+    """
+    Data class for CellList with common attributes for all cells. Individual data elements are accessed per cell.
+
+    Parameters
+    ----------
+    cell_list : :obj:`list` or :class:`numpy.ndarray`
+        List of array of :class:`~colicoords.cell.Cell` objects.
+
+    """
+    def __init__(self, cell_list):
+
+        self.cell_list = cell_list
+
+    @property
+    def shape(self):
+        """:obj:`tuple`: Tuple of cell's data element's shape if they are all equal, else `None`"""
+
+        sh0, sh1 = np.array([c.data.shape for c in self.cell_list]).T
+        if np.all(sh0[0] == sh0) and np.all(sh1[0] == sh1):
+            return sh0[0], sh1[1]
+        else:
+            return None
 
 
 def _rotate_storm(storm_data, theta, shape=None):

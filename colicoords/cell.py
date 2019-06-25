@@ -1,6 +1,7 @@
 from colicoords.fitting import CellFit
 from colicoords.support import allow_scalars, box_mean, running_mean
 from colicoords.minimizers import Powell
+from colicoords.data_models import CellListData
 import numbers
 import mahotas as mh
 import numpy as np
@@ -1400,11 +1401,14 @@ class CellList(object):
     ----------
     cell_list : :class:`~numpy.ndarray`
         Numpy array of `Cell` objects
+    data : :class:`~colicoords.data_models.CellListData`
+        Object with common attributes for all cells
 
     """
 
     def __init__(self, cell_list):
         self.cell_list = np.array(cell_list)
+        self.data = CellListData(cell_list)
 
     def optimize(self, data_name='binary', cell_function=None, minimizer=Powell, **kwargs):
         """
