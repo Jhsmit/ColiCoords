@@ -3,7 +3,7 @@ from matplotlib.colors import Normalize
 from matplotlib.ticker import MaxNLocator
 import numpy as np
 from colicoords.config import cfg
-from colicoords.cell import calc_lc, CellList
+from colicoords.cell import calc_lc, CellList, Cell
 import seaborn as sns
 from tqdm.auto import tqdm
 
@@ -26,6 +26,8 @@ class CellPlot(object):
         Single-cell object to plot.
     """
     def __init__(self, cell_obj):
+        if not isinstance(cell_obj, Cell):
+            raise ValueError("'cell_obj' must be an instance of colicoords.cell.Cell")
         self.cell_obj = cell_obj
 
     def plot_midline(self, ax=None, **kwargs):
@@ -1050,7 +1052,9 @@ class CellListPlot(object):
         ``CellList`` object with ``Cell`` objects to plot.
     """
     def __init__(self, cell_list):
-        assert isinstance(cell_list, CellList)
+        if not isinstance(cell_list, CellList):
+            raise ValueError("'cell_list' must be an instance of colicoords.cell.CellList")
+
         self.cell_list = cell_list
 
     def hist_property(self, prop='length', ax=None, **kwargs):
