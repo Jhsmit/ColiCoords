@@ -711,7 +711,7 @@ class IterCellPlot(object):
 
         return line
 
-    def plot_storm(self, ax=None, data_name='', method='plot', upscale=5, alpha_cutoff=None, storm_weight=True, sigma=0.25, **kwargs):
+    def plot_storm(self, ax=None, data_name='', method='plot', upscale=5, alpha_cutoff=None, storm_weight=False, sigma=0.25, **kwargs):
         #todo make functions with table and shape and other kwargs?
         """
         Graphically represent STORM data.
