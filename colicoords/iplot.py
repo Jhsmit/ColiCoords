@@ -748,6 +748,7 @@ class IterCellPlot(object):
         #todo alpha cutoff docstirng and adjustment / testing
 
         if not data_name:
+            #todo update via CellListData
             data_name = list(self.cell_list[0].data.storm_dict.keys())[0]
 
         storm_table = self.cell_list[0].data.data_dict[data_name]
@@ -755,9 +756,9 @@ class IterCellPlot(object):
 
         x, y = storm_table['x'], storm_table['y']
 
-        if self.cell_list[0].data.shape:
-            xmax = self.cell_list[0].data.shape[1]
-            ymax = self.cell_list[0].data.shape[0]
+        if self.cell_list.data.shape is not None:
+            xmax = self.cell_list.data.shape[1]
+            ymax = self.cell_list.data.shape[0]
         else:
             #todo change to global x, y max and not local
             xmax = int(storm_table['x'].max())
@@ -805,6 +806,7 @@ class IterCellPlot(object):
             colors_stack = np.empty((len(self.cell_list), *x_coords.shape, 4))
             for i, cell in enumerate(self.cell_list):
                 storm_table = cell.data.data_dict[data_name]
+                x, y = storm_table['x'], storm_table['y']
 
                 if type(sigma) == str:
                     sigma_local = storm_table[sigma]
@@ -816,7 +818,6 @@ class IterCellPlot(object):
                 else:
                     raise ValueError('Invalid sigma')
 
-                x, y = storm_table['x'], storm_table['y']
 
                 try:
                     intensities = storm_table['intensity'] if storm_weight else np.ones_like(x)
