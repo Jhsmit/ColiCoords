@@ -508,6 +508,23 @@ class CellListData(object):
         else:
             return None
 
+    @property
+    def names(self):
+        """:obj:`list`: List of all data names in the ``Data`` objects of the cells, if all are equal, else `None`."""
+        names = np.array(c.data.names for c in self.cell_list)
+        if np.all(names[0] == names):
+            return list(names[0])
+        else:
+            return None
+
+    @property
+    def dclasses(self):
+        """:obj:`list`: List of all data classes in the ``Data`` objects of the cells, if all are equal, else `None`."""
+        dclasses = np.array(c.data.dclasses for c in self.cell_list)
+        if np.all(dclasses[0] == dclasses):
+            return list(dclasses[0])
+        else:
+            return None
 
 def _rotate_storm(storm_data, theta, shape=None):
     theta *= np.pi / 180  # to radians
