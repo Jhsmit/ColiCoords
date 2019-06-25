@@ -511,7 +511,7 @@ class CellListData(object):
     @property
     def names(self):
         """:obj:`list`: List of all data names in the ``Data`` objects of the cells, if all are equal, else `None`."""
-        names = np.array(c.data.names for c in self.cell_list)
+        names = np.array([c.data.names for c in self.cell_list])
         if np.all(names[0] == names):
             return list(names[0])
         else:
@@ -520,7 +520,7 @@ class CellListData(object):
     @property
     def dclasses(self):
         """:obj:`list`: List of all data classes in the ``Data`` objects of the cells, if all are equal, else `None`."""
-        dclasses = np.array(c.data.dclasses for c in self.cell_list)
+        dclasses = np.array([c.data.dclasses for c in self.cell_list])
         if np.all(dclasses[0] == dclasses):
             return list(dclasses[0])
         else:
