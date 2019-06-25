@@ -1581,7 +1581,6 @@ class CellList(object):
             print("Warning: method 'gauss' is not a storm-compatible method, method was set to 'box'")
             method = 'box'
 
-
         numpoints = len(np.arange(0, stop + step, step))
         out_arr = np.zeros((len(self), numpoints))
         for i, c in enumerate(self):
