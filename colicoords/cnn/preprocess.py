@@ -199,22 +199,18 @@ class AugmentedImgSequence(BaseSequence):
             ``BaseSequence`` object with indices selected for training.
         """
         step = int(np.round(1/frac))
-        idx_val = np.arange(step-1, len(self.index_list), step) + offset
+        idx_val = np.arange(0, len(self.index_list), step) + offset
         if random:
             idx_val += np.random.random_integers(0, step-1, len(idx_val))
-
-        if idx_val.max() > len(self.index_list):
-            idx_val[-1] = len(self.index_list) - 1
-            print("Warning, index out of bounds, set to last element")
 
         assert idx_val.max() < len(self.index_list)
         assert len(np.unique(idx_val)) == len(idx_val)
 
         val_indices = self.index_list[idx_val]
-        train_idices = np.delete(self.index_list, idx_val, axis=0)
+        train_indices = np.delete(self.index_list, idx_val, axis=0)
 
         val_seq = BaseSequence(self.x_arr, self.y_arr, val_indices, shuffle=self._shuffle, batch_size=self.batch_size)
-        train_seq = BaseSequence(self.x_arr, self.y_arr, train_idices, shuffle=self._shuffle, batch_size=self.batch_size)
+        train_seq = BaseSequence(self.x_arr, self.y_arr, train_indices, shuffle=self._shuffle, batch_size=self.batch_size)
 
         return val_seq, train_seq
 
