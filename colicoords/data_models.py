@@ -265,7 +265,7 @@ class Data(object):
                 raise TypeError('Invalid data type {} for data class binary'.format(data.dtype))
 
             self._check_shape(data.shape, data.ndim)
-            self.data_dict[name] = BinaryImage(data, name=name, metadata=metadata)
+            self.data_dict[name] = BinaryImage(data.astype(np.int32), name=name, metadata=metadata)
         elif dclass == 'brightfield':
             self._check_shape(data.shape, data.ndim)
             b = BrightFieldImage(data, name=name, metadata=metadata)
@@ -525,6 +525,7 @@ class CellListData(object):
             return list(dclasses[0])
         else:
             return None
+
 
 def _rotate_storm(storm_data, theta, shape=None):
     theta *= np.pi / 180  # to radians

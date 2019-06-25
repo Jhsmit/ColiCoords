@@ -80,7 +80,7 @@ def _load_cell(cell_grp):
         grp = data_grp[key]
         data_arr = grp[key]
         dclass = grp.attrs.get('dclass').decode('UTF-8')
-        data_obj.add_data(data_arr, dclass=dclass, name=key)
+        data_obj.add_data(data_arr[:], dclass=dclass, name=key)
 
     c = Cell(data_obj, init_coords=False)
 
