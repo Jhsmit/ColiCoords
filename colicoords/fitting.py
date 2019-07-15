@@ -1,10 +1,11 @@
 import numpy as np
 import numbers
-from colicoords.support import ArrayFitResults
-from symfit import Fit
+from symfit import Fit, CallableNumericalModel
+from symfit.core.fit import TakesData
+
 from colicoords.models import NumericalCellModel
 from colicoords.minimizers import Powell
-from symfit.core.fit import CallableNumericalModel, TakesData
+from colicoords.support import ArrayFitResults
 
 
 class RadialData(np.lib.mixins.NDArrayOperatorsMixin):

@@ -1,10 +1,12 @@
+import re
 import h5py
 import numpy as np
 import os
+
 from colicoords.cell import Cell, CellList
 from colicoords.config import cfg
 from colicoords.data_models import Data
-import re
+
 
 TYPES = {
     'id': int,

@@ -1,8 +1,8 @@
 import numpy as np
 from scipy.integrate import quad
+from symfit import Parameter, Variable, CallableNumericalModel
+
 from colicoords.config import cfg
-from symfit.core.fit import CallableNumericalModel
-from symfit import Parameter, Variable
 
 
 class NumericalCellModel(CallableNumericalModel):

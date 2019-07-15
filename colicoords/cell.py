@@ -1,17 +1,18 @@
+import numpy as np
+import multiprocess as mp
+from scipy.integrate import quad
+from scipy.optimize import brentq
+import numbers
+import mahotas as mh
+import operator
+from functools import partial
+from contextlib import closing
+from tqdm.auto import tqdm
+
 from colicoords.fitting import CellFit
 from colicoords.support import allow_scalars, box_mean, running_mean
 from colicoords.minimizers import Powell
 from colicoords.data_models import CellListData
-import numbers
-import mahotas as mh
-import numpy as np
-import operator
-from functools import partial
-from contextlib import closing
-from scipy.integrate import quad
-from scipy.optimize import brentq
-import multiprocess as mp
-from tqdm.auto import tqdm
 
 
 class Cell(object):

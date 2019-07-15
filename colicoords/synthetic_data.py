@@ -1,9 +1,10 @@
-from colicoords.cell import Cell, Coordinates, CellList
-from colicoords.data_models import Data
 import numpy as np
 import mahotas as mh
 from scipy.integrate import quad
 from scipy.optimize import fsolve
+
+from colicoords.cell import Cell, Coordinates, CellList
+from colicoords.data_models import Data
 
 
 class SynthCell(Cell):
