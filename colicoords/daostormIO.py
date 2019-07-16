@@ -2,7 +2,7 @@
 """
 Load 3D-DAOSTORM (https://github.com/ZhuangLab/storm-analysis) format data.
 
-Hazen 10/13
+Hazen 07/19
 """
 import numpy
 import warnings
