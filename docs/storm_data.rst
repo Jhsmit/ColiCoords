@@ -23,8 +23,6 @@ dimension; axis 0 for a 3D :class:`colicoords.data_models.Data` object.
     from colicoords import Data, data_to_cells, load_thunderstorm
 
     storm_table = load_thunderstorm('storm_table.csv')
-    binary = tifffile.
-
 
     binary_stack = tifffile.imread('data/02_binary_stack.tif')
     flu_stack = tifffile.imread('data/02_brightfield_stack.tif')
