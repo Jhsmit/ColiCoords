@@ -276,7 +276,7 @@ class CellPlot(object):
 
         if not data_name:
             try:
-                data_elem = list(self.cell_obj.data.flu_dict.values())[0]  # yuck
+                data_elem = list(self.cell_obj.data.flu_dict.values())[0]  # yuck, next(dict.values())   ??
             except IndexError:
                 try:
                     data_elem = list(self.cell_obj.data.storm_dict.values())[0]
