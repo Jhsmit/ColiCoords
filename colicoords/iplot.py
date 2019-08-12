@@ -1,17 +1,17 @@
 import matplotlib.pyplot as plt
-from colicoords.cell import CellList, calc_lc
-from colicoords.plot import cmap_default, render_storm
-from colicoords.support import pad_cell
-from colicoords.config import cfg
-from ipywidgets import widgets
-from IPython.display import display
-import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.projections import register_projection
 from matplotlib.ticker import MaxNLocator
 from matplotlib.colors import Normalize
+from ipywidgets import widgets
+from IPython.display import display
+import numpy as np
 
+from colicoords.cell import CellList, calc_lc
+from colicoords.plot import cmap_default, render_storm
+from colicoords.support import pad_cell
+from colicoords.config import cfg
 
 #todo fix extend!
 # Pad all cells so the shape is the same and then use the good old update?

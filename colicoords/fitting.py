@@ -1,10 +1,11 @@
 import numpy as np
 import numbers
-from colicoords.support import ArrayFitResults
-from symfit import Fit
+from symfit import Fit, CallableNumericalModel
+from symfit.core.fit import TakesData
+
 from colicoords.models import NumericalCellModel
 from colicoords.minimizers import Powell
-from symfit.core.fit import CallableNumericalModel, TakesData
+from colicoords.support import ArrayFitResults
 
 
 class RadialData(np.lib.mixins.NDArrayOperatorsMixin):
@@ -339,8 +340,11 @@ class LinearModelFit(Fit):
         overall_dict = {**res.params, **linear_dict}
         popt = [overall_dict[par.name] for par in self._old_model.params]
 
-        return ArrayFitResults(self._old_model, popt, None, res.infodict, res.status_message, res.iterations, **res.gof_qualifiers)
-
+        
+        try:
+            return ArrayFitResults(self._old_model, popt, None, res.infodict, res.status_message, res.iterations, **res.gof_qualifiers)
+        except AttributeError:
+            return ArrayFitResults(self._old_model, popt, None, res.minimizer, res.objective, res.status_message, **res.minimizer_output)
 
 def solve_linear_system(y_list, data):
     """Solve system of linear eqns a1*y1 + a2*y2 == data but then also vector edition of that"""

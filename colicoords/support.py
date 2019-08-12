@@ -1,7 +1,8 @@
 from functools import wraps
 import numpy as np
 import mahotas as mh
-from symfit.core.fit import FitResults
+from symfit import FitResults
+
 import colicoords
 
 

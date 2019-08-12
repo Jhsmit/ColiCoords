@@ -2,10 +2,11 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 from matplotlib.ticker import MaxNLocator
 import numpy as np
-from colicoords.config import cfg
-from colicoords.cell import calc_lc, CellList, Cell
 import seaborn as sns
 from tqdm.auto import tqdm
+
+from colicoords.config import cfg
+from colicoords.cell import calc_lc, CellList, Cell
 
 sns.set_style('white')
 cmap_default = {'fluorescence': 'viridis', 'binary': 'gray_r', 'brightfield': 'gray'}

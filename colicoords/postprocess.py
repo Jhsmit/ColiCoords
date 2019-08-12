@@ -1,7 +1,8 @@
 import numpy as np
-from colicoords.support import gauss_2d
 from scipy.spatial import distance
 from tqdm.auto import tqdm
+
+from colicoords.support import gauss_2d
 
 
 def align_cells(model_cell, data_cells, r_norm=True, sigma=1):
