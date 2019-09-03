@@ -44,13 +44,13 @@ class TestCell(ArrayTestCase):
     def test_recontruct(self):
         bf_recontstr = self.cell_obj.reconstruct_image('brightfield')
         lsq = np.sum((bf_recontstr - self.cell_obj.data.bf_img)**2)
-        self.assertAlmostEqual(lsq, 44728880.4819674, 2)
+        self.assertAlmostEqual(44728880.4819674, lsq, 2)
 
         bf_rscl = self.cell_obj.reconstruct_image('brightfield', r_scale=0.5)
         cell = self.cell_obj.copy()
         cell.data.add_data(bf_rscl, 'brightfield', 'rescaled')
         r_mid = cell.measure_r(data_name='rescaled', mode='mid', in_place=False)
-        self.assertAlmostEqual(r_mid, 12.974043291957795, 2)
+        self.assertAlmostEqual(12.974043291957795, r_mid, 2)
 
     def test_get_intensity(self):
         cell = self.cell_obj.copy()
