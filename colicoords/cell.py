@@ -110,7 +110,7 @@ class Cell(object):
         """:obj:`float`: Volume of the cell in cubic pixels."""
         return np.pi * self.coords.r ** 2 * self.length + (4 / 3) * np.pi * self.coords.r ** 3
 
-    def phi_dist(self, step, data_name='',  r_max=None, r_min=0, storm_weight=False, method='gauss', sigma=5):
+    def phi_dist(self, step, data_name='', r_max=None, r_min=0, storm_weight=False, method='gauss', sigma=5):
         """
         Calculates the angular distribution of signal for a given data element.
 
@@ -136,14 +136,14 @@ class Cell(object):
         Returns
         -------
         xvals : :class:`~numpy.ndarray`
-            Array of distances along the cell midline, values are the middle of the bins/kernel.
+            Array of angles along the cell pole, values are the middle of the bins/kernel.
         yvals_l : :class:`~numpy.ndarray`
             Array of bin heights for the left pole.
         yvals_r : :class:`~numpy.ndarray`
             Array of bin heights for the right pole.
         """
 
-        r_max = r_max if r_max else self.coords.r
+        r_max = r_max if r_max is not None else self.coords.r
         stop = 180
 
         if not data_name:
@@ -539,7 +539,7 @@ class Cell(object):
             imax = np.argmax(y)
             r = x[imax]
         else:
-            ValueError('Invalid value for mode')
+            raise ValueError('Invalid value for mode')
 
         if in_place:
             self.coords.r = r
@@ -560,7 +560,7 @@ class Cell(object):
         norm_x : :obj:`bool`
             Boolean indicating whether or not to normalize to r=1.
         r_scale : :obj:`float`
-            Stretch or compress the image in the radial direction by this factor.
+            Stretch or compress the image in the radial direction by this factor. Values > 1 will compress the image.
         **kwargs
             Optional keyword arguments are 'stop' and 'step' which are passed to `r_dist`.
 
