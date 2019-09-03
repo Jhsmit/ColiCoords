@@ -74,6 +74,13 @@ class TestCellListSTORM(ArrayTestCase):
         self.cell_list = load(os.path.join(f_path, 'test_data', 'test_synth_cell_storm.hdf5'))
         self.cell = self.cell_list[0]
 
+        x = np.arange(20)
+        y = np.exp(-x / 5)
+
+        img_3d = self.cell.data.data_dict['fluorescence'][np.newaxis, :, :] * y[:, np.newaxis, np.newaxis]
+        self.cell.data.add_data(img_3d, 'fluorescence', 'flu_3d')
+
+
         data = Data()
         data.add_data(self.cell.data.binary_img, 'binary')
         self.empty_cell = Cell(data)
@@ -109,8 +116,14 @@ class TestCellListSTORM(ArrayTestCase):
         x, y = self.cell.l_dist(nbins, method='box', r_max=1)
         x, y = self.cell.l_dist(nbins, method='box', r_max=0)
 
+        x, y_list = self.cell.l_dist(nbins, data_name='flu_3d')
+        self.assertEqual(len(y_list), 20)
+
+
     def test_l_classify(self):
-        pass
+        p, b, m = self.cell.l_classify(data_name='storm')
+        total = len(self.cell.data.data_dict['storm'])
+        self.assertEqual(p + b + m, total)
 
     def test_r_dist(self):
             stop = 15
