@@ -110,7 +110,7 @@ class Cell(object):
         """:obj:`float`: Volume of the cell in cubic pixels."""
         return np.pi * self.coords.r ** 2 * self.length + (4 / 3) * np.pi * self.coords.r ** 3
 
-    def phi_dist(self, step, data_name='',  r_max=None, r_min=0, storm_weight=False, method='gauss', sigma=5):
+    def phi_dist(self, step, data_name='', r_max=None, r_min=0, storm_weight=False, method='gauss', sigma=5):
         """
         Calculates the angular distribution of signal for a given data element.
 
@@ -143,7 +143,7 @@ class Cell(object):
             Array of bin heights for the right pole.
         """
 
-        r_max = r_max if r_max else self.coords.r
+        r_max = r_max if r_max is not None else self.coords.r
         stop = 180
 
         if not data_name:
