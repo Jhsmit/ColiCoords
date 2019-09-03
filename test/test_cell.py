@@ -156,6 +156,44 @@ class TestCellListSTORM(ArrayTestCase):
             x, y = self.cell.r_dist(stop, step, data_name='fluorescence', limit_l=1-1e-10)
             self.assertArrayEqual(bins, x)
 
+    def test_phi_dist(self):
+        step = 0.5
+        with self.assertRaises(IndexError):
+            x, yl, yr = self.empty_cell.phi_dist(step)
+        with self.assertRaises(ValueError):  # todo refactor to stay as KeyError?
+            x, yl, yr = self.cell.phi_dist(step, data_name='notexisting')
+        with self.assertRaises(ValueError):
+            x, yl, yr = self.cell.phi_dist(step, method='notexisting')
+
+        stop = 180
+        bins_box = np.arange(0, stop + step, step) + 0.5 * step
+        bins = np.arange(0, stop + step, step)
+
+        x, y = self.cell.data.data_dict['storm']['x'], self.cell.data.data_dict['storm']['y']
+        lc, rc, psi = self.cell.coords.transform(x, y)
+
+        b = np.logical_and(psi != 0, psi != 180)  # only localizations at poles
+        storm_int_sum = np.sum(self.cell.data.data_dict['storm']['intensity'][b])
+
+        x, yl, yr = self.cell.phi_dist(step, data_name='storm', r_max=np.inf)
+        self.assertArrayEqual(bins_box, x)
+        self.assertEqual(np.sum(yl + yr), storm_int_sum)
+
+        x, yl, yr = self.cell.phi_dist(step, data_name='storm', storm_weight=True, r_max=np.inf)
+        self.assertArrayEqual(bins_box, x)
+        self.assertEqual(np.sum(yl + yr), storm_int_sum)
+
+        x, yl, yr = self.cell.phi_dist(step, data_name='storm', r_max=0)
+        self.assertEqual(np.sum(yl + yr), 0)
+
+        x, yl, yr = self.cell.phi_dist(step, data_name='fluorescence')
+        self.assertArrayEqual(bins, x)
+
+        x, yl, yr = self.cell.phi_dist(step, data_name='fluorescence', r_min=-5)
+        x, yl, yr = self.cell.phi_dist(step, data_name='fluorescence', r_max=0)
+        x, yl, yr = self.cell.phi_dist(step, data_name='fluorescence', r_max=0, r_min=5)
+        self.assertEqual(np.sum(yl + yr), 0)
+
 
 if __name__ == '__main__':
     unittest.main()
