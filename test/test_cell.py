@@ -27,9 +27,49 @@ class TestCell(ArrayTestCase):
 
         r_max = self.cell_obj.measure_r(data_name='brightfield', mode='max', in_place=False, step=0.5)
         r_mid = self.cell_obj.measure_r(data_name='brightfield', mode='mid', in_place=False)
+        r_min = self.cell_obj.measure_r(data_name='brightfield', mode='min', in_place=False)
+        print(r_min)
 
         self.assertEqual(r_max, 9.0)
         self.assertAlmostEqual(r_mid, 6.49, 2)
+
+        with self.assertRaises(ValueError):
+            r_ = self.cell_obj.measure_r(mode='asdf')
+
+        cell = self.cell_obj.copy()
+        r_max = cell.measure_r(data_name='brightfield', mode='max', in_place=True, step=0.5)
+        self.assertEqual(r_max, None)
+        self.assertEqual(cell.coords.r, 9.0)
+
+    def test_recontruct(self):
+        bf_recontstr = self.cell_obj.reconstruct_image('brightfield')
+        lsq = np.sum((bf_recontstr - self.cell_obj.data.bf_img)**2)
+        self.assertEqual(lsq, 44728880.4819674)
+
+        bf_rscl = self.cell_obj.reconstruct_image('brightfield', r_scale=0.5)
+        cell = self.cell_obj.copy()
+        cell.data.add_data(bf_rscl, 'brightfield', 'rescaled')
+        r_mid = cell.measure_r(data_name='rescaled', mode='mid', in_place=False)
+        self.assertEqual(r_mid, 12.974043291957795)
+
+    def test_get_intensity(self):
+        cell = self.cell_obj.copy()
+        i0 = self.cell_obj.get_intensity()
+        i1 = self.cell_obj.get_intensity(data_name='fluorescence')
+        i2 = self.cell_obj.get_intensity(data_name='fluorescence', mask='coords')
+        cell.coords.r *= 2
+        i3 = cell.get_intensity(data_name='fluorescence', mask='coords')
+        i4 = self.cell_obj.get_intensity(data_name='fluorescence', func=np.max)
+        i5 = self.cell_obj.get_intensity(data_name='fluorescence', func=np.min)
+        i6 = self.cell_obj.get_intensity(data_name='fluorescence', func=np.median)
+
+        with self.assertRaises(ValueError):
+            self.cell_obj.get_intensity(data_name='asdfsdfa')
+
+        ii = [i0, i1, i2, i3, i4, i5, i6]
+        vi = [23729.91051454139, 23729.91051454139, 23580.72807991121, 11281.533678756477, 40733, 3094, 27264.0]
+        for i, v in zip(ii, vi):
+            self.assertEqual(i, v)
 
 
 class TestCellList(ArrayTestCase):
@@ -122,6 +162,10 @@ class TestCellListSTORM(ArrayTestCase):
 
     def test_l_classify(self):
         p, b, m = self.cell.l_classify(data_name='storm')
+        total = len(self.cell.data.data_dict['storm'])
+        self.assertEqual(p + b + m, total)
+
+        p, b, m = self.cell.l_classify()
         total = len(self.cell.data.data_dict['storm'])
         self.assertEqual(p + b + m, total)
 

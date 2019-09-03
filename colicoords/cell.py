@@ -539,7 +539,7 @@ class Cell(object):
             imax = np.argmax(y)
             r = x[imax]
         else:
-            ValueError('Invalid value for mode')
+            raise ValueError('Invalid value for mode')
 
         if in_place:
             self.coords.r = r
@@ -560,7 +560,7 @@ class Cell(object):
         norm_x : :obj:`bool`
             Boolean indicating whether or not to normalize to r=1.
         r_scale : :obj:`float`
-            Stretch or compress the image in the radial direction by this factor.
+            Stretch or compress the image in the radial direction by this factor. Values > 1 will compress the image.
         **kwargs
             Optional keyword arguments are 'stop' and 'step' which are passed to `r_dist`.
 
