@@ -136,7 +136,7 @@ class Cell(object):
         Returns
         -------
         xvals : :class:`~numpy.ndarray`
-            Array of distances along the cell midline, values are the middle of the bins/kernel.
+            Array of angles along the cell pole, values are the middle of the bins/kernel.
         yvals_l : :class:`~numpy.ndarray`
             Array of bin heights for the left pole.
         yvals_r : :class:`~numpy.ndarray`
