@@ -30,19 +30,19 @@ class TestCellPlot(ArrayTestCase):
         x = np.linspace(self.cell.coords.xl, self.cell.coords.xr, 100)
         y = np.polyval(self.cell.coords.coeff[::-1], x)
         xl, yl = line.get_data()
-        self.assertArrayEqual(y, yl)
+        self.assertArrayAlmostEqual(y, yl, decimal=10)
 
         line = self.cp.plot_midline(color='g')
-        fig.close()
+        plt.close()
 
     def test_plot_binary_img(self):
         fig, ax = plt.subplots()
 
         image = self.cp.plot_binary_img(ax)
         data = image.get_array()
-        self.assertArrayEqual(data, self.cell.data.binary_img())
+        self.assertArrayEqual(data, self.cell.data.binary_img)
 
-        fig.close()
+        plt.close()
 
     def test_plot_sim_binary(self):
         fig, ax = plt.subplots()
@@ -51,7 +51,7 @@ class TestCellPlot(ArrayTestCase):
         data = image.get_array()
         img = self.cell.coords.rc < self.cell.coords.r
         self.assertArrayEqual(data, img)
-        fig.close()
+        plt.close()
 
     def test_plot_bin_fit_comparison(self):
         fig, ax = plt.subplots()
@@ -61,7 +61,7 @@ class TestCellPlot(ArrayTestCase):
         img = self.cell.coords.rc < self.cell.coords.r
         final_img = 3 - (2 * img + self.cell.data.binary_img)
         self.assertArrayEqual(data, final_img)
-        fig.close()
+        plt.close()
 
     def test_plot_outline(self):
         fig, ax = plt.subplots()
@@ -72,7 +72,7 @@ class TestCellPlot(ArrayTestCase):
         dist = np.sqrt((x[:-1] - x[1:])**2 + (y[:-1] - y[1:])**2)
         self.assertTrue(np.all(dist < 0.14))
         self.assertEqual(0.10525317206276026, np.mean(dist))
-        fig.close()
+        plt.close()
 
     def test_plot_r_dist(self):
         fig, ax = plt.subplots()
@@ -135,7 +135,7 @@ class TestCellPlot(ArrayTestCase):
         x, y = line.get_data()
         num = np.sum((l > 0.25*self.cell.length)*(l < 0.75*self.cell.length))
         self.assertEqual(y.sum(), num)
-        fig.close()
+        plt.close()
 
     def test_plot_l_dist(self):
         fig, ax = plt.subplots()
@@ -188,7 +188,7 @@ class TestCellPlot(ArrayTestCase):
         x, y = line.get_data()
         num = (r < self.cell.coords.r).sum()
         self.assertEqual(y.sum(), num)
-        fig.close()
+        plt.close()
 
     def test_plot_phi_dist(self):
         fig, ax = plt.subplots()
@@ -238,7 +238,7 @@ class TestCellPlot(ArrayTestCase):
         x, y = line.get_data()
         num = (r < self.cell.coords.r).sum()
         self.assertEqual(y.sum(), num)
-        fig.close()
+        plt.close()
 
     def test_plot_storm(self):
         st_x, st_y = self.cell.data.data_dict['storm']['x'], self.cell.data.data_dict['storm']['y']
@@ -253,7 +253,7 @@ class TestCellPlot(ArrayTestCase):
         data = img.get_array()
         self.assertEqual(data.sum(), 13638.106321000001)
         self.assertEqual(data.ndim, 3)
-        fig.close()
+        plt.close()
 
     def test_plot_l_class(self):
         st_x, st_y = self.cell.data.data_dict['storm']['x'], self.cell.data.data_dict['storm']['y']
@@ -269,12 +269,12 @@ class TestCellPlot(ArrayTestCase):
 
         num = (l == 0).sum() + (l == self.cell.length).sum()
         self.assertEqual(num, h[0])
-        fig.close()
+        plt.close()
 
     def test_plot_kymograph(self):
         fig, ax = plt.subplots()
         self.cp.plot_kymograph(ax=ax, data_name='flu_3d', norm_y=False)
-        # fig.close() cant close this figure?
+        # plt.close() cant close this figure?
 
         with self.assertRaises(NotImplementedError):
             self.cp.plot_kymograph(data_name='flu_3d', mode='l')
@@ -292,7 +292,7 @@ class TestCellPlot(ArrayTestCase):
 
         n, b, p = self.cp.hist_l_storm(ax=ax, norm_x=True)
         self.assertEqual(num, np.sum(n))
-        fig.close()
+        plt.close()
 
     def test_hist_r_storm(self):
         st_x, st_y = self.cell.data.data_dict['storm']['x'], self.cell.data.data_dict['storm']['y']
@@ -309,14 +309,12 @@ class TestCellPlot(ArrayTestCase):
     def test_hist_phi_storm(self):
         st_x, st_y = self.cell.data.data_dict['storm']['x'], self.cell.data.data_dict['storm']['y']
         l, r, phi = self.cell.coords.transform(st_x, st_y)
-        num = len(st_x)
+        num = (l == 0).sum() + (l == self.cell.length).sum()
 
         fig, ax = plt.subplots()
         n, b, p = self.cp.hist_phi_storm(ax=ax)
         self.assertEqual(num, np.sum(n))
-
-        n, b, p = self.cp.hist_phi_storm(ax=ax, norm_x=True)
-        self.assertEqual(num, np.sum(n))
+        plt.close()
 
     def test_misc(self):
 
@@ -324,3 +322,4 @@ class TestCellPlot(ArrayTestCase):
         fig = self.cp.figure()
         self.cp.imshow(img)
         self.cp.savefig('deleteme.png')
+        plt.close()
