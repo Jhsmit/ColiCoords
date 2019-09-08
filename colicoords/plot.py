@@ -471,7 +471,6 @@ class CellPlot(object):
         ax = plt.gca() if ax is None else ax
 
         #?????
-        print(data_elem.dclass)
         if data_elem.dclass == 'storm':
             if storm_weight:
                 ylabel = 'Total STORM intensity (photons)'
@@ -484,8 +483,8 @@ class CellPlot(object):
         ax.set_ylabel(ylabel)
 
         l = kwargs.pop('label', None)
-        line_l = ax.plot(x_vals, phi_l, label='Left pole')
-        line_r = ax.plot(x_vals, phi_r, label='Right pole')
+        line_l, = ax.plot(x_vals, phi_l, label='Left pole')
+        line_r, = ax.plot(x_vals, phi_r, label='Right pole')
 
         return line_l, line_r
 
