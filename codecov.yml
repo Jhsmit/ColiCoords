@@ -1,0 +1,4 @@
+ignore:
+  - "colicoords/gui" 
+  - "test"       
+  - "colicoords/cnn"
