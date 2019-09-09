@@ -84,7 +84,7 @@ class TestCellPlot(ArrayTestCase):
         x2, y2 = line.get_data()
         self.assertArrayEqual(x1, x2)
         self.assertArrayEqual(y1, y2)
-        self.assertEqual(y2[0], 0.04789108896255459)
+        self.assertAlmostEqual(y2[0], 0.04789108896255459, 10)
 
         line = self.cp.plot_r_dist(ax=ax, zero=True)
         x, y = line.get_data()
@@ -110,7 +110,7 @@ class TestCellPlot(ArrayTestCase):
         self.assertEqual(label, 'Distance (norm)')
         line = self.cp.plot_r_dist(ax=ax, method='box')
         x, y = line.get_data()
-        self.assertEqual(y[0], 0.04788923286631714)
+        self.assertAlmostEqual(y[0], 0.04788923286631714, 10)
 
         ax.clear()
 
@@ -147,7 +147,7 @@ class TestCellPlot(ArrayTestCase):
         x2, y2 = line.get_data()
         self.assertArrayEqual(x1, x2)
         self.assertArrayEqual(y1, y2)
-        self.assertEqual(y2[0], 0.039903571495215485)
+        self.assertAlmostEqual(y2[0], 0.039903571495215485, 10)
 
         line = self.cp.plot_l_dist(ax=ax, zero=True)
         x, y = line.get_data()
