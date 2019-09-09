@@ -377,6 +377,7 @@ class CellPlot(object):
         else:
             data_elem = self.cell_obj.data.data_dict[data_name]
 
+        dist_kwargs = {} if dist_kwargs is None else dist_kwargs
         nbins = dist_kwargs.pop('nbins', cfg.L_DIST_NBINS)
         scf = self.cell_obj.length if norm_x else 1
         sigma = dist_kwargs.pop('sigma', cfg.L_DIST_SIGMA) / scf
@@ -470,7 +471,6 @@ class CellPlot(object):
         ax = plt.gca() if ax is None else ax
 
         #?????
-        print(data_elem.dclass)
         if data_elem.dclass == 'storm':
             if storm_weight:
                 ylabel = 'Total STORM intensity (photons)'
@@ -483,8 +483,8 @@ class CellPlot(object):
         ax.set_ylabel(ylabel)
 
         l = kwargs.pop('label', None)
-        line_l = ax.plot(x_vals, phi_l, label='Left pole')
-        line_r = ax.plot(x_vals, phi_r, label='Right pole')
+        line_l, = ax.plot(x_vals, phi_l, label='Left pole')
+        line_r, = ax.plot(x_vals, phi_r, label='Right pole')
 
         return line_l, line_r
 
