@@ -1416,13 +1416,13 @@ class CellListPlot(object):
         l = kwargs.pop('label', None)
 
         mean = np.nanmean(phi_l, axis=0)
-        line_l = ax.plot(x_vals, mean, label='Left pole')
+        line_l, = ax.plot(x_vals, mean, label='Left pole')
         if band_func:
             width = band_func(phi_l, axis=0)
             ax.fill_between(x_vals, mean + width, mean - width, alpha=0.25)
 
         mean = np.nanmean(phi_r, axis=0)
-        line_r = ax.plot(x_vals, mean, label='Right pole')
+        line_r, = ax.plot(x_vals, mean, label='Right pole')
         if band_func:
             width = band_func(phi_r, axis=0)
             ax.fill_between(x_vals, mean + width, mean - width, alpha=0.25)
