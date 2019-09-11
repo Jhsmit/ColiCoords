@@ -1236,7 +1236,7 @@ class CellListPlot(object):
             ax.fill_between(x, mean + width, mean - width, alpha=0.25)
 
         ax.set_xlabel('Distance ({})'.format(xunits))
-        ax.set_ylabel('Signal intensity ({})'.format(yunits))
+        ax.set_ylabel('Intensity ({})'.format(yunits))
         ax.set_title('Radial Distribution')
 
         if norm_y:
