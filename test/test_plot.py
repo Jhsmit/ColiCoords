@@ -448,14 +448,14 @@ class TestCellListPlot(ArrayTestCase):
 
         line = self.clp.plot_l_dist(ax=ax, norm_y=True)
         x, y = line.get_data()
-        self.assertEqual(0.989601334046804, y.max())
+        self.assertAlmostEqual(0.989601334046804, y.max(), 10)
         label = ax.get_ylabel()
         self.assertEqual(label, 'Intensity (norm)')
 
         line = self.clp.plot_l_dist(ax=ax, zero=True, norm_y=True)
         x, y = line.get_data()
-        self.assertEqual(0.0414570895171721, y.min())
-        self.assertEqual(0.9693266707814306, y.max())
+        self.assertAlmostEqual(0.0414570895171721, y.min(), 10)
+        self.assertAlmostEqual(0.9693266707814306, y.max(), 10)
         label = ax.get_ylabel()
         self.assertEqual(label, 'Intensity (norm)')
 
