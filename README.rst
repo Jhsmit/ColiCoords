@@ -67,3 +67,15 @@ Several examples of `ColiCoords` usage can be found in the examples directory.
 
 .. |pipeline| image:: images/pipeline_figure.png
     :width: 100%
+
+Citation
+========
+
+If you you use ``ColiCoords`` for scientific publication, please cite:
+
+Smit, J. H., Li, Y., Warszawik, E. M., Herrmann, A. & Cordes, T. *ColiCoords: A Python package for the analysis of bacterial fluorescence microscopy data.* PLOS ONE 14, e0217524 (2019).
+
+If you use the ``CNN`` module please also cite:
+
+Falk, T. et al. *U-Net: deep learning for cell counting, detection, and morphometry.* Nat Methods 16, 67–70 (2019).
+
