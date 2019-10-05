@@ -7,6 +7,7 @@ import numpy as np
 import mahotas as mh
 import os
 
+
 class TestData(ArrayTestCase):
     def setUp(self):
         self.data = load_testdata('ds1')
@@ -78,10 +79,3 @@ class TestImgProcess(ArrayTestCase):
 
         dilated = multi_dilate(binary, 300)
         self.assertEqual(dilated.sum(), np.product(binary.shape))
-
-    def test_temmp(self):
-        binary = self.data.binary_img.astype(bool)[0]
-
-        eroded = multi_erode(binary, 1)
-        self.assertLess(np.sum(eroded), s)
-        self.assertArrayEqual(mh.erode(binary), e)
