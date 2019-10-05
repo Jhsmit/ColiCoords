@@ -339,10 +339,9 @@ class TestCellListPlot(ArrayTestCase):
         for c in self.cell_list:
             st_x, st_y = c.data.data_dict['storm']['x'], c.data.data_dict['storm']['y']
             l, r, phi = c.coords.transform(st_x, st_y)
-            self.num_poles += ( (l == 0).sum() + (l == c.length).sum() )
+            self.num_poles += ((l == 0).sum() + (l == c.length).sum() )
             self.num_05 += np.sum((l > 0.25 * c.length) * (l < 0.75 * c.length))
         self.num_full = self.num_st - self.num_poles
-
 
     def test_hist_property(self):
         fig, ax = plt.subplots()
@@ -533,3 +532,59 @@ class TestCellListPlot(ArrayTestCase):
             num_poles_r += ( (r < c.coords.r) * np.logical_or(l == 0, l == c.length) ).sum()
 
         self.assertAlmostEqual(float(yl.sum() + yr.sum()),  float(num_poles_r / self.num), 1)
+
+    def test_plot_class(self):
+        fig, ax = plt.subplots()
+        container = self.clp.plot_l_class(ax=ax)
+        self.assertEqual(len(container), 3)
+
+        h = [rect.get_height() for rect in container]
+        self.assertEqual(self.num_st / len(self.cell_list), sum(h))
+
+        num = 0
+        for c in self.cell_list:
+            st_x, st_y = c.data.data_dict['storm']['x'], c.data.data_dict['storm']['y']
+            l, r, phi = c.coords.transform(st_x, st_y)
+            num += (l == 0).sum() + (l == c.length).sum()
+
+        self.assertEqual(self.num_poles / len(self.cell_list), h[0])
+        plt.close()
+
+    def test_plot_kymograph(self):
+        fig, ax = plt.subplots()
+        self.clp.plot_kymograph(ax=ax, norm_y=False)
+        # plt.close() cant close this figure?
+
+        with self.assertRaises(NotImplementedError):
+            self.clp.plot_kymograph(data_name='flu_3d', mode='l')
+        with self.assertRaises(NotImplementedError):
+            self.clp.plot_kymograph(data_name='flu_3d', mode='a')
+
+    def test_hist_l_storm(self):
+        fig, ax = plt.subplots()
+        n, b, p = self.clp.hist_l_storm(ax=ax)
+        self.assertEqual(self.num_st, np.sum(n))
+
+        n, b, p = self.clp.hist_l_storm(ax=ax)
+        self.assertEqual(self.num_st, np.sum(n))
+        plt.close()
+
+    def test_hist_r_storm(self):
+        fig, ax = plt.subplots()
+        n, b, p = self.clp.hist_r_storm(ax=ax)
+        self.assertEqual(self.num_st, np.sum(n))
+
+        n, b, p = self.clp.hist_r_storm(ax=ax, norm_x=True)
+        self.assertEqual(self.num_st, np.sum(n))
+
+    def test_hist_phi_storm(self):
+        fig, ax = plt.subplots()
+        n, b, p = self.clp.hist_phi_storm(ax=ax)
+        self.assertEqual(self.num_poles, np.sum(n))
+        plt.close()
+
+    def test_misc(self):
+        fig = self.clp.figure()
+        self.clp.savefig('deleteme.png')
+        self.clp.show()
+        plt.close()
