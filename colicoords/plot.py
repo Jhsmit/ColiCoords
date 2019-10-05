@@ -1236,7 +1236,7 @@ class CellListPlot(object):
             ax.fill_between(x, mean + width, mean - width, alpha=0.25)
 
         ax.set_xlabel('Distance ({})'.format(xunits))
-        ax.set_ylabel('Signal intensity ({})'.format(yunits))
+        ax.set_ylabel('Intensity ({})'.format(yunits))
         ax.set_title('Radial Distribution')
 
         if norm_y:
@@ -1339,7 +1339,7 @@ class CellListPlot(object):
             ax.fill_between(x, mean + width, mean - width, alpha=0.25)
 
         ax.set_xlabel('Distance ({})'.format(xunits))
-        ax.set_ylabel('Signal intensity ({})'.format(yunits))
+        ax.set_ylabel('Intensity ({})'.format(yunits))
         ax.set_title('Longitudinal Distribution')
 
         if norm_y:
@@ -1416,13 +1416,13 @@ class CellListPlot(object):
         l = kwargs.pop('label', None)
 
         mean = np.nanmean(phi_l, axis=0)
-        line_l = ax.plot(x_vals, mean, label='Left pole')
+        line_l, = ax.plot(x_vals, mean, label='Left pole')
         if band_func:
             width = band_func(phi_l, axis=0)
             ax.fill_between(x_vals, mean + width, mean - width, alpha=0.25)
 
         mean = np.nanmean(phi_r, axis=0)
-        line_r = ax.plot(x_vals, mean, label='Right pole')
+        line_r, = ax.plot(x_vals, mean, label='Right pole')
         if band_func:
             width = band_func(phi_r, axis=0)
             ax.fill_between(x_vals, mean + width, mean - width, alpha=0.25)
@@ -1447,9 +1447,8 @@ class CellListPlot(object):
 
         Returns
         -------
-        axes : :class:`matplotlib.axes.Axes`
-            The created or specified with `ax` matplotlib axes
-
+        container : :class:`~matplotlib.container.BarContainer`
+            Container with all the bars.
         """
         #todo created in all the return docstrings is not truthful
         cl = self.cell_list.l_classify(data_name=data_name)
@@ -1463,11 +1462,11 @@ class CellListPlot(object):
             raise ValueError("Invalid value for 'yerr', must be either 'std' or 'sem'")
 
         ax = plt.gca() if ax is None else ax
-        ax.bar(np.arange(3), mean, tick_label=['Pole', 'Between', 'Middle'], yerr=yerr, **kwargs)
+        container = ax.bar(np.arange(3), mean, tick_label=['Pole', 'Between', 'Middle'], yerr=yerr, **kwargs)
         ax.yaxis.set_major_locator(MaxNLocator(integer=True))
         ax.set_ylabel('Mean number of spots')
 
-        return ax
+        return container
 
     def plot_kymograph(self, mode='r', data_name='', ax=None, time_factor=1, time_unit='frames', dist_kwargs=None,
                        norm_y=True, aspect=1, **kwargs):
