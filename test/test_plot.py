@@ -586,5 +586,4 @@ class TestCellListPlot(ArrayTestCase):
     def test_misc(self):
         fig = self.clp.figure()
         self.clp.savefig('deleteme.png')
-        self.clp.show()
         plt.close()
