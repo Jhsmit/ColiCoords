@@ -18,15 +18,39 @@ from colicoords.config import cfg
 
 
 class IterRedrawAxes(Axes):
+    """
+    Axes object with methods for iterative plotting.
+
+    Upon renewing the graph for all plotted elements is redrawn completely.
+
+    *args
+        Arguments passed to :class:`~matplotlib.axes.Axes`
+    **kwargs
+        Keyword arguments passed to :class:`~matplotlib.axes.Axes`
+    """
+
     name = 'iter_redraw'
-    # update_register = []
-    # new_additions = []
 
     def __init__(self, *args, **kwargs):
         super(IterRedrawAxes, self).__init__(*args, **kwargs)
         self.redraw_register = []
 
     def iter_plot(self, *args, **kwargs):
+        """
+        Plot y versus x through :func:`~matplotlib.pyplot.plot` iteratively.
+
+        Parameters
+        ----------
+        *args
+            Arguments in similar format as :func:`~matplotlib.pyplot.plot`, where the all data arguments should be
+            interables with equal lengths.
+        **kwargs
+            Additional keyword arguments passed to :func:`matplotlib.pyplot.plot`
+        Returns
+        -------
+        lines : :obj:`list`
+            List with :class:`matplotlib.lines.Line2D` objects from the first element of data iterables.
+        """
         # todo allow single x for multiple y's
 
         self._set_length(len(args[0]))
@@ -48,45 +72,57 @@ class IterRedrawAxes(Axes):
             line, = self.plot(*[a[0] for a in iter_args], *other_args, **kwargs)
             self.redraw_register.append((self.plot, iter_args, other_args, kwargs))
             lines.append(line)
-
         return lines
 
-        # while args:
-        #     new_args = []
-        #     iterdata = []
-        #     this, args = args[:2], args[2:]
-        #
-        #     if args and isinstance(args[0], str):
-        #         print('this', this)
-        #         print(type(this[0]))
-        #         new_args += [a[0] for a in this if not isinstance(a, str)]
-        #         new_args += this[1] if isinstance(this[1], str) else []
-        #         iterdata.append([a for a in this if not isinstance(a, str)])
-        #         new_args += [args[0]]
-        #         args = args[1:]
-        # print('new args and kwargs')
-        # print(new_args)
-        # print(kwargs)
-        # lines = super(IterAxes, self).plot(*new_args, **kwargs) # no need for supers anymore
-        #
-        # for data, line in zip(iterdata, lines):
-        #     self.update_register.append((self._update_plot, [line, *data], {}))
-        #
-        # return lines
-
     def iter_imshow(self, X, **kwargs):
+        """
+        Plot an image through :func:`~matplotlib.pyplot.imshow` iteratively.
+
+        Parameters
+        ----------
+        X : iterable
+            Iterable of image data supported by :func:`~matplotlib.pyplot.imshow`.
+        **kwargs
+            Additional keyword arguments passed to :func:`~matplotlib.pyplot.imshow`.
+
+        Returns
+        -------
+        img : :class:`matplotlib.image.AxesImage`
+            From the first element of iterable X.
+        """
+
         self._set_length(len(X))
         img = self.imshow(X[0], **kwargs)
         self.redraw_register.append((self.imshow, [X], [], kwargs))
         return img
 
     def iter_hist(self, x, **kwargs):
+        """
+        Plot a histogram through :func:`~matplotlib.pyplot.hist` iteratively.
+
+        Parameters
+        ----------
+        x : iterable
+            iterable of array like data to histogram.
+        **kwargs
+            Additional keyword arguments passed to :func:`~matplotlib.pyplot.hist` iteratively.
+
+        Returns
+        -------
+        n : :class:`~numpy.ndarray` or list of arrays
+            The values of the histogram bins for the first iterable
+        b : :class:`~numpy.ndarray`
+            Bins of the first histogram in the iterable
+        p : list or list of lists
+            Silent list of individual :class:`~matplotlib.patches.Patch` objects of the first histogram in the iterable
+        """
+
         self._set_length(len(x))
         self.set_prop_cycle(None)
         n, b, p = self.hist(x[0], **kwargs)
         color = p[0].get_facecolor()
         kwargs.update({'color': color})
-        self.update_register.append((self._update_hist, [p, x], kwargs))
+        self.redraw_register.append((self._update_hist, [p, x], kwargs))
         return n, b, p
 
     def _update_hist(self, idx, patches, x, **kwargs):
@@ -94,7 +130,8 @@ class IterRedrawAxes(Axes):
         n, b, p = self.hist(x[idx], **kwargs)
         self.new_additions.append((self._update_hist, [p, x], kwargs))
 
-    def _update_plot(self, idx, line, *data):
+    @staticmethod
+    def _update_plot(idx, line, *data):
         if len(data) == 1:
             line.set_ydata(data)
         else:
@@ -102,10 +139,21 @@ class IterRedrawAxes(Axes):
             line.set_xdata(x[idx])
             line.set_ydata(y[idx])
 
-    def _update_imshow(self, idx, img, data):
+    @staticmethod
+    def _update_imshow(idx, img, data):
         img.set_data(data[idx])
 
     def update_graph(self, idx):
+        """
+        Updates the graph to the requested index.
+
+        Parameters
+        ----------
+        idx : :obj:`int`
+            Index of iterable to plot by redrawing each element
+
+        """
+
         self.cla()
         for f, iter_args, args, kwargs in self.redraw_register:
             f(*[a[idx] for a in iter_args], *args, **kwargs)
@@ -120,9 +168,19 @@ class IterRedrawAxes(Axes):
 
 #TODO thread/process?? per axes for updating the figure?
 class IterUpdateAxes(Axes):
+    """
+    Axes object with methods for iterative plotting.
+
+    Upon renewing the graph for all plotted elements the data is updated, while leaving the original Axes
+    unaltered.
+
+    *args
+        Arguments passed to :class:`~matplotlib.axes.Axes`
+    **kwargs
+        Keyword arguments passed to :class:`~matplotlib.axes.Axes`
+    """
+
     name = 'iter_update'
-    # update_register = []
-    # new_additions = []
 
     def __init__(self, *args, **kwargs):
         super(IterUpdateAxes, self).__init__(*args, **kwargs)
@@ -130,7 +188,24 @@ class IterUpdateAxes(Axes):
         self.new_additions = []
 
     def iter_plot(self, *args, **kwargs):
-        # todo allow single x for multiple y's
+        """
+        Plot y versus x through :func:`~matplotlib.pyplot.plot` iteratively.
+
+        Parameters
+        ----------
+        *args
+            Arguments in similar format as :func:`~matplotlib.pyplot.plot`, where the all data arguments should be
+            interables with equal lengths.
+        **kwargs
+            Additional keyword arguments passed to :func:`matplotlib.pyplot.plot`
+
+        Returns
+        -------
+        lines : :obj:`list`
+            List with :class:`matplotlib.lines.Line2D` objects from the first element of data iterables.
+        """
+
+        # todo allow single x for multiple y's?
         self._set_length(len(args[0]))
         args_grps = []
         while args:
@@ -151,36 +226,49 @@ class IterUpdateAxes(Axes):
 
         return lines
 
-        # while args:
-        #     new_args = []
-        #     iterdata = []
-        #     this, args = args[:2], args[2:]
-        #
-        #     if args and isinstance(args[0], str):
-        #         print('this', this)
-        #         print(type(this[0]))
-        #         new_args += [a[0] for a in this if not isinstance(a, str)]
-        #         new_args += this[1] if isinstance(this[1], str) else []
-        #         iterdata.append([a for a in this if not isinstance(a, str)])
-        #         new_args += [args[0]]
-        #         args = args[1:]
-        # print('new args and kwargs')
-        # print(new_args)
-        # print(kwargs)
-        # lines = super(IterAxes, self).plot(*new_args, **kwargs) # no need for supers anymore
-        #
-        # for data, line in zip(iterdata, lines):
-        #     self.update_register.append((self._update_plot, [line, *data], {}))
-        #
-        # return lines
-
     def iter_imshow(self, X, **kwargs):
+        """
+        Plot an image through :func:`~matplotlib.pyplot.imshow` iteratively.
+
+        Parameters
+        ----------
+        X : iterable
+            Iterable of image data supported by :func:`~matplotlib.pyplot.imshow`.
+        **kwargs
+            Additional keyword arguments passed to :func:`~matplotlib.pyplot.imshow`.
+
+        Returns
+        -------
+        img : :class:`matplotlib.image.AxesImage`
+            From the first element of iterable X.
+        """
+
         self._set_length(len(X))
         img = self.imshow(X[0], **kwargs)
         self.update_register.append((self._update_imshow, [img, X], {}))  # partial?
         return img
 
     def iter_hist(self, x, **kwargs):
+        """
+        Plot a histogram through :func:`~matplotlib.pyplot.hist` iteratively.
+
+        Parameters
+        ----------
+        x : iterable
+            iterable of array like data to histogram.
+        **kwargs
+            Additional keyword arguments passed to :func:`~matplotlib.pyplot.hist`.
+
+        Returns
+        -------
+        n : :class:`~numpy.ndarray` or list of arrays
+            The values of the histogram bins for the first iterable
+        b : :class:`~numpy.ndarray`
+            Bins of the first histogram in the iterable
+        p : list or list of lists
+            Silent list of individual :class:`~matplotlib.patches.Patch` objects of the first histogram in the iterable
+        """
+
         self._set_length(len(x))
         self.set_prop_cycle(None)
         n, b, p = self.hist(x[0], **kwargs)
@@ -190,12 +278,36 @@ class IterUpdateAxes(Axes):
         return n, b, p
 
     def iter_bar(self, x, height, **kwargs):
+        """
+        Plot a bar chart through :func:`~matplotlib.pyplot.bar` iteratively.
+
+        Parameters
+        ----------
+        x : iterable
+            iterable of bar x positions.
+        height : iterable
+            iterable of bar heights
+        **kwargs
+            Additional keyword arguments passed to :func:`~matplotlib.pyplot.bar`.
+
+        Returns
+        -------
+        n : :class:`~numpy.ndarray` or list of arrays
+            The values of the histogram bins for the first iterable
+        b : :class:`~numpy.ndarray`
+            Bins of the first histogram in the iterable
+        p : list or list of lists
+            Silent list of individual :class:`~matplotlib.patches.Patch` objects of the first histogram in the iterable
+        """
+
+        for h in height:
+            assert len(x[0] == len(h)), 'All bar heights must have the same length'
         self._set_length(len(x))
         bar_container = self.bar(x[0], height[0], **kwargs)
         self.update_register.append((self._update_bar, [bar_container, height], {}))
-      #  self.patches += [p for p in bar_container]
 
-    def _update_bar(self, idx, bar_container, height, **kwargs):
+    @staticmethod
+    def _update_bar(idx, bar_container, height, **kwargs):
         h = height[idx]
         [rect.set_height(h_elem) for rect, h_elem in zip(bar_container, h)]
 
@@ -217,6 +329,15 @@ class IterUpdateAxes(Axes):
         img.set_clim(data[idx].min(), data[idx].max())
 
     def update_graph(self, idx):
+        """
+        Updates the graph to the requested index.
+
+        Parameters
+        ----------
+        idx : :obj:`int`
+            Index of iterable to plot by redrawing each element
+
+        """
         self.new_additions = []
         remove = []
         for i, (f, args, kwargs) in enumerate(self.update_register):
@@ -236,7 +357,21 @@ class IterUpdateAxes(Axes):
 
 
 class IterFigure(Figure):
+    """
+    Subclass of :class:`matplotlib.figure.Figure` which allows the display of navigation buttons and sliders to
+    iterate through data.
+
+    Parameters
+    ----------
+    *args
+        Additional arguments passed to :class:`matplotlib.figure.Figure`
+    slider : :obj:`bool`, optional
+        Whether or not to show a slider for navigation
+    **kwargs:
+        Additional keyword arguments passed to :class:`matplotlib.figure.Figure`
+    """
     length = None
+
     def __init__(self, *args, slider=True, **kwargs):
         super(IterFigure, self).__init__(*args, **kwargs)
         self.idx = 0
@@ -271,9 +406,21 @@ class IterFigure(Figure):
             self.box = self.btn_hbox
 
     def display(self):
+        """
+        Displays the widgets box with navigation buttons and optionally slider.
+        """
         display(self.box)
 
     def set_length(self, length):
+        """
+        Sets if the length of the iterable plotted.
+
+        Parameters
+        ----------
+        length : :obj:`int`
+            Length of the iterable
+        """
+
         self.length = length
         self._int_box.max = length - 1
         try:
@@ -282,6 +429,10 @@ class IterFigure(Figure):
             pass
 
     def handle_int_box(self, change):
+        """
+        Handler function for changes in the value display in the text box. Updates the `idx` value and triggers
+        updating of the graph.
+        """
         self.idx = change.new
         self.update_graph()
 
@@ -303,6 +454,9 @@ class IterFigure(Figure):
         self._int_box.value = np.random.randint(0, self.length)
 
     def update_graph(self):
+        """
+        Updates all axes in the figure to reflect the new state of `idx`.
+        """
         for ax in self.axes:
             ax.update_graph(self.idx)
             ax.relim()
@@ -312,18 +466,23 @@ class IterFigure(Figure):
 
 class IterCellPlot(object):
     """
-    Object for plotting single-cell derived data.
+    Object for plotting single-cell derived data by iterating through a :class:`~colicoords.cell.CellList` object.
 
     Parameters
     ----------
-    cell_obj : :class:`~colicoords.cell.Cell`
-        Single-cell object to plot.
+    cell_list : :class:`~colicoords.cell.CellList`
+        CellList object to plot
+
+    pad : :obj:`bool`, optional
+        If `True` all cells will be padded to the shape of the largest cell in the `cell_list`. This allows the usage of
+        :class:`~colicoords.iplot.IterUpdateAxes` over :class:`~colicoords.iplot.IterRedrawAxes`, which updates faster.
 
     Attributes
     ----------
-    cell_obj : :class:`~colioords.cell.Cell`
-        Single-cell object to plot.
+    cell_list : :class:`~colicoords.cell.CellList`
+        CellList object to plot
     """
+
     def __init__(self, cell_list, pad=True):
         if pad:
             shape_0, shape_1 = zip(*[cell_obj.data.shape for cell_obj in cell_list])
@@ -543,14 +702,14 @@ class IterCellPlot(object):
 
         dist_kwargs = dist_kwargs if dist_kwargs is not None else {}
         x, out_arr = self.get_r_dist(norm_x=norm_x, data_name=data_name, limit_l=limit_l,
-                               method=method, storm_weight=storm_weight, **dist_kwargs)
+                                     method=method, storm_weight=storm_weight, **dist_kwargs)
 
         if not data_name:
             try:
                 data_elem = list(self.cell_list[0].data.flu_dict.values())[0]  # yuck
             except IndexError:
                 try:
-                    data_elem = list(self.cell_obj.data.storm_dict.values())[0]
+                    data_elem = list(self.cell_list.data.storm_dict.values())[0]
                 except IndexError:
                     raise IndexError('No valid data element found')
         else:
@@ -1032,51 +1191,6 @@ class IterCellPlot(object):
 
         return h
 
-    def _plot_storm(self, storm_table, ax=None, kernel=None, bw_method=0.05, upscale=2, alpha_cutoff=None, **kwargs):
-        raise DeprecationWarning("")
-        x, y = storm_table['x'], storm_table['y']
-
-        if self.cell_obj.data.shape:
-            xmax = self.cell_obj.data.shape[1]
-            ymax = self.cell_obj.data.shape[0]
-        else:
-            xmax = int(storm_table['x'].max())
-            ymax = int(storm_table['y'].max())
-
-        x_bins = np.linspace(0, xmax, num=xmax * upscale, endpoint=True)
-        y_bins = np.linspace(0, ymax, num=ymax * upscale, endpoint=True)
-
-        h, xedges, yedges = np.histogram2d(x, y, bins=[x_bins, y_bins])
-
-        ax = plt.gca() if ax is None else ax
-        if not kernel:
-            cm = plt.cm.get_cmap('Blues')
-            cmap = cm if not 'cmap' in kwargs else kwargs.pop('cmap')
-
-            img = h.T
-            ax.imshow(img, interpolation='nearest', cmap=cmap, extent=[0, xmax, ymax, 0], **kwargs)
-        else:
-            # https://jakevdp.github.io/PythonDataScienceHandbook/05.13-kernel-density-estimation.html
-            # todo check the mgrid describes the coords correctly
-            X, Y = np.mgrid[0:xmax:xmax * upscale * 1j, ymax:0:ymax * upscale * 1j]
-            positions = np.vstack([X.ravel(), Y.ravel()])
-            values = np.vstack([x, y])
-            k = stats.gaussian_kde(values, bw_method=bw_method)
-            Z = np.reshape(k(positions).T, X.shape)
-            img = np.rot90(Z)
-
-            img_norm = img / img.max()
-            alphas = np.ones(img.shape)
-            if alpha_cutoff:
-                alphas[img_norm < 0.3] = img_norm[img_norm < 0.3] / 0.3
-
-            cmap = sns.light_palette("green", as_cmap=True) if not 'cmap' in kwargs else plt.cm.get_cmap(kwargs.pop('cmap'))
-            normed = Normalize()(img)
-            colors = cmap(normed)
-            colors[..., -1] = alphas
-
-            ax.imshow(colors, cmap=cmap, extent=[0, xmax, ymax, 0], interpolation='nearest', **kwargs)
-
     def imshow(self, img, ax=None, **kwargs):
         """
         Call to matplotlib's imshow.
@@ -1138,6 +1252,20 @@ class IterCellPlot(object):
 
 
 class AutoIterCellPlot(IterCellPlot):
+    """
+    Quickly provides insight into the contents of a :class:`~colicoords.cell.CellList` object by automatically plotting
+    the contents of the cells' :class:`~colicoords.data_models.Data` objects.
+
+    Parameters
+    ----------
+    cell_list : :class:`~colicoords.cell.CellList`
+        CellList object to plot
+
+    pad : :obj:`bool`, optional
+        If `True` all cells will be padded to the shape of the largest cell in the `cell_list`. This allows the usage of
+        :class:`~colicoords.iplot.IterUpdateAxes` over :class:`~colicoords.iplot.IterRedrawAxes`, which updates faster.
+    """
+
     default_order = {
         'binary': 0,
         'brightfield': 1,
@@ -1160,6 +1288,18 @@ class AutoIterCellPlot(IterCellPlot):
         self.axes = None
 
     def plot(self, cols=3, **kwargs):
+        """
+        Creates a :class:`~matplotlib.figure.Figure` by calling :func:`~colicoords.iplot.iter_subplots` and plots all
+        data elements associated with the cells.
+
+        Parameters
+        ----------
+        cols: :obj:`int`
+            Number of columns to use in the subplot
+        **kwargs
+            Additional keyword arguments to pass to :func:`~colicoords.iplot.iter_subplots`.
+
+        """
         rows = int(np.ceil(self.num_img / cols))
         cols = min(cols, self.num_img)
 
@@ -1181,14 +1321,43 @@ class AutoIterCellPlot(IterCellPlot):
 
 
 def iter_subplots(*args, **kwargs):
+    """
+    Equivalent to :func:`~matplotlib.pyplot.subplots` but by default returns :class:`~colicoords.iplot.IterUpdateAxes`
+
+    Parameters
+    ----------
+    args
+    kwargs
+
+    Returns
+    -------
+    fig : :class:`~matplotlib.figure.Figure`
+        Matplotlib Figure
+    axes : :class:`~matplotlib.axes.Axes` or :obj:`tuple`
+        Axes in the figure
+    """
     subplot_kw = kwargs.pop('subplot_kw', {'projection': 'iter_update'})
 
     fig, axes = plt.subplots(*args,  subplot_kw=subplot_kw, FigureClass=IterFigure, **kwargs)
     return fig, axes
 
 
-def make_outline(cell_obj, numpoints=500):
-    t = np.linspace(cell_obj.coords.xl, cell_obj.coords.xr, num=numpoints)
+def make_outline(cell_obj):
+    """
+
+    Parameters
+    ----------
+    cell_obj : :class:`~colicoords.cell.Cell`
+        Cell object to base the outline on
+    Returns
+    -------
+    x_all : :class:`~numpy.ndarray`
+        x points describing the outline
+    y_all : :class:`~numpy.ndarray`
+        y points describing the outline
+    """
+
+    t = np.linspace(cell_obj.coords.xl, cell_obj.coords.xr, num=500)
     a0, a1, a2 = cell_obj.coords.coeff
 
     x_top = t + cell_obj.coords.r * ((a1 + 2 * a2 * t) / np.sqrt(1 + (a1 + 2 * a2 * t) ** 2))
