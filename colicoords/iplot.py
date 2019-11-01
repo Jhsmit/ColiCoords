@@ -1344,11 +1344,13 @@ def iter_subplots(*args, **kwargs):
 
 def make_outline(cell_obj):
     """
-    
+    Calculates the isodistance line from the cell's midline, as defined by the cells coordinate system parameters.
+
     Parameters
     ----------
     cell_obj : :class:`~colicoords.cell.Cell`
         Cell object to base the outline on
+
     Returns
     -------
     x_all : :class:`~numpy.ndarray`
