@@ -1344,7 +1344,7 @@ def iter_subplots(*args, **kwargs):
 
 def make_outline(cell_obj):
     """
-
+    
     Parameters
     ----------
     cell_obj : :class:`~colicoords.cell.Cell`
