@@ -959,7 +959,6 @@ class IterCellPlot(object):
             y_bins = np.linspace(0, ymax, num=ymax * upscale, endpoint=True)
 
             img = np.empty((len(self.cell_list), ymax * upscale - 1, xmax * upscale - 1))
-            print(img.shape)
             for i, cell in enumerate(self.cell_list):
                 storm_table = cell.data.data_dict[data_name]
                 x, y = storm_table['x'], storm_table['y']
