@@ -553,7 +553,7 @@ class IterCellPlot(object):
         images = [cell_obj.coords.rc < cell_obj.coords.r for cell_obj in self.cell_list]
 
         ax = plt.gca() if ax is None else ax
-        ymax, xmax = self.cell_obj.data.shape
+        ymax, xmax = self.cell_list[0].data.shape
         cmap = kwargs.pop('cmap', cmap_default['binary'])
         image = ax.iter_imshow(images, extent=[0, xmax, ymax, 0], cmap=cmap, **kwargs)
 
