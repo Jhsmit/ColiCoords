@@ -292,12 +292,8 @@ class IterUpdateAxes(Axes):
 
         Returns
         -------
-        n : :class:`~numpy.ndarray` or list of arrays
-            The values of the histogram bins for the first iterable
-        b : :class:`~numpy.ndarray`
-            Bins of the first histogram in the iterable
-        p : list or list of lists
-            Silent list of individual :class:`~matplotlib.patches.Patch` objects of the first histogram in the iterable
+        bar_container : :class:`~matplotlib.container.BarContainer`
+            Matplotlib container for bar plots
         """
 
         for h in height:
@@ -305,6 +301,8 @@ class IterUpdateAxes(Axes):
         self._set_length(len(x))
         bar_container = self.bar(x[0], height[0], **kwargs)
         self.update_register.append((self._update_bar, [bar_container, height], {}))
+
+        return bar_container
 
     @staticmethod
     def _update_bar(idx, bar_container, height, **kwargs):
@@ -1331,10 +1329,9 @@ def iter_subplots(*args, **kwargs):
 
     Returns
     -------
-    fig : :class:`~matplotlib.figure.Figure`
-        Matplotlib Figure
-    axes : :class:`~matplotlib.axes.Axes` or :obj:`tuple`
-        Axes in the figure
+    tuple : :obj:`tuple`
+        Tuple containing a :class:`~matplotlib.figure.Figure` and axes as either a single Axes instance or
+        :obj:`tuple` with multiple Axes instances
     """
     subplot_kw = kwargs.pop('subplot_kw', {'projection': 'iter_update'})
 
