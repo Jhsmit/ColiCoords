@@ -1255,11 +1255,6 @@ class IterCellPlot(object):
         return image
 
     @staticmethod
-    def figure(*args, **kwargs):
-        """Calls :meth:`matplotlib.pyplot.figure`"""
-        return plt.figure(*args, **kwargs)
-
-    @staticmethod
     def show(*args, **kwargs):
         """Calls :meth:`matplotlib.pyplot.show`"""
         plt.show(*args, **kwargs)
