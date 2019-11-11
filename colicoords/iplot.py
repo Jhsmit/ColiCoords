@@ -1341,7 +1341,7 @@ def iter_subplots(*args, **kwargs):
 
 def make_outline(cell_obj):
     """
-    Calculates the isodistance line from the cell's midline, as defined by the cells coordinate system parameters.
+    Calculates the iso-distance line from the cell's midline, as defined by the cells coordinate system parameters.
 
     Parameters
     ----------
