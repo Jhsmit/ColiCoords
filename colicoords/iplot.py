@@ -122,26 +122,8 @@ class IterRedrawAxes(Axes):
         n, b, p = self.hist(x[0], **kwargs)
         color = p[0].get_facecolor()
         kwargs.update({'color': color})
-        self.redraw_register.append((self._update_hist, [p, x], kwargs))
+        self.redraw_register.append((self.hist, [x], [], kwargs))
         return n, b, p
-
-    def _update_hist(self, idx, patches, x, **kwargs):
-        [p.remove() for p in patches]
-        n, b, p = self.hist(x[idx], **kwargs)
-        self.new_additions.append((self._update_hist, [p, x], kwargs))
-
-    @staticmethod
-    def _update_plot(idx, line, *data):
-        if len(data) == 1:
-            line.set_ydata(data)
-        else:
-            x, y = data
-            line.set_xdata(x[idx])
-            line.set_ydata(y[idx])
-
-    @staticmethod
-    def _update_imshow(idx, img, data):
-        img.set_data(data[idx])
 
     def update_graph(self, idx):
         """
