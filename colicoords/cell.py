@@ -71,7 +71,12 @@ class Cell(object):
 
         """
         fit = CellFit(self, data_name=data_name, cell_function=cell_function, minimizer=minimizer)
-        return fit.execute(**kwargs)
+        try:
+            res = fit.execute(**kwargs)
+            return res       
+        except AssertionError:
+            print('ass error', self.name)
+            return None
 
     @property
     def radius(self):
@@ -1468,7 +1473,8 @@ class CellList(object):
             res = list(tqdm(pool.imap(f, self), total=len(self)))
 
         for r, cell in zip(res, self):
-            cell.coords.sub_par(r.params)
+            if r is not None:
+                cell.coords.sub_par(r.params)
 
         return res
 

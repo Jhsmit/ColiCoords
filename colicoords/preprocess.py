@@ -1,6 +1,7 @@
 import mahotas as mh
 import numpy as np
 from numpy.lib.polynomial import RankWarning
+from numpy.linalg import LinAlgError
 import warnings
 from colicoords.cell import Cell, CellList
 from colicoords.support import multi_dilate
@@ -213,9 +214,13 @@ def data_to_cells(input_data, initial_crop=5, final_crop=7, rotate='binary', rem
 
             if remove_poor_fit:
                 #Might want to move this context manager outside of for loop
-                with warnings.catch_warnings(record=True) as w:
-                    c = Cell(final_data, init_coords=init_coords)
-                if w and w[0].category == RankWarning:
+                try:
+                    with warnings.catch_warnings(record=True) as w:
+                        c = Cell(final_data, init_coords=init_coords)
+                    if w and w[0].category == RankWarning:
+                        continue
+                except LinAlgError:
+                    print(i, l)
                     continue
             else:
                 c = Cell(final_data, init_coords=init_coords)
