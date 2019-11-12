@@ -470,5 +470,4 @@ class TestIterCellPlot(ArrayTestCase):
     def test_misc(self):
         fig = plt.figure()
         self.icp.savefig('deleteme.png')
-        self.icp.show()
         plt.close()
