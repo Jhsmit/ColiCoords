@@ -116,7 +116,7 @@ def create_config(path=None):
         os.mkdir(config['Other']['CACHE_DIR'])
 
 
-cfg = DefaultConfig
+load_config()
 
 
 try:
