@@ -4,9 +4,8 @@ import numpy as np
 import os
 
 from colicoords.cell import Cell, CellList
-from colicoords.config import cfg
 from colicoords.data_models import Data
-
+import colicoords.config as config
 
 TYPES = {
     'id': int,
@@ -137,7 +136,7 @@ def load_thunderstorm(file_path, pixelsize=None):
 
     """
 
-    pixelsize = cfg.IMG_PIXELSIZE if not pixelsize else pixelsize
+    pixelsize = config.cfg.IMG_PIXELSIZE if not pixelsize else pixelsize
     ext = os.path.splitext(file_path)[1]
     if ext == '.csv':
         delimiter = ','

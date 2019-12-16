@@ -11,8 +11,7 @@ import numpy as np
 from colicoords.cell import CellList, calc_lc
 from colicoords.plot import cmap_default, render_storm
 from colicoords.support import pad_cell
-from colicoords.config import cfg
-
+import colicoords.config as config
 #todo fix extend!
 # Pad all cells so the shape is the same and then use the good old update?
 
@@ -711,7 +710,7 @@ class IterCellPlot(object):
             a_max = np.max(out_arr, axis=1)
             out_arr = out_arr / a_max[:, np.newaxis]
 
-        x = x if norm_x else x * (cfg.IMG_PIXELSIZE / 1000)
+        x = x if norm_x else x * (config.cfg.IMG_PIXELSIZE / 1000)
         xunits = 'norm' if norm_x else '$\mu m$'
         yunits = 'norm' if norm_y else 'a.u.'
 
@@ -736,13 +735,13 @@ class IterCellPlot(object):
     def get_r_dist(self, norm_x=False, data_name='', limit_l=None, method='gauss', storm_weight=False, **kwargs):
         #todo wrappertje that autofills defaults?
         if norm_x:
-            stop = cfg.R_DIST_NORM_STOP
-            step = cfg.R_DIST_NORM_STEP
-            sigma = cfg.R_DIST_NORM_SIGMA
+            stop = config.cfg.R_DIST_NORM_STOP
+            step = config.cfg.R_DIST_NORM_STEP
+            sigma = config.cfg.R_DIST_NORM_SIGMA
         else:
-            stop = cfg.R_DIST_STOP
-            step = cfg.R_DIST_STEP
-            sigma = cfg.R_DIST_SIGMA
+            stop = config.cfg.R_DIST_STOP
+            step = config.cfg.R_DIST_STEP
+            sigma = config.cfg.R_DIST_SIGMA
 
         stop = kwargs.pop('stop', stop)
         step = kwargs.pop('step', step)
@@ -797,8 +796,8 @@ class IterCellPlot(object):
         else:
             data_elem = self.cell_list[0].data.data_dict[data_name]
 
-        nbins = dist_kwargs.pop('nbins', cfg.L_DIST_NBINS)
-        sigma = dist_kwargs.pop('sigma', cfg.L_DIST_SIGMA)
+        nbins = dist_kwargs.pop('nbins', config.cfg.L_DIST_NBINS)
+        sigma = dist_kwargs.pop('sigma', config.cfg.L_DIST_SIGMA)
         scf = self.cell_list.length if norm_x else np.ones(len(self.cell_list))
 
         sigma_arr = sigma / scf
@@ -821,7 +820,7 @@ class IterCellPlot(object):
             a_max = np.max(out_arr, axis=1)
             out_arr = out_arr / a_max[:, np.newaxis]
 
-        x_arr = x_arr if norm_x else x_arr * (cfg.IMG_PIXELSIZE / 1000)
+        x_arr = x_arr if norm_x else x_arr * (config.cfg.IMG_PIXELSIZE / 1000)
         xunits = 'norm' if norm_x else '$\mu m$'
         yunits = 'norm' if norm_y else 'a.u.'
 
@@ -852,8 +851,8 @@ class IterCellPlot(object):
 
     def plot_phi_dist(self, ax=None, data_name='', r_max=None, r_min=0, storm_weight=False, method='gauss',
                       dist_kwargs=None, **kwargs):
-        step = kwargs.pop('step', cfg.PHI_DIST_STEP)
-        sigma = kwargs.pop('sigma', cfg.PHI_DIST_SIGMA)
+        step = kwargs.pop('step', config.cfg.PHI_DIST_STEP)
+        sigma = kwargs.pop('sigma', config.cfg.PHI_DIST_SIGMA)
         dist_kwargs = {} if dist_kwargs is None else dist_kwargs
 
         if not data_name:

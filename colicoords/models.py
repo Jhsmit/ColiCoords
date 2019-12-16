@@ -2,8 +2,7 @@ import numpy as np
 from scipy.integrate import quad
 from symfit import Parameter, Variable, CallableNumericalModel
 
-from colicoords.config import cfg
-
+import colicoords.config as config
 
 class NumericalCellModel(CallableNumericalModel):
     """
@@ -24,9 +23,9 @@ class NumericalCellModel(CallableNumericalModel):
 
         r = Parameter('r', value=cell_obj.coords.r, min=cell_obj.coords.r / 4, max=cell_obj.coords.r * 4)
         xl = Parameter('xl', value=cell_obj.coords.xl,
-                       min=cell_obj.coords.xl - cfg.ENDCAP_RANGE / 2, max=cell_obj.coords.xl + cfg.ENDCAP_RANGE / 2)
+                       min=cell_obj.coords.xl - config.cfg.ENDCAP_RANGE / 2, max=cell_obj.coords.xl + config.cfg.ENDCAP_RANGE / 2)
         xr = Parameter('xr', value=cell_obj.coords.xr,
-                       min=cell_obj.coords.xr - cfg.ENDCAP_RANGE / 2, max=cell_obj.coords.xr + cfg.ENDCAP_RANGE / 2)
+                       min=cell_obj.coords.xr - config.cfg.ENDCAP_RANGE / 2, max=cell_obj.coords.xr + config.cfg.ENDCAP_RANGE / 2)
         a0 = Parameter('a0', value=cell_obj.coords.coeff[0], min=0, max=cell_obj.data.shape[0]*1.5)
         a1 = Parameter('a1', value=cell_obj.coords.coeff[1], min=-15, max=15)
         a2 = Parameter('a2', value=cell_obj.coords.coeff[2], min=-0.05, max=0.05)
@@ -48,7 +47,7 @@ try:
     from joblib import Memory as JobMemory
     class Memory(JobMemory):
         def __init__(self, *args, **kwargs):
-            args = (cfg.CACHE_DIR,) + args
+            args = (config.cfg.CACHE_DIR,) + args
             super(Memory, self).__init__(*args, **kwargs)
 
 except ImportError:
@@ -179,7 +178,7 @@ class RDistFunc(object):
 
         try:
             yarr = (a1 / (0.5 * np.pi * r1 ** 2))*y1 + (a2 / (np.pi * r2))*y2
-        except ValueError: # a's are arrays
+        except ValueError:  # a's are arrays
             assert a1.shape == a2.shape
             yarr = (a1[:, np.newaxis] / (0.5 * np.pi * r1 ** 2))*y1[np.newaxis, :] + (a2[:, np.newaxis] / (np.pi * r2))*y2[np.newaxis, :]
 
