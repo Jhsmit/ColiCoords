@@ -18,8 +18,8 @@
   :target: https://codecov.io/gh/Jhsmit/ColiCoords
 .. |license| image:: https://img.shields.io/badge/License-MIT-yellow.svg
     :target: https://opensource.org/licenses/MIT
-.. |doi| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.3256674.svg
-   :target: https://doi.org/10.5281/zenodo.3256674
+.. |doi| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.1412663.svg
+   :target: https://doi.org/10.5281/zenodo.1412663
 
 `Documentation <https://colicoords.readthedocs.io/>`_
 
