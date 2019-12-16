@@ -159,38 +159,7 @@ def load_thunderstorm(file_path, pixelsize=None):
     storm_table['uncertainty_xy'] /= pixelsize
     storm_table['sigma'] /= pixelsize
 
-
     return storm_table
-
-
-def _load_cell_tables(h5file, key):
-    data_obj = Data()
-
-    node = h5file.get_node(key)
-    data_grp = node['data']
-    for child in data_grp._f_iter_nodes():
-        dclass = child._v_attrs['dclass'].decode('UTF-8')
-        name = child._v_name
-
-        data_obj.add_data(child[name].read(), dclass=dclass, name=name)
-
-    c = Cell(data_obj, init_coords=False)
-
-
-    attrs = node.attributes._v_attrs
-    for a in ['r', 'xl', 'xr', 'coeff']:
-        setattr(c.coords, a, attrs[a])
-    c.coords.shape = c.data.shape
-
-    name = attrs['name'].decode('UTF-8')
-    c.name = name if name is not 'None' else None
-
-    return c
-
-
-# h5file = open_file(fpath, mode='r')
-# nodes = h5file.list_nodes('/')
-# cells = CellList([_load_cell(h5file, node) for node in nodes])
 
 
 def _load_deprecated(file_path):
