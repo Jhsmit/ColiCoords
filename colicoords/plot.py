@@ -292,7 +292,7 @@ class CellPlot(object):
         if norm_y:
             y = y.astype(float) / y.max()
 
-        x = x if norm_x else x * (cfg.IMG_PIXELSIZE / 1000)
+        x = x if norm_x else x * (config.cfg.IMG_PIXELSIZE / 1000)
         xunits = 'norm' if norm_x else '$\mu m$'
         yunits = 'norm' if norm_y else 'a.u.'
 
