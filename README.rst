@@ -27,6 +27,8 @@
 
 `BioRxiv Paper <https://www.biorxiv.org/content/10.1101/608109v1>`_
 
+`Paper code <https://github.com/Jhsmit/ColiCoords-Paper>`_
+
 Project Goals
 =============
 
