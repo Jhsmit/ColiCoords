@@ -68,10 +68,14 @@ class TestCellFitting(ArrayTestCase):
             res_dict = {'a0': 1.762122e+01, 'a1': -2.272049e-02, 'a2': 4.457729e-04,
                         'r': 9.243795e+00, 'xl': 1.517070e+01, 'xr': 3.638401e+01}
             value = 8206601.073967202
-        else:
+        elif StrictVersion(scipy.__version__) < StrictVersion('1.4.0'):
             res_dict = {'a0': 1.804735702887220E+01, 'a1': -5.285406247108937E-02, 'a2': 9.726930458977879E-04,
                         'r': 9.265014573271854E+00, 'xl': 1.520349136432933E+01, 'xr': 3.637929146737385E+01}
             value = 8221057.758640378
+        else:
+            res_dict = {'a0': 1.772944105424428E+01, 'a1': -2.800104528377645E-02, 'a2': 4.916945792890149E-04,
+                        'r': 9.254283346347917E+00, 'xl': 1.5172830307331035E+01, 'xr': 3.645007538899884E+01}
+            value = 8191888.515532021
 
         res = cell_0.optimize('brightfield', minimizer=DifferentialEvolution, **self.de_kwargs)
         self.assertAlmostEqual(self.cf*res.objective_value, value, 6)
