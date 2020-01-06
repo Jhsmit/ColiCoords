@@ -42,6 +42,7 @@ class DefaultConfig(object):
         return os.path.join(os.path.expanduser('~'), '.colicoords', 'cache')
 
 
+
 config_sections = {
     'General': ['IMG_PIXELSIZE'],
     'Optimization': ['ENDCAP_RANGE'],
@@ -76,8 +77,8 @@ def load_config(path=None):
         Optional path.
 
     """
-    global cfg
     path = path if path else os.path.join(os.path.expanduser('~'), '.colicoords', 'config.ini')
+    global cfg
     if os.path.exists(path):
         config = configparser.ConfigParser()
         config.read(path)
@@ -106,7 +107,6 @@ def create_config(path=None):
     config = configparser.ConfigParser()
     config.optionxform = str
     for k, v in config_sections.items():
-        print(k)
         config[k] = {vi: getattr(DefaultConfig, vi) for vi in v}
 
     with open(os.path.join(path, 'config.ini'), 'w') as configfile:

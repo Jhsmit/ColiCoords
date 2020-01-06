@@ -8,7 +8,6 @@ import numpy
 import warnings
 
 import colicoords.fileIO as fileIO
-
 import storm_analysis.sa_library.sa_h5py as saH5Py
 
 

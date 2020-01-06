@@ -5,8 +5,8 @@ import numpy as np
 import seaborn as sns
 from tqdm.auto import tqdm
 
-from colicoords.config import cfg
 from colicoords.cell import calc_lc, CellList, Cell
+import colicoords.config as config
 
 sns.set_style('white')
 cmap_default = {'fluorescence': 'viridis', 'binary': 'gray_r', 'brightfield': 'gray'}
@@ -292,7 +292,7 @@ class CellPlot(object):
         if norm_y:
             y = y.astype(float) / y.max()
 
-        x = x if norm_x else x * (cfg.IMG_PIXELSIZE / 1000)
+        x = x if norm_x else x * (config.cfg.IMG_PIXELSIZE / 1000)
         xunits = 'norm' if norm_x else '$\mu m$'
         yunits = 'norm' if norm_y else 'a.u.'
 
@@ -317,13 +317,13 @@ class CellPlot(object):
         #todo copy of get_r_dist on CellListPlot, make baseclass?
         #used in kymograph plotting
         if norm_x:
-            stop = cfg.R_DIST_NORM_STOP
-            step = cfg.R_DIST_NORM_STEP
-            sigma = cfg.R_DIST_NORM_SIGMA
+            stop = config.cfg.R_DIST_NORM_STOP
+            step = config.cfg.R_DIST_NORM_STEP
+            sigma = config.cfg.R_DIST_NORM_SIGMA
         else:
-            stop = cfg.R_DIST_STOP
-            step = cfg.R_DIST_STEP
-            sigma = cfg.R_DIST_SIGMA
+            stop = config.cfg.R_DIST_STOP
+            step = config.cfg.R_DIST_STEP
+            sigma = config.cfg.R_DIST_SIGMA
 
         stop = kwargs.pop('stop', stop)
         step = kwargs.pop('step', step)
@@ -378,9 +378,9 @@ class CellPlot(object):
             data_elem = self.cell_obj.data.data_dict[data_name]
 
         dist_kwargs = {} if dist_kwargs is None else dist_kwargs
-        nbins = dist_kwargs.pop('nbins', cfg.L_DIST_NBINS)
+        nbins = dist_kwargs.pop('nbins', config.cfg.L_DIST_NBINS)
         scf = self.cell_obj.length if norm_x else 1
-        sigma = dist_kwargs.pop('sigma', cfg.L_DIST_SIGMA) / scf
+        sigma = dist_kwargs.pop('sigma', config.cfg.L_DIST_SIGMA) / scf
 
         dist_kwargs = dist_kwargs if dist_kwargs is not None else {}
         x, y = self.cell_obj.l_dist(nbins, data_name=data_name, norm_x=norm_x, r_max=r_max, storm_weight=storm_weight,
@@ -392,7 +392,7 @@ class CellPlot(object):
         if norm_y:
             y = y.astype(float) / y.max()
 
-        x = x if norm_x else x * (cfg.IMG_PIXELSIZE / 1000)
+        x = x if norm_x else x * (config.cfg.IMG_PIXELSIZE / 1000)
         xunits = 'norm' if norm_x else '$\mu m$'
         yunits = 'norm' if norm_y else 'a.u.'
 
@@ -449,8 +449,8 @@ class CellPlot(object):
         lines : :obj:`tuple`
             Tuple with Matplotlib line artist objects.
         """
-        step = kwargs.pop('step', cfg.PHI_DIST_STEP)
-        sigma = kwargs.pop('sigma', cfg.PHI_DIST_SIGMA)
+        step = kwargs.pop('step', config.cfg.PHI_DIST_STEP)
+        sigma = kwargs.pop('sigma', config.cfg.PHI_DIST_SIGMA)
         dist_kwargs = {} if dist_kwargs is None else dist_kwargs
 
         if not data_name:
@@ -846,7 +846,7 @@ class CellPlot(object):
             x_len /= self.cell_obj.coords.r
             xunits = 'norm'
         else:
-            x_len *= (cfg.IMG_PIXELSIZE / 1000)
+            x_len *= (config.cfg.IMG_PIXELSIZE / 1000)
             xunits = '$\mu m$'
 
         ax = plt.gca() if ax is None else ax
@@ -903,7 +903,7 @@ class CellPlot(object):
             r /= self.cell_obj.coords.r
             xunits = 'norm'
         else:
-            r *= (cfg.IMG_PIXELSIZE / 1000)
+            r *= (config.cfg.IMG_PIXELSIZE / 1000)
             xunits = '$\mu m$'
 
         if limit_l is not None:
@@ -1078,25 +1078,25 @@ class CellListPlot(object):
         """
 
         if prop == 'length':
-            values = self.cell_list.length * (cfg.IMG_PIXELSIZE / 1000)
+            values = self.cell_list.length * (config.cfg.IMG_PIXELSIZE / 1000)
             title = 'Cell length'
             xlabel = r'Length ($\mu m$)'
         elif prop == 'radius':
-            values = self.cell_list.radius * (cfg.IMG_PIXELSIZE / 1000)
+            values = self.cell_list.radius * (config.cfg.IMG_PIXELSIZE / 1000)
             title = 'Cell radius'
             xlabel = r'Radius ($\mu m$)'
         elif prop == 'circumference':
-            values = self.cell_list.circumference * (cfg.IMG_PIXELSIZE / 1000)
+            values = self.cell_list.circumference * (config.cfg.IMG_PIXELSIZE / 1000)
         elif prop == 'area':
-            values = self.cell_list.area * (cfg.IMG_PIXELSIZE / 1000)**2
+            values = self.cell_list.area * (config.cfg.IMG_PIXELSIZE / 1000)**2
             title = 'Cell area'
             xlabel = r'Area ($\mu m^{2}$)'
         elif prop == 'surface':
-            values = self.cell_list.surface * (cfg.IMG_PIXELSIZE / 1000)**2
+            values = self.cell_list.surface * (config.cfg.IMG_PIXELSIZE / 1000)**2
             title = 'Cell surface'
             xlabel = r'Area ($\mu m^{2}$)'
         elif prop == 'volume':
-            values = self.cell_list.volume * (cfg.IMG_PIXELSIZE / 1000) ** 3
+            values = self.cell_list.volume * (config.cfg.IMG_PIXELSIZE / 1000) ** 3
             title = 'Cell volume'
             xlabel = r'Volume ($\mu m^{3}$)'
         else:
@@ -1185,13 +1185,13 @@ class CellListPlot(object):
         """
 
         if norm_x:
-            stop = cfg.R_DIST_NORM_STOP
-            step = cfg.R_DIST_NORM_STEP
-            sigma = cfg.R_DIST_NORM_STEP
+            stop = config.cfg.R_DIST_NORM_STOP
+            step = config.cfg.R_DIST_NORM_STEP
+            sigma = config.cfg.R_DIST_NORM_STEP
         else:
-            stop = cfg.R_DIST_STOP
-            step = cfg.R_DIST_STEP
-            sigma = cfg.R_DIST_STEP
+            stop = config.cfg.R_DIST_STOP
+            step = config.cfg.R_DIST_STEP
+            sigma = config.cfg.R_DIST_STEP
 
         stop = kwargs.pop('stop', stop)
         step = kwargs.pop('step', step)
@@ -1216,7 +1216,7 @@ class CellListPlot(object):
             a_max = np.max(out_arr, axis=1)
             out_arr = out_arr / a_max[:, np.newaxis]
 
-        x = x if norm_x else x * (cfg.IMG_PIXELSIZE / 1000)
+        x = x if norm_x else x * (config.cfg.IMG_PIXELSIZE / 1000)
 
         xunits = 'norm' if norm_x else '$\mu m$'
         yunits = 'norm' if norm_y else 'a.u.'
@@ -1247,13 +1247,13 @@ class CellListPlot(object):
     def get_r_dist(self, norm_x=False, data_name='', limit_l=None, method='gauss', storm_weight=False, **kwargs):
         #todo wrappertje that autofills defaults?
         if norm_x:
-            stop = cfg.R_DIST_NORM_STOP
-            step = cfg.R_DIST_NORM_STEP
-            sigma = cfg.R_DIST_NORM_SIGMA
+            stop = config.cfg.R_DIST_NORM_STOP
+            step = config.cfg.R_DIST_NORM_STEP
+            sigma = config.cfg.R_DIST_NORM_SIGMA
         else:
-            stop = cfg.R_DIST_STOP
-            step = cfg.R_DIST_STEP
-            sigma = cfg.R_DIST_SIGMA
+            stop = config.cfg.R_DIST_STOP
+            step = config.cfg.R_DIST_STEP
+            sigma = config.cfg.R_DIST_SIGMA
 
         stop = kwargs.pop('stop', stop)
         step = kwargs.pop('step', step)
@@ -1302,8 +1302,8 @@ class CellListPlot(object):
 
         dist_kwargs = {} if dist_kwargs is None else dist_kwargs
 
-        nbins = dist_kwargs.pop('nbins', cfg.L_DIST_NBINS)
-        sigma = dist_kwargs.pop('sigma', cfg.L_DIST_SIGMA)
+        nbins = dist_kwargs.pop('nbins', config.cfg.L_DIST_NBINS)
+        sigma = dist_kwargs.pop('sigma', config.cfg.L_DIST_SIGMA)
         sigma_arr = sigma / self.cell_list.length
         x_arr, out_arr = self.cell_list.l_dist(nbins, data_name=data_name, norm_x=True, r_max=r_max,
                                                storm_weight=storm_weight, method=method, sigma=sigma_arr, **dist_kwargs)
@@ -1381,8 +1381,8 @@ class CellListPlot(object):
             Tuple with Matplotlib line artist objects.
         """
 
-        step = kwargs.pop('step', cfg.PHI_DIST_STEP)
-        sigma = kwargs.pop('sigma', cfg.PHI_DIST_SIGMA)
+        step = kwargs.pop('step', config.cfg.PHI_DIST_STEP)
+        sigma = kwargs.pop('sigma', config.cfg.PHI_DIST_SIGMA)
         dist_kwargs = {} if dist_kwargs is None else dist_kwargs
 
         x_vals, phi_l, phi_r = self.cell_list.phi_dist(step, data_name=data_name, r_max=r_max, r_min=r_min,
@@ -1644,7 +1644,7 @@ class CellListPlot(object):
         if norm_x:
             xunits = 'norm'
         else:
-            full_r *= (cfg.IMG_PIXELSIZE / 1000)
+            full_r *= (config.cfg.IMG_PIXELSIZE / 1000)
             xunits = '$\mu m$'
 
         ax = plt.gca() if ax is None else ax
@@ -1747,7 +1747,7 @@ def kymograph(x, arr, ax=None, time_factor=1, time_unit='frames', norm_y=True, a
         img[i] = np.interp(x_new, x_full, row)
 
     # Change x units
-    x_full *= cfg.IMG_PIXELSIZE / 1000
+    x_full *= config.cfg.IMG_PIXELSIZE / 1000
 
     # Change y units
     y_max = img.shape[0] * time_factor
