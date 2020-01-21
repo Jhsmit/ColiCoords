@@ -73,7 +73,7 @@ Several examples of `ColiCoords` usage can be found in the examples directory.
 Citation
 ========
 
-If you you use ``ColiCoords`` for scientific publication, please cite:
+If you you use ``ColiCoords`` (or any modified version) for scientific publication or other purposes, please cite:
 
 Smit, J. H., Li, Y., Warszawik, E. M., Herrmann, A. & Cordes, T. *ColiCoords: A Python package for the analysis of bacterial fluorescence microscopy data.* PLOS ONE 14, e0217524 (2019).
 
@@ -81,3 +81,8 @@ If you use the ``CNN`` module please also cite:
 
 Falk, T. et al. *U-Net: deep learning for cell counting, detection, and morphometry.* Nat Methods 16, 67–70 (2019).
 
+Acknowledgement
+===============
+
+ColiCoords up to v0.1.4 was developed by Jochem Smit within ongoing projects of the `Cordes Lab <http://www.mikrobiologie.biologie.uni-muenchen.de/forschung/ag_cordes/index.html>`_.
+The project was financed until 01-08-2018 by an ERC Starting Grant (No. 638536 - SM-IMPORT to Thorben Cordes) and an ERC Advanced Grant (No. 694610 - SUPRABIOTICS to Andreas Herrmann).
