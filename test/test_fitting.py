@@ -172,26 +172,6 @@ class TestCellFitting(ArrayTestCase):
         for r, val in zip(res_list, obj_values):
             self.assertAlmostEqual(self.cf*r.objective_value, val, 5)
 
-    # def test_temp(self):
-    #     cells = self.cells[:4].copy()
-    #     #perturb inital coordinate guesses
-    #     for cell in cells:
-    #         cell.coords.xl -= 3
-    #         cell.coords.xr += 3
-    #         cell.coords.a0 *= 0.9
-    #         cell.coords.a1 *= 1.05
-    #
-    #     res_list = cells.optimize_mp(minimizer=DifferentialEvolution, **self.de_kwargs)
-    #
-    #     # Check if the result has been properly substituted in all cell objects
-    #     for r, cell in zip(res_list, cells):
-    #         for k, v in r.params.items():
-    #             self.assertEqual(v, getattr(cell.coords, k))
-    #
-    #     obj_values = [24.0, 17.0, 19.0, 22.0]
-    #     for r, val in zip(res_list, obj_values):
-    #         self.assertEqual(r.objective_value, val)
-
 
 class TestSynthCellFitting(ArrayTestCase):
     def setUp(self):
