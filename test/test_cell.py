@@ -6,6 +6,7 @@ from colicoords.support import pad_cell
 from colicoords.cell import CellList, Cell
 from colicoords.fileIO import load
 import os
+import sys
 import numpy as np
 import unittest
 
@@ -44,7 +45,12 @@ class TestCell(ArrayTestCase):
     def test_reconstruct(self):
         bf_recontstr = self.cell_obj.reconstruct_image('brightfield')
         lsq = np.sum((bf_recontstr - self.cell_obj.data.bf_img)**2)
-        self.assertAlmostEqual(44774714.40809806, float(lsq), 2)   # Changed from 44728880.4819674
+
+        if sys.version_info.minor == 6:
+            self.assertAlmostEqual(44728880.48196769, float(lsq), 2)
+        else:
+            # Changed from 44728880.4819674 between py3.6 -> py3.6+
+            self.assertAlmostEqual(44774714.40809806, float(lsq), 2)
 
         bf_rscl = self.cell_obj.reconstruct_image('brightfield', r_scale=0.5)
         cell = self.cell_obj.copy()
