@@ -1,4 +1,4 @@
-|travis| |test_action| |docs| |binder| |codecov| |license| |doi| 
+|test_action| |docs| |binder| |codecov| |license| |doi| 
 
 |image|
 
