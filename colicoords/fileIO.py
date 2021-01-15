@@ -93,7 +93,7 @@ def _load_cell(cell_grp):
     c.coords.shape = c.data.shape
 
     name = attr_dict.get('name').decode('UTF-8')
-    c.name = name if name is not 'None' else None
+    c.name = name if name != 'None' else None
 
     return c
 
