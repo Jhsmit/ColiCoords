@@ -1,14 +1,14 @@
-|travis| |appveyor| |docs| |binder| |codecov| |license| |doi| 
+|travis| |test_action| |docs| |binder| |codecov| |license| |doi| 
 
-|test|
+|image|
 
-.. |test| image:: images/logo_with_cell_1280x640.png
+.. |image| image:: images/logo_with_cell_1280x640.png
     :width: 50%
 
-.. |travis| image:: https://travis-ci.org/Jhsmit/ColiCoords.svg?branch=master
-    :target: https://travis-ci.org/Jhsmit/ColiCoords 
-.. |appveyor| image:: https://ci.appveyor.com/api/projects/status/801teey9fnm8kuc9/branch/master?svg=true
-    :target: https://ci.appveyor.com/project/Jhsmit/colicoords
+
+
+.. |test_action| image:: https://github.com/Jhsmit/ColiCoords/workflows/pytest/badge.svg
+    :target: https://github.com/Jhsmit/ColiCoords/actions?query=workflow%3Apytest
 .. |docs| image:: https://readthedocs.org/projects/colicoords/badge/?version=latest
     :target: https://colicoords.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
