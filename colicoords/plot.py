@@ -908,7 +908,7 @@ class CellPlot(object):
 
         if limit_l is not None:
             #todo this code appears also in cell.r_dist()
-            if limit_l is 'full':
+            if limit_l == 'full':
                 xc = self.cell_obj.coords.calc_xc(xp, yp)
                 b = (xc > self.cell_obj.coords.xl) * (xc < self.cell_obj.coords.xr).astype(bool)
             elif limit_l == 'poles':
