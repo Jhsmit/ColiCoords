@@ -66,10 +66,9 @@ class TestCell(ArrayTestCase):
         with self.assertRaises(ValueError):
             self.cell_obj.get_intensity(data_name='asdfsdfa')
 
-        ii = [i0, i1, i2, i3, i4, i5, i6]
-        vi = [23729.91051454139, 23729.91051454139, 23580.72807991121, 11281.533678756477, 40733, 3094, 27264.0]
-        for i, v in zip(ii, vi):
-            self.assertEqual(i, v)
+        ii = np.array([i0, i1, i2, i3, i4, i5, i6])
+        vi = np.array([23729.91051454139, 23729.91051454139, 23580.72807991121, 11281.533678756477, 40733, 3094, 27264.0])
+        assert np.allclose(ii, vi)
 
 
 class TestCellList(ArrayTestCase):
