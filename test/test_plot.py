@@ -398,7 +398,7 @@ class TestCellListPlot(ArrayTestCase):
         line = self.clp.plot_r_dist(ax=ax, zero=True, norm_y=True)
         x, y = line.get_data()
         self.assertEqual(0, y.min())
-        self.assertEqual(0.9891755849204829, y.max())
+        self.assertAlmostEqual(0.9891755849204829, y.max(), 2)  # MAC OS difference as above
         label = ax.get_ylabel()
         self.assertEqual(label, 'Intensity (norm)')
 
