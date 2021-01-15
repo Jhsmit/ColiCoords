@@ -4,6 +4,7 @@ from colicoords.plot import CellPlot, CellListPlot
 from colicoords.fileIO import load
 import os
 import numpy as np
+import tempfile
 
 
 #todo include storm intensity field
@@ -322,7 +323,8 @@ class TestCellPlot(ArrayTestCase):
         img = np.random.rand(*self.cell.data.binary_img.shape)
         fig = self.cp.figure()
         self.cp.imshow(img)
-        self.cp.savefig('deleteme.png')
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            self.cp.savefig(os.path.join(tmpdirname, 'deleteme.png'))
         plt.close()
 
 
