@@ -390,7 +390,8 @@ class TestCellListPlot(ArrayTestCase):
         line = self.clp.plot_r_dist(ax=ax, norm_y=True)
         x, y = line.get_data()
         # This != 1 because curves are individually normalized and then averaged
-        self.assertEqual(0.9891755849204928, y.max())
+        # On MAC OS py 3.7: AssertionError: 0.9891755849204928 != 0.9891755849204926
+        self.assertAlmostEqual(0.9891755849204928, y.max(), 2)
         label = ax.get_ylabel()
         self.assertEqual(label, 'Intensity (norm)')
 
