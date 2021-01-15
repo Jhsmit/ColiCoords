@@ -293,7 +293,7 @@ class CellPlot(object):
             y = y.astype(float) / y.max()
 
         x = x if norm_x else x * (config.cfg.IMG_PIXELSIZE / 1000)
-        xunits = 'norm' if norm_x else '$\mu m$'
+        xunits = 'norm' if norm_x else 'μm'
         yunits = 'norm' if norm_y else 'a.u.'
 
         ax = plt.gca() if ax is None else ax
@@ -393,7 +393,7 @@ class CellPlot(object):
             y = y.astype(float) / y.max()
 
         x = x if norm_x else x * (config.cfg.IMG_PIXELSIZE / 1000)
-        xunits = 'norm' if norm_x else '$\mu m$'
+        xunits = 'norm' if norm_x else 'μm'
         yunits = 'norm' if norm_y else 'a.u.'
 
         ax = plt.gca() if ax is None else ax
@@ -847,7 +847,7 @@ class CellPlot(object):
             xunits = 'norm'
         else:
             x_len *= (config.cfg.IMG_PIXELSIZE / 1000)
-            xunits = '$\mu m$'
+            xunits = 'μm'
 
         ax = plt.gca() if ax is None else ax
         ax.set_xlabel('Distance ({})'.format(xunits))
@@ -904,7 +904,7 @@ class CellPlot(object):
             xunits = 'norm'
         else:
             r *= (config.cfg.IMG_PIXELSIZE / 1000)
-            xunits = '$\mu m$'
+            xunits = 'μm'
 
         if limit_l is not None:
             #todo this code appears also in cell.r_dist()
@@ -1080,25 +1080,25 @@ class CellListPlot(object):
         if prop == 'length':
             values = self.cell_list.length * (config.cfg.IMG_PIXELSIZE / 1000)
             title = 'Cell length'
-            xlabel = r'Length ($\mu m$)'
+            xlabel = r'Length (μm)'
         elif prop == 'radius':
             values = self.cell_list.radius * (config.cfg.IMG_PIXELSIZE / 1000)
             title = 'Cell radius'
-            xlabel = r'Radius ($\mu m$)'
+            xlabel = r'Radius (μm)'
         elif prop == 'circumference':
             values = self.cell_list.circumference * (config.cfg.IMG_PIXELSIZE / 1000)
         elif prop == 'area':
             values = self.cell_list.area * (config.cfg.IMG_PIXELSIZE / 1000)**2
             title = 'Cell area'
-            xlabel = r'Area ($\mu m^{2}$)'
+            xlabel = r'Area (μm²)'
         elif prop == 'surface':
             values = self.cell_list.surface * (config.cfg.IMG_PIXELSIZE / 1000)**2
             title = 'Cell surface'
-            xlabel = r'Area ($\mu m^{2}$)'
+            xlabel = r'Area (μm²)'
         elif prop == 'volume':
             values = self.cell_list.volume * (config.cfg.IMG_PIXELSIZE / 1000) ** 3
             title = 'Cell volume'
-            xlabel = r'Volume ($\mu m^{3}$)'
+            xlabel = r'Volume (μm³)'
         else:
             raise ValueError('Invalid target')
 
@@ -1218,7 +1218,7 @@ class CellListPlot(object):
 
         x = x if norm_x else x * (config.cfg.IMG_PIXELSIZE / 1000)
 
-        xunits = 'norm' if norm_x else '$\mu m$'
+        xunits = 'norm' if norm_x else 'μm'
         yunits = 'norm' if norm_y else 'a.u.'
 
         ax = plt.gca() if ax is None else ax
@@ -1645,7 +1645,7 @@ class CellListPlot(object):
             xunits = 'norm'
         else:
             full_r *= (config.cfg.IMG_PIXELSIZE / 1000)
-            xunits = '$\mu m$'
+            xunits = 'μm'
 
         ax = plt.gca() if ax is None else ax
 
@@ -1758,7 +1758,7 @@ def kymograph(x, arr, ax=None, time_factor=1, time_unit='frames', norm_y=True, a
     ax = plt.gca() if ax is None else ax
     image = ax.imshow(img, aspect=aspect * (1 / aspect_c), interpolation='spline16', cmap='viridis', origin='lower',
                       extent=[x_full.min(), x_full.max(), 0, y_max], **kwargs)
-    ax.set_xlabel('Distance ($\mu$m)')
+    ax.set_xlabel('Distance (μm)')
     ax.set_ylabel('Time ({})'.format(time_unit))
 
     return image

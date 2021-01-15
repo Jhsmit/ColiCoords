@@ -711,7 +711,7 @@ class IterCellPlot(object):
             out_arr = out_arr / a_max[:, np.newaxis]
 
         x = x if norm_x else x * (config.cfg.IMG_PIXELSIZE / 1000)
-        xunits = 'norm' if norm_x else '$\mu m$'
+        xunits = 'norm' if norm_x else 'μm'
         yunits = 'norm' if norm_y else 'a.u.'
 
         ax = plt.gca() if ax is None else ax
@@ -821,7 +821,7 @@ class IterCellPlot(object):
             out_arr = out_arr / a_max[:, np.newaxis]
 
         x_arr = x_arr if norm_x else x_arr * (config.cfg.IMG_PIXELSIZE / 1000)
-        xunits = 'norm' if norm_x else '$\mu m$'
+        xunits = 'norm' if norm_x else 'μm'
         yunits = 'norm' if norm_y else 'a.u.'
 
         ax = plt.gca() if ax is None else ax
