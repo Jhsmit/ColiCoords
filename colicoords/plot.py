@@ -1756,8 +1756,8 @@ def kymograph(x, arr, ax=None, time_factor=1, time_unit='frames', norm_y=True, a
     aspect_c = y_max / x_range
 
     ax = plt.gca() if ax is None else ax
-    image = ax.imshow(img, aspect=aspect * (1 / aspect_c), interpolation='spline16', cmap='viridis', origin='lower_left',
-              extent=[x_full.min(), x_full.max(), 0, y_max], **kwargs)
+    image = ax.imshow(img, aspect=aspect * (1 / aspect_c), interpolation='spline16', cmap='viridis', origin='lower',
+                      extent=[x_full.min(), x_full.max(), 0, y_max], **kwargs)
     ax.set_xlabel('Distance ($\mu$m)')
     ax.set_ylabel('Time ({})'.format(time_unit))
 
