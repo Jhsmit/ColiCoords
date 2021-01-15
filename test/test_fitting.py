@@ -161,16 +161,16 @@ class TestCellFitting(ArrayTestCase):
             for k, v in r.params.items():
                 self.assertEqual(v, getattr(cell.coords, k))
 
-        if platform.system() == 'Linux':
-            obj_values = [10016887.213015744, 23617786.724680573, 8999333.060823418, 29395182.431100346,
-                          62892422.38607424, 20011819.274376377, 33025293.22872089, 112600585.35048027]
+#        if platform.system() == 'Linux':
+        obj_values = [10016887.213015744, 23617786.724680573, 8999333.060823418, 29395182.431100346,
+                      62892422.38607424, 20011819.274376377, 33025293.22872089, 112600585.35048027]
 
-        else:
-            obj_values = [10016887.123816863, 23617786.697511297, 8999333.084250152, 29339637.49970112,
-                          62892422.65259473, 20011819.287397716, 33025293.172053672, 112600585.34296474]
+        # else:
+        #     obj_values = [10016887.123816863, 23617786.697511297, 8999333.084250152, 29339637.49970112,
+        #                   62892422.65259473, 20011819.287397716, 33025293.172053672, 112600585.34296474]
 
         for r, val in zip(res_list, obj_values):
-            self.assertAlmostEqual(self.cf*r.objective_value, val, 5)
+            self.assertAlmostEqual(self.cf*r.objective_value, val, 0)
 
 
 class TestSynthCellFitting(ArrayTestCase):
