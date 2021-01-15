@@ -41,7 +41,7 @@ class TestCell(ArrayTestCase):
         self.assertEqual(r_max, None)
         self.assertEqual(cell.coords.r, 9.0)
 
-    def test_recontruct(self):
+    def test_reconstruct(self):
         bf_recontstr = self.cell_obj.reconstruct_image('brightfield')
         lsq = np.sum((bf_recontstr - self.cell_obj.data.bf_img)**2)
         self.assertAlmostEqual(44774714.40809806, float(lsq), 2)   # Changed from 44728880.4819674
