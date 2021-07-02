@@ -76,6 +76,13 @@ class TestCell(ArrayTestCase):
         vi = np.array([23729.91051454139, 23729.91051454139, 23580.72807991121, 11281.533678756477, 40733, 3094, 27264.0])
         assert np.allclose(ii, vi)
 
+    def test_geometry(self):
+        props = ['radius', 'length', 'circumference', 'area', 'surface', 'volume']
+        values = [10.030, 28.852, 120.721, 894.853, 3082.576, 13346.087]
+        for val, prop in zip(values, props):
+            m1 = getattr(self.cell_obj, prop)
+            self.assertAlmostEqual(m1, val, places=3)
+
 
 class TestCellList(ArrayTestCase):
     def setUp(self):
