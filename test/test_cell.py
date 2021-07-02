@@ -9,6 +9,8 @@ import os
 import sys
 import numpy as np
 import unittest
+import mahotas as mh
+from scipy.integrate import IntegrationWarning
 
 
 class TestCell(ArrayTestCase):
