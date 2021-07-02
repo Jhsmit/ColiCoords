@@ -85,6 +85,15 @@ class TestCell(ArrayTestCase):
             m1 = getattr(self.cell_obj, prop)
             self.assertAlmostEqual(m1, val, places=3)
 
+        img = mh.imread('test_data/cell_numerical_circumference.bmp')
+        data = Data()
+        data.add_data(img, 'binary')
+        parameters = {'xl': 9.052183818572, 'xr': 16.473663643227702, 'a0': 75.8840251535968, 'a1': -4.77838056145959, 'a2': 0.03780895333655627, 'r': 7.0710678118654755, 'shape': (45, 26)}
+        cell = Cell(data, init_coords=False, **parameters)
+        with self.assertWarns(IntegrationWarning):
+            c = cell.circumference
+        self.assertAlmostEqual(c, 102.94616854654704, places=5)
+
 
 class TestCellList(ArrayTestCase):
     def setUp(self):
