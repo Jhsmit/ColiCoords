@@ -1254,27 +1254,31 @@ class Coordinates(object):
     def _top(self):
         """:obj:`float`: Length of the cell's top membrane segment."""
 
-        # http://tutorial.math.lamar.edu/Classes/CalcII/ParaArcLength.aspx
-        def integrant_top(t, a1, a2, r):
-            return np.sqrt(1 + (a1 + 2 * a2 * t) ** 2 + ((4 * a2 ** 2 * r ** 2) / (1 + (a1 + 2 * a2 * t) ** 2) ** 2) + (
-                        (4 * a2 * r) / np.sqrt(1 + (a1 + 2 * a2 * t))))
+        t = np.linspace(self.xl, self.xr, num=100)
+        a0, a1, a2 = self.coeff
 
-        top, terr = quad(integrant_top, self.xl, self.xr,
-                         args=(self.a1, self.a2, self.r))
-        return top
+        x_top = t + self.r * ((a1 + 2 * a2 * t) / np.sqrt(1 + (a1 + 2 * a2 * t) ** 2))
+        y_top = a0 + a1 * t + a2 * (t ** 2) - self.r * (1 / np.sqrt(1 + (a1 + 2 * a2 * t) ** 2))
+
+        top_arr = np.asarray([y_top, x_top]).swapaxes(1, 0)
+        d = np.diff(top_arr, axis=0)
+        dists = np.sqrt((d ** 2).sum(axis=1))
+        return np.sum(dists)
 
     @property
     def _bot(self):
         """:obj:`float`: Length of the cell's bottom membrane segment."""
 
-        # http://tutorial.math.lamar.edu/Classes/CalcII/ParaArcLength.aspx\
-        def integrant_bot(t, a1, a2, r):
-            return np.sqrt(1 + (a1 + 2 * a2 * t) ** 2 + ((4 * a2 ** 2 * r ** 2) / (1 + (a1 + 2 * a2 * t) ** 2) ** 2) - (
-                        (4 * a2 * r) / np.sqrt(1 + (a1 + 2 * a2 * t))))
+        t = np.linspace(self.xl, self.xr, num=100)
+        a0, a1, a2 = self.coeff
 
-        bot, berr = quad(integrant_bot, self.xl, self.xr,
-                         args=(self.a1, self.a2, self.r))
-        return bot
+        x_bot = t + - self.r * ((a1 + 2 * a2 * t) / np.sqrt(1 + (a1 + 2 * a2 * t) ** 2))
+        y_bot = a0 + a1 * t + a2 * (t ** 2) + self.r * (1 / np.sqrt(1 + (a1 + 2 * a2 * t) ** 2))
+
+        bot_arr = np.asarray([y_bot, x_bot]).swapaxes(1, 0)
+        d = np.diff(bot_arr, axis=0)
+        dists = np.sqrt((d ** 2).sum(axis=1))
+        return np.sum(dists)
 
     def p(self, x_arr):
         """
