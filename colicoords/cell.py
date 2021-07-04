@@ -1,6 +1,6 @@
 import numpy as np
 import multiprocess as mp
-from scipy.integrate import quad
+from scipy.integrate import quad, IntegrationWarning
 from scipy.optimize import brentq
 import numbers
 import mahotas as mh
@@ -8,6 +8,7 @@ import operator
 from functools import partial
 from contextlib import closing
 from tqdm.auto import tqdm
+import warnings
 
 from colicoords.fitting import CellFit
 from colicoords.support import allow_scalars, box_mean, running_mean
@@ -1254,31 +1255,57 @@ class Coordinates(object):
     def _top(self):
         """:obj:`float`: Length of the cell's top membrane segment."""
 
-        t = np.linspace(self.xl, self.xr, num=100)
-        a0, a1, a2 = self.coeff
+        # http://tutorial.math.lamar.edu/Classes/CalcII/ParaArcLength.aspx
+        def integrant_top(t, a1, a2, r):
+            return np.sqrt(1 + (a1 + 2 * a2 * t) ** 2 + ((4 * a2 ** 2 * r ** 2) / (1 + (a1 + 2 * a2 * t) ** 2) ** 2) + (
+                        (4 * a2 * r) / np.sqrt(1 + (a1 + 2 * a2 * t))))
 
-        x_top = t + self.r * ((a1 + 2 * a2 * t) / np.sqrt(1 + (a1 + 2 * a2 * t) ** 2))
-        y_top = a0 + a1 * t + a2 * (t ** 2) - self.r * (1 / np.sqrt(1 + (a1 + 2 * a2 * t) ** 2))
+        top, terr = quad(integrant_top, self.xl, self.xr,
+                         args=(self.a1, self.a2, self.r))
 
-        top_arr = np.asarray([y_top, x_top]).swapaxes(1, 0)
-        d = np.diff(top_arr, axis=0)
-        dists = np.sqrt((d ** 2).sum(axis=1))
-        return np.sum(dists)
+        if np.isnan(top) or np.isnan(terr):
+            msg = "Falling back to numerical approximation"
+            warnings.warn(msg, IntegrationWarning, stacklevel=2)
+
+            t = np.linspace(self.xl, self.xr, num=100)
+            a0, a1, a2 = self.coeff
+
+            x_top = t + self.r * ((a1 + 2 * a2 * t) / np.sqrt(1 + (a1 + 2 * a2 * t) ** 2))
+            y_top = a0 + a1 * t + a2 * (t ** 2) - self.r * (1 / np.sqrt(1 + (a1 + 2 * a2 * t) ** 2))
+
+            top_arr = np.asarray([y_top, x_top]).swapaxes(1, 0)
+            d = np.diff(top_arr, axis=0)
+            dists = np.sqrt((d ** 2).sum(axis=1))
+            top = np.sum(dists)
+
+        return top
 
     @property
     def _bot(self):
         """:obj:`float`: Length of the cell's bottom membrane segment."""
 
-        t = np.linspace(self.xl, self.xr, num=100)
-        a0, a1, a2 = self.coeff
+        def integrant_bot(t, a1, a2, r):
+            return np.sqrt(1 + (a1 + 2 * a2 * t) ** 2 + ((4 * a2 ** 2 * r ** 2) / (1 + (a1 + 2 * a2 * t) ** 2) ** 2) - (
+                        (4 * a2 * r) / np.sqrt(1 + (a1 + 2 * a2 * t))))
 
-        x_bot = t + - self.r * ((a1 + 2 * a2 * t) / np.sqrt(1 + (a1 + 2 * a2 * t) ** 2))
-        y_bot = a0 + a1 * t + a2 * (t ** 2) + self.r * (1 / np.sqrt(1 + (a1 + 2 * a2 * t) ** 2))
+        bot, berr = quad(integrant_bot, self.xl, self.xr,
+                         args=(self.a1, self.a2, self.r))
 
-        bot_arr = np.asarray([y_bot, x_bot]).swapaxes(1, 0)
-        d = np.diff(bot_arr, axis=0)
-        dists = np.sqrt((d ** 2).sum(axis=1))
-        return np.sum(dists)
+        if np.isnan(bot) or np.isnan(berr):
+            msg = "Falling back to numerical approximation"
+            warnings.warn(msg, IntegrationWarning, stacklevel=2)
+            t = np.linspace(self.xl, self.xr, num=100)
+            a0, a1, a2 = self.coeff
+
+            x_bot = t + - self.r * ((a1 + 2 * a2 * t) / np.sqrt(1 + (a1 + 2 * a2 * t) ** 2))
+            y_bot = a0 + a1 * t + a2 * (t ** 2) + self.r * (1 / np.sqrt(1 + (a1 + 2 * a2 * t) ** 2))
+
+            bot_arr = np.asarray([y_bot, x_bot]).swapaxes(1, 0)
+            d = np.diff(bot_arr, axis=0)
+            dists = np.sqrt((d ** 2).sum(axis=1))
+            bot = np.sum(dists)
+
+        return bot
 
     def p(self, x_arr):
         """

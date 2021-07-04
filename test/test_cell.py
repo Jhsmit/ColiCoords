@@ -9,6 +9,8 @@ import os
 import sys
 import numpy as np
 import unittest
+import mahotas as mh
+from scipy.integrate import IntegrationWarning
 
 
 class TestCell(ArrayTestCase):
@@ -75,6 +77,23 @@ class TestCell(ArrayTestCase):
         ii = np.array([i0, i1, i2, i3, i4, i5, i6])
         vi = np.array([23729.91051454139, 23729.91051454139, 23580.72807991121, 11281.533678756477, 40733, 3094, 27264.0])
         assert np.allclose(ii, vi)
+
+    def test_geometry(self):
+        props = ['radius', 'length', 'circumference', 'area', 'surface', 'volume']
+        values = [10.030, 28.852, 120.721, 894.853, 3082.576, 13346.087]
+        for val, prop in zip(values, props):
+            m1 = getattr(self.cell_obj, prop)
+            self.assertAlmostEqual(m1, val, places=3)
+
+        f_path = os.path.dirname(os.path.realpath(__file__))
+        img = mh.imread(os.path.join(f_path, r'test_data/cell_numerical_circumference.bmp'))
+        data = Data()
+        data.add_data(img, 'binary')
+        parameters = {'xl': 9.052183818572, 'xr': 16.473663643227702, 'a0': 75.8840251535968, 'a1': -4.77838056145959, 'a2': 0.03780895333655627, 'r': 7.0710678118654755, 'shape': (45, 26)}
+        cell = Cell(data, init_coords=False, **parameters)
+        with self.assertWarns(IntegrationWarning):
+            c = cell.circumference
+        self.assertAlmostEqual(c, 102.94616854654704, places=5)
 
 
 class TestCellList(ArrayTestCase):
