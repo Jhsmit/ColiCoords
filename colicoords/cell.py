@@ -1973,7 +1973,7 @@ def solve_trig(a, b, c, d):
     Returns
     -------
     array : array_like
-        First real root solution.
+        All 3 real root solutions.
 
     .. [1] https://en.wikipedia.org/wiki/Cubic_function#Trigonometric_solution_for_three_real_roots
 
@@ -1984,8 +1984,8 @@ def solve_trig(a, b, c, d):
     assert (np.all(p < 0))
 
     #Find all 3 real roots
-    x_r_array = [np.zeros(p.shape),np.zeros(p.shape),np.zeros(p.shape)]
-    for i,k in enumerate([0.,1.,2.]): #TODO faster solution available if you vectorize via numpy, but this is fast enough
+    x_r_array = [np.zeros(p.shape), np.zeros(p.shape), np.zeros(p.shape)]
+    for i, k in enumerate([0., 1., 2.]): #TODO faster solution available if you vectorize via numpy, but this is fast enough
 
         t_k = 2. * np.sqrt(-p / 3.) * np.cos(
             (1 / 3.) * np.arccos(((3. * q) / (2. * p)) * np.sqrt(-3. / p)) - (2 * np.pi * k) / 3.)
