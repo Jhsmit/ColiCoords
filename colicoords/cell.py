@@ -783,27 +783,31 @@ class Coordinates(object):
 
     def _pick_root(self, roots, xp, yp):
         """
-        Evaluate the expression for r^2 for each of 3 roots and pick the smallest - which corresponds to the minimum distance from midline.
+        Evaluate the expression for r^2 for each of 3 roots and pick the smallest - which corresponds to the
+        minimum distance from midline.
 
         Parameters
         ----------
-        roots : (3,i) ndarray of float, containing 3 roots each of i total polynomials
-
-        xp : (ymax,xmax) ndarray of matrix x-coordinate, where ymax xmax are image array sizes.
-        yp : (ymax,xmax) ndarray of matrix u-coordinate, where ymax xmax are image array sizes.
+        roots : :class:`~numpy.ndarray`
+            ndarray of shape (3,n), containing 3 roots each of n total polynomials
+        xp : :class:`~numpy.ndarray`
+            ndarray of shape (n,) with x-coordinate
+        yp : :class:`~numpy.ndarray`
+            ndarray of shape (n,) with y-coordinate
 
         Returns
         -------
-        xc : (i,) ndarray of float, containing i roots which minimize the r^2
+        xc : :class:`~numpy.ndarray`
+            ndarray of shape (n,), containing n roots which minimize the r^2
         """
 
-        (_, i) = roots.shape
+        (_, n) = roots.shape
 
         a0, a1, a2 = self.coeff
 
         # Broadcast to common shape
-        xp = np.broadcast_to(xp, (3, i))
-        yp = np.broadcast_to(yp, (3, i))
+        xp = np.broadcast_to(xp, (3, n))
+        yp = np.broadcast_to(yp, (3, n))
 
         # Calculate r^2 for all roots
         rsquare = (roots - xp) ** 2 + (a0 + a1 * roots + a2 * roots ** 2 - yp) ** 2
@@ -811,7 +815,7 @@ class Coordinates(object):
         # Find roots that minimize r^2 and return
         mask = np.argmin(rsquare, axis=0)
 
-        return roots[mask, np.arange(0, i, 1)]
+        return roots[mask, np.arange(0, n, 1)]
 
     @allow_scalars
     def calc_xc_mask(self, xp, yp):
