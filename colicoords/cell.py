@@ -774,22 +774,20 @@ class Coordinates(object):
             trig_part = solve_trig(a, b, c[~mask], d[~mask])
 
             # Trig_part returns 3 roots. Evaluate each and pick the one that corresponds to the minimum distance
-            trig_part = self._pick_root(trig_part, self.coeff, xp[~mask], yp[~mask])
+            trig_part = self._pick_root(trig_part, xp[~mask], yp[~mask])
 
             x_c[mask] = general_part
             x_c[~mask] = trig_part
 
         return x_c
 
-    @staticmethod
-    def _pick_root(roots, coeff, xp, yp):
-        '''
+    def _pick_root(self, roots, xp, yp):
+        """
         Evaluate the expression for r^2 for each of 3 roots and pick the smallest - which corresponds to the minimum distance from midline.
 
         Parameters
         ----------
         roots : (3,i) ndarray of float, containing 3 roots each of i total polynomials
-        coeff : (3) list of [a0,a1,a2] coefficients of midline polynomial
 
         xp : (ymax,xmax) ndarray of matrix x-coordinate, where ymax xmax are image array sizes.
         yp : (ymax,xmax) ndarray of matrix u-coordinate, where ymax xmax are image array sizes.
@@ -797,11 +795,11 @@ class Coordinates(object):
         Returns
         -------
         xc : (i,) ndarray of float, containing i roots which minimize the r^2
-        '''
+        """
 
         (_, i) = roots.shape
 
-        a0, a1, a2 = coeff
+        a0, a1, a2 = self.coeff
 
         # Broadcast to common shape
         xp = np.broadcast_to(xp, (3, i))
